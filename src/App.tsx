@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Plus, Check, Trash2, BarChart2, SlidersHorizontal, X, Calendar, Lock, User, KeyRound, ArrowUpDown, Save } from 'lucide-react';
+import { Search, ListTodo, Plus, Check, Trash2, BarChart2, SlidersHorizontal, X, Lock, User, KeyRound, ArrowUpDown, Save } from 'lucide-react';
 
 interface Tournament {
   id: string;
@@ -49,7 +49,7 @@ export default function App() {
   const [selectedRooms, setSelectedRooms] = useState<string[]>(Object.keys(ROOMS));
   const [activeStats, setActiveStats] = useState<Tournament | null>(null);
 
-  // === НОВЫЕ СТЕЙТЫ ДЛЯ СОРТИРОВКИ И ШАБЛОНОВ ===
+  // === СТЕЙТЫ ДЛЯ СОРТИРОВКИ И ШАБЛОНОВ ===
   const [sortOrder, setSortOrder] = useState<'time' | 'buyin' | 'ev'>('time');
   const [showPresetsModal, setShowPresetsModal] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
@@ -179,7 +179,7 @@ export default function App() {
       setGrid(grid.filter(item => item.id !== t.id));
       try { WebApp.HapticFeedback.impactOccurred('rigid'); } catch(e){}
     } else {
-      setGrid([...grid, t]); // Сортировку теперь делает sortedGrid
+      setGrid([...grid, t]);
       try { WebApp.HapticFeedback.impactOccurred('light'); } catch(e){}
     }
   };
@@ -191,12 +191,12 @@ export default function App() {
       if (sortOrder === 'buyin') {
         const valA = parseFloat(a.buyin.replace(/[$,]/g, '')) || 0;
         const valB = parseFloat(b.buyin.replace(/[$,]/g, '')) || 0;
-        return valB - valA; // Дорогие сверху
+        return valB - valA;
       }
       if (sortOrder === 'ev') {
         const valA = parseFloat(a.ev_mtt?.replace(/[$,+]/g, '') || '0') || 0;
         const valB = parseFloat(b.ev_mtt?.replace(/[$,+]/g, '') || '0') || 0;
-        return valB - valA; // Плюсовые сверху
+        return valB - valA;
       }
       return 0;
     });
