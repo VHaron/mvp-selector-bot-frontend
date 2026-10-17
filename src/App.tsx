@@ -12,6 +12,7 @@ interface Tournament {
   roi_str: string;
   gtd: string;
   afs: string;
+  duration: string;
 }
 
 const ROOMS: Record<string, string> = {
@@ -21,7 +22,7 @@ const ROOMS: Record<string, string> = {
   '261': 'Pokerdom', '262': 'RPTBet', '263': 'CoinPoker'
 };
 
-const API_BASE_URL = 'https://mvp-selector-bot-joinweb3.msk1.amvera.tech/api'; // УКАЖИ ЗДЕСЬ АДРЕС AMVERA ПОТОМ
+const API_BASE_URL = 'https://mvp-selector-bot-joinweb3.msk1.amvera.tech/api';
 
 export default function App() {
   // Авторизация
@@ -47,7 +48,7 @@ export default function App() {
   const [selectedRooms, setSelectedRooms] = useState<string[]>(Object.keys(ROOMS));
   const [activeStats, setActiveStats] = useState<Tournament | null>(null);
 
-useEffect(() => {
+  useEffect(() => {
     try {
       WebApp.ready();
       WebApp.expand();
@@ -57,13 +58,12 @@ useEffect(() => {
       console.log("Запущено в браузере (локальный режим)");
     }
     
-    // Проверяем токен только один раз при загрузке страницы
     const savedToken = localStorage.getItem('mvp_token');
     if (savedToken) {
       setSessionToken(savedToken);
       setAuthStep('app');
     }
-  }, []); // <-- ВАЖНО: пустой массив, чтобы эффект не срабатывал каждый раз
+  }, []);
 
   // ===================== АВТОРИЗАЦИЯ =====================
   const handleLogin = async (e: React.FormEvent) => {
@@ -80,14 +80,11 @@ useEffect(() => {
       
       if (!res.ok) throw new Error(data.detail || 'Ошибка авторизации');
       
-      // Сохраняем токен в стейт, чтобы бэкенд знал, кого проверяет
       setSessionToken(data.session_token);
 
       if (data.status === 'mfa_required') {
-        // Если нужна 2FA - переводим на экран, но в память браузера ПОКА НЕ СОХРАНЯЕМ!
         setAuthStep('mfa');
       } else {
-        // Если 2FA не нужна (например, аккаунт без нее), сохраняем и пускаем
         localStorage.setItem('mvp_token', data.session_token);
         setAuthStep('app');
       }
@@ -112,7 +109,6 @@ useEffect(() => {
       
       if (!res.ok) throw new Error(data.detail || 'Неверный код 2FA');
       
-      // ВОТ ТЕПЕРЬ 2FA пройдена! Сохраняем в память и пускаем в приложение
       localStorage.setItem('mvp_token', sessionToken as string);
       setAuthStep('app');
     } catch (err: any) {
@@ -146,7 +142,6 @@ useEffect(() => {
       });
       
       if (res.status === 401) {
-        // Сессия протухла
         logout();
         return;
       }
@@ -183,6 +178,34 @@ useEffect(() => {
     const val = parseFloat(t.buyin.replace(',', '.').replace('$', ''));
     return sum + (isNaN(val) ? 0 : val);
   }, 0);
+
+  // === ФУНКЦИЯ ДЛЯ РАСЧЕТА ВРЕМЕНИ ===
+  const getSessionEndTime = (tournaments: Tournament[]) => {
+    if (!tournaments || tournaments.length === 0) return "--:--";
+
+    let maxEndTimeMins = 0;
+
+    tournaments.forEach(tourney => {
+      if (!tourney.time_start || !tourney.duration) return;
+
+      const [hours, minutes] = tourney.time_start.split(':').map(Number);
+      const startMins = (hours * 60) + (minutes || 0);
+      
+      const durationHours = parseFloat(tourney.duration.replace(',', '.'));
+      const durationMins = durationHours * 60;
+
+      const endMins = startMins + durationMins;
+
+      if (endMins > maxEndTimeMins) {
+        maxEndTimeMins = endMins;
+      }
+    });
+
+    const finalHours = Math.floor(maxEndTimeMins / 60) % 24;
+    const finalMinutes = Math.round(maxEndTimeMins % 60);
+
+    return `${String(finalHours).padStart(2, '0')}:${String(finalMinutes).padStart(2, '0')}`;
+  };
 
   const getPriorityStyles = (prio: string) => {
     if (prio === '1') return { border: 'border-l-emerald-500', glow: 'shadow-[0_0_20px_rgba(16,185,129,0.07)] hover:shadow-[0_0_25px_rgba(16,185,129,0.15)]', dot: 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]' };
@@ -388,6 +411,20 @@ useEffect(() => {
       {/* 📋 Контент: Сетка */}
       {activeTab === 'grid' && (
         <div className="p-4 space-y-3">
+          
+          {grid.length > 0 && (
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-2 flex justify-between items-center shadow-[0_0_20px_rgba(34,211,238,0.05)]">
+              <div>
+                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block mb-1">Турниров в сетке</span>
+                <div className="text-xl font-black text-white">{grid.length} <span className="text-sm text-slate-500 font-medium tracking-normal">шт.</span></div>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block mb-1">Конец сессии</span>
+                <div className="text-xl font-black text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.3)]">~ {getSessionEndTime(grid)}</div>
+              </div>
+            </div>
+          )}
+
           {grid.length === 0 ? (
             <div className="text-center py-20 px-6 bg-slate-900/50 rounded-2xl border border-slate-800/50">
               <div className="text-5xl mb-5 opacity-30">📋</div>
