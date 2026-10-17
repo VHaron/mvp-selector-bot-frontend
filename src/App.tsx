@@ -21,7 +21,7 @@ const ROOMS: Record<string, string> = {
   '261': 'Pokerdom', '262': 'RPTBet', '263': 'CoinPoker'
 };
 
-const API_BASE_URL = 'http://localhost:8000/api'; // УКАЖИ ЗДЕСЬ АДРЕС AMVERA ПОТОМ
+const API_BASE_URL = 'https://mvp-selector-bot-joinweb3.msk1.amvera.tech/api'; // УКАЖИ ЗДЕСЬ АДРЕС AMVERA ПОТОМ
 
 export default function App() {
   // Авторизация
