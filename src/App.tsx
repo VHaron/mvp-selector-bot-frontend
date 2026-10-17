@@ -13,6 +13,7 @@ interface Tournament {
   gtd: string;
   afs: string;
   duration: string;
+  ev_mtt: string;
 }
 
 const ROOMS: Record<string, string> = {
@@ -174,12 +175,19 @@ export default function App() {
     }
   };
 
+  // === РАСЧЕТЫ: СУММА БАЙ-ИНОВ И ОЖИДАНИЕ ===
   const totalBuyin = grid.reduce((sum, t) => {
     const val = parseFloat(t.buyin.replace(',', '.').replace('$', ''));
     return sum + (isNaN(val) ? 0 : val);
   }, 0);
 
-  // === ФУНКЦИЯ ДЛЯ РАСЧЕТА ВРЕМЕНИ ===
+  const totalEV = grid.reduce((sum, t) => {
+    if (!t.ev_mtt) return sum;
+    const val = parseFloat(t.ev_mtt.replace(',', '.').replace('$', '').replace('+', ''));
+    return sum + (isNaN(val) ? 0 : val);
+  }, 0);
+
+  // === ФУНКЦИЯ ДЛЯ РАСЧЕТА ВРЕМЕНИ ОКОНЧАНИЯ ===
   const getSessionEndTime = (tournaments: Tournament[]) => {
     if (!tournaments || tournaments.length === 0) return "--:--";
 
@@ -310,9 +318,9 @@ export default function App() {
           </div>
           <h1 className="text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-100 to-slate-400">Поиск турниров</h1>
         </div>
-        <div className="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.05)]">
-          <span className="text-emerald-400 text-sm">💰</span> 
-          <span className="text-slate-400">Сумма: <b className="text-emerald-400 tracking-wide">${totalBuyin.toFixed(2)}</b></span>
+        <div className="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-[10px] font-bold flex flex-col items-end shadow-[0_0_15px_rgba(16,185,129,0.05)]">
+          <div className="text-slate-400 mb-0.5">Загрузка: <b className="text-emerald-400 text-xs">${totalBuyin.toFixed(2)}</b></div>
+          <div className="text-slate-500">EV сессии: <b className={`text-xs ${totalEV >= 0 ? 'text-blue-400 drop-shadow-[0_0_5px_rgba(59,130,246,0.4)]' : 'text-rose-400'}`}>{totalEV > 0 ? '+' : ''}${totalEV.toFixed(2)}</b></div>
         </div>
       </div>
 
@@ -412,15 +420,22 @@ export default function App() {
       {activeTab === 'grid' && (
         <div className="p-4 space-y-3">
           
+          {/* ОБНОВЛЕННАЯ ПЛАШКА СО СТАТИСТИКОЙ (С ОЖИДАНИЕМ) */}
           {grid.length > 0 && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-2 flex justify-between items-center shadow-[0_0_20px_rgba(34,211,238,0.05)]">
-              <div>
-                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block mb-1">Турниров в сетке</span>
-                <div className="text-xl font-black text-white">{grid.length} <span className="text-sm text-slate-500 font-medium tracking-normal">шт.</span></div>
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 mb-3 grid grid-cols-3 gap-2 shadow-[0_0_20px_rgba(34,211,238,0.05)]">
+              <div className="text-left flex flex-col justify-center">
+                <span className="text-[9px] uppercase font-bold text-slate-500 tracking-wider block mb-1">Турниров</span>
+                <div className="text-xl font-black text-white leading-none">{grid.length} <span className="text-xs text-slate-500 font-medium tracking-normal">шт.</span></div>
               </div>
-              <div className="text-right">
-                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block mb-1">Конец сессии</span>
-                <div className="text-xl font-black text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.3)]">~ {getSessionEndTime(grid)}</div>
+              <div className="text-center border-x border-slate-800/50 flex flex-col justify-center">
+                <span className="text-[9px] uppercase font-bold text-slate-500 tracking-wider block mb-1">Ожидание</span>
+                <div className={`text-xl font-black leading-none ${totalEV >= 0 ? 'text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]' : 'text-rose-400'}`}>
+                  {totalEV > 0 ? '+' : ''}${totalEV.toFixed(2)}
+                </div>
+              </div>
+              <div className="text-right flex flex-col justify-center">
+                <span className="text-[9px] uppercase font-bold text-slate-500 tracking-wider block mb-1">Конец сессии</span>
+                <div className="text-xl font-black text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.3)] leading-none">~{getSessionEndTime(grid)}</div>
               </div>
             </div>
           )}
