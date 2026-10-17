@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+body {
+  background-color: var(--tg-theme-bg-color, #1a1a1a);
+  color: var(--tg-theme-text-color, #ffffff);
+}
