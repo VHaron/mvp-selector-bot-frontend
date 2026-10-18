@@ -160,6 +160,13 @@ export default function App() {
     } catch (e) {} finally { setLoading(false); }
   };
 
+  // === ВИЗУАЛЬНЫЕ СТИЛИ (Вернул приоритеты) ===
+  const getPriorityStyles = (prio: string) => {
+    if (prio === '1') return { border: 'border-l-emerald-500', glow: 'shadow-[0_0_20px_rgba(16,185,129,0.07)] hover:shadow-[0_0_25px_rgba(16,185,129,0.15)]', dot: 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]' };
+    if (prio === '2') return { border: 'border-l-amber-500', glow: 'shadow-[0_0_20px_rgba(245,158,11,0.07)] hover:shadow-[0_0_25px_rgba(245,158,11,0.15)]', dot: 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]' };
+    return { border: 'border-l-rose-500', glow: 'shadow-[0_0_20px_rgba(244,63,94,0.07)] hover:shadow-[0_0_25px_rgba(244,63,94,0.15)]', dot: 'bg-rose-400 shadow-[0_0_8px_rgba(251,113,133,0.8)]' };
+  };
+
   // === НОВЫЕ ФИЧИ (Математика) ===
   const isOverlay = (t: Tournament) => {
     const buyin = parseNum(t.buyin); const gtd = parseNum(t.gtd); const afs = parseNum(t.afs);
@@ -388,11 +395,18 @@ export default function App() {
               const isAdded = grid.some(item => item.id === t.id);
               const tier = getTier(t);
               const overlay = isOverlay(t);
+              const prioStyles = getPriorityStyles(t.priority);
+              
+              // Если есть заметка "must" - рамка зеленая, иначе берем рамку приоритета (и свечение тоже)
+              const cardBorder = note?.tag === 'must' ? 'border-l-4 border-l-emerald-500' : `border-l-[3px] ${prioStyles.border}`;
+              const cardGlow = note?.tag === 'must' ? 'shadow-[0_0_20px_rgba(16,185,129,0.1)]' : prioStyles.glow;
               
               return (
-                <div key={t.id} className={`bg-slate-900 rounded-2xl p-4 border border-slate-800 transition-all ${note?.tag==='must' ? 'border-l-4 border-l-emerald-500' : ''}`}>
+                <div key={t.id} className={`bg-slate-900 rounded-2xl p-4 border border-slate-800 transition-all duration-300 ${cardBorder} ${cardGlow}`}>
                   <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-2.5">
+                      {/* Цветная точка приоритета */}
+                      <div className={`w-2 h-2 rounded-full ${prioStyles.dot}`}></div>
                       <span className="text-sm text-cyan-400 font-mono font-extrabold tracking-wide drop-shadow-[0_0_8px_rgba(34,211,238,0.3)]">{t.time_start}</span>
                     </div>
                     <div className="flex gap-2 items-center">
@@ -500,10 +514,12 @@ export default function App() {
             </div>
           ) : (
             sortedGrid.map((t) => {
+              const prioStyles = getPriorityStyles(t.priority);
               return (
-                <div key={t.id} className="bg-slate-900 rounded-xl p-3.5 shadow-lg border border-slate-800 flex justify-between items-center gap-3">
+                <div key={t.id} className={`bg-slate-900 rounded-xl p-3.5 shadow-lg border border-slate-800 flex justify-between items-center gap-3 border-l-[3px] ${prioStyles.border}`}>
                   <div className="flex-1 pl-1">
                     <div className="flex items-center gap-2.5">
+                      <div className={`w-1.5 h-1.5 rounded-full ${prioStyles.dot}`}></div>
                       <span className="text-xs font-mono font-bold text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.4)]">{t.time_start}</span>
                       <span className="text-[9px] uppercase font-bold text-slate-400 bg-slate-950 px-1.5 py-0.5 rounded tracking-wider border border-slate-800">{t.room}</span>
                     </div>
@@ -605,11 +621,16 @@ export default function App() {
       {activeStats && (() => {
         const key = getNoteKey(activeStats);
         const note = notes[key] || { tag: 'none', text: '' };
+        const prioStyles = getPriorityStyles(activeStats.priority);
         return (
         <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-[24px] p-6 w-full max-w-sm shadow-2xl relative">
             <button onClick={() => setActiveStats(null)} className="absolute top-4 right-4 p-2 bg-slate-800 hover:bg-slate-700 rounded-full text-slate-400 transition"><X size={20}/></button>
-            <h3 className="font-black text-xl text-white pr-8 mb-1 leading-tight">{activeStats.name}</h3>
+            
+            <div className="flex items-center gap-2 mb-1 pr-8">
+               <div className={`w-2.5 h-2.5 rounded-full ${prioStyles.dot}`}></div>
+               <h3 className="font-black text-xl text-white leading-tight">{activeStats.name}</h3>
+            </div>
             <span className="text-[10px] text-indigo-400 uppercase font-bold bg-indigo-500/10 px-2 py-1 rounded border border-indigo-500/20 inline-block">{activeStats.room}</span>
             
             <div className="grid grid-cols-2 gap-2 mt-5 mb-5">
