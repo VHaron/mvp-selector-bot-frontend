@@ -36,17 +36,21 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
 
-  // Состояние приложения (Чистое, без локальной памяти)
+  // Состояние приложения (Чистое)
   const [activeTab, setActiveTab] = useState<'search' | 'grid'>('search');
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [grid, setGrid] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Фильтры (Выбраны все румы по умолчанию)
+  // Фильтры
   const [showFilters, setShowFilters] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  
+  // === СТЕЙТЫ ДЛЯ ОБЛАЧНЫХ НАСТРОЕК РУМОВ ===
   const [selectedRooms, setSelectedRooms] = useState<string[]>(Object.keys(ROOMS));
+  const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
+
   const [activeStats, setActiveStats] = useState<Tournament | null>(null);
 
   // === СТЕЙТЫ ДЛЯ СОРТИРОВКИ И ОБЛАЧНЫХ ШАБЛОНОВ ===
@@ -55,7 +59,7 @@ export default function App() {
   const [newPresetName, setNewPresetName] = useState('');
   const [presets, setPresets] = useState<{name: string, items: Tournament[]}[]>([]);
 
-  // === ФУНКЦИИ ДЛЯ СВЯЗИ С БЭКЕНДОМ ПО ШАБЛОНАМ ===
+  // === ФУНКЦИИ ДЛЯ СВЯЗИ С БЭКЕНДОМ (ШАБЛОНЫ И НАСТРОЙКИ) ===
   const fetchPresets = async (token: string) => {
     try {
       const res = await fetch(`${API_BASE_URL}/get_presets`, {
@@ -77,16 +81,54 @@ export default function App() {
       await fetch(`${API_BASE_URL}/save_presets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          session_token: token, 
-          presets: newPresets 
-        })
+        body: JSON.stringify({ session_token: token, presets: newPresets })
       });
     } catch (e) {
       console.error("Ошибка сохранения шаблонов", e);
     }
   };
 
+  // Загрузка настроек румов с сервера
+  const fetchSettings = async (token: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/get_settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_token: token })
+      });
+      const data = await res.json();
+      if (data.status === 'success' && data.selected_rooms) {
+        setSelectedRooms(data.selected_rooms);
+      }
+    } catch (e) {
+      console.error("Ошибка загрузки настроек", e);
+    } finally {
+      setIsSettingsLoaded(true); // Разрешаем авто-сохранение только после загрузки
+    }
+  };
+
+  // Сохранение настроек румов на сервер
+  const syncSettingsWithServer = async (rooms: string[], token: string) => {
+    try {
+      await fetch(`${API_BASE_URL}/save_settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_token: token, selected_rooms: rooms })
+      });
+    } catch (e) {
+      console.error("Ошибка сохранения настроек", e);
+    }
+  };
+
+  // Авто-сохранение выбранных румов при любом изменении (в облако)
+  useEffect(() => {
+    if (isSettingsLoaded && sessionToken) {
+      syncSettingsWithServer(selectedRooms, sessionToken);
+    }
+  }, [selectedRooms, isSettingsLoaded, sessionToken]);
+
+
+  // === ИНИЦИАЛИЗАЦИЯ ===
   useEffect(() => {
     try {
       WebApp.ready();
@@ -100,7 +142,8 @@ export default function App() {
     const savedToken = localStorage.getItem('mvp_token');
     if (savedToken) {
       setSessionToken(savedToken);
-      fetchPresets(savedToken); // Загружаем облачные шаблоны при входе
+      fetchPresets(savedToken); // Загружаем облачные шаблоны
+      fetchSettings(savedToken); // Загружаем настройки румов
       setAuthStep('app');
     }
   }, []);
@@ -126,7 +169,8 @@ export default function App() {
         setAuthStep('mfa');
       } else {
         localStorage.setItem('mvp_token', data.session_token);
-        fetchPresets(data.session_token); // Загружаем облачные шаблоны
+        fetchPresets(data.session_token);
+        fetchSettings(data.session_token);
         setAuthStep('app');
       }
     } catch (err: any) {
@@ -151,7 +195,8 @@ export default function App() {
       if (!res.ok) throw new Error(data.detail || 'Неверный код 2FA');
       
       localStorage.setItem('mvp_token', sessionToken as string);
-      fetchPresets(sessionToken as string); // Загружаем облачные шаблоны
+      fetchPresets(sessionToken as string);
+      fetchSettings(sessionToken as string);
       setAuthStep('app');
     } catch (err: any) {
       setAuthError(err.message);
@@ -165,6 +210,8 @@ export default function App() {
     setSessionToken(null);
     setGrid([]);
     setPresets([]);
+    setSelectedRooms(Object.keys(ROOMS));
+    setIsSettingsLoaded(false);
     setAuthStep('login');
   };
 
@@ -241,7 +288,7 @@ export default function App() {
     if (!newPresetName.trim() || grid.length === 0 || !sessionToken) return;
     const newPresets = [...presets, { name: newPresetName, items: grid }];
     setPresets(newPresets);
-    syncPresetsWithServer(newPresets, sessionToken); // Отправляем на бэкенд
+    syncPresetsWithServer(newPresets, sessionToken);
     setNewPresetName('');
     try { WebApp.HapticFeedback.notificationOccurred('success'); } catch(e){}
   };
@@ -256,7 +303,7 @@ export default function App() {
     if (!sessionToken) return;
     const newPresets = presets.filter((_, i) => i !== idx);
     setPresets(newPresets);
-    syncPresetsWithServer(newPresets, sessionToken); // Отправляем обновление на бэкенд
+    syncPresetsWithServer(newPresets, sessionToken);
   };
 
   const clearGrid = () => {
