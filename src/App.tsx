@@ -36,27 +36,56 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
 
-  // Состояние приложения
+  // Состояние приложения (Чистое, без локальной памяти)
   const [activeTab, setActiveTab] = useState<'search' | 'grid'>('search');
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [grid, setGrid] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Фильтры
+  // Фильтры (Выбраны все румы по умолчанию)
   const [showFilters, setShowFilters] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selectedRooms, setSelectedRooms] = useState<string[]>(Object.keys(ROOMS));
   const [activeStats, setActiveStats] = useState<Tournament | null>(null);
 
-  // === СТЕЙТЫ ДЛЯ СОРТИРОВКИ И ШАБЛОНОВ ===
+  // === СТЕЙТЫ ДЛЯ СОРТИРОВКИ И ОБЛАЧНЫХ ШАБЛОНОВ ===
   const [sortOrder, setSortOrder] = useState<'time' | 'buyin' | 'ev'>('time');
   const [showPresetsModal, setShowPresetsModal] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
-  const [presets, setPresets] = useState<{name: string, items: Tournament[]}[]>(() => {
-    const saved = localStorage.getItem('mvp_presets');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [presets, setPresets] = useState<{name: string, items: Tournament[]}[]>([]);
+
+  // === ФУНКЦИИ ДЛЯ СВЯЗИ С БЭКЕНДОМ ПО ШАБЛОНАМ ===
+  const fetchPresets = async (token: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/get_presets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_token: token })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setPresets(data.presets);
+      }
+    } catch (e) {
+      console.error("Ошибка загрузки шаблонов", e);
+    }
+  };
+
+  const syncPresetsWithServer = async (newPresets: {name: string, items: Tournament[]}[], token: string) => {
+    try {
+      await fetch(`${API_BASE_URL}/save_presets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          session_token: token, 
+          presets: newPresets 
+        })
+      });
+    } catch (e) {
+      console.error("Ошибка сохранения шаблонов", e);
+    }
+  };
 
   useEffect(() => {
     try {
@@ -71,6 +100,7 @@ export default function App() {
     const savedToken = localStorage.getItem('mvp_token');
     if (savedToken) {
       setSessionToken(savedToken);
+      fetchPresets(savedToken); // Загружаем облачные шаблоны при входе
       setAuthStep('app');
     }
   }, []);
@@ -96,6 +126,7 @@ export default function App() {
         setAuthStep('mfa');
       } else {
         localStorage.setItem('mvp_token', data.session_token);
+        fetchPresets(data.session_token); // Загружаем облачные шаблоны
         setAuthStep('app');
       }
     } catch (err: any) {
@@ -120,6 +151,7 @@ export default function App() {
       if (!res.ok) throw new Error(data.detail || 'Неверный код 2FA');
       
       localStorage.setItem('mvp_token', sessionToken as string);
+      fetchPresets(sessionToken as string); // Загружаем облачные шаблоны
       setAuthStep('app');
     } catch (err: any) {
       setAuthError(err.message);
@@ -131,6 +163,8 @@ export default function App() {
   const logout = () => {
     localStorage.removeItem('mvp_token');
     setSessionToken(null);
+    setGrid([]);
+    setPresets([]);
     setAuthStep('login');
   };
 
@@ -202,12 +236,12 @@ export default function App() {
     });
   }, [grid, sortOrder]);
 
-  // === ЛОГИКА ШАБЛОНОВ ===
+  // === ЛОГИКА ОБЛАЧНЫХ ШАБЛОНОВ ===
   const savePreset = () => {
-    if (!newPresetName.trim() || grid.length === 0) return;
+    if (!newPresetName.trim() || grid.length === 0 || !sessionToken) return;
     const newPresets = [...presets, { name: newPresetName, items: grid }];
     setPresets(newPresets);
-    localStorage.setItem('mvp_presets', JSON.stringify(newPresets));
+    syncPresetsWithServer(newPresets, sessionToken); // Отправляем на бэкенд
     setNewPresetName('');
     try { WebApp.HapticFeedback.notificationOccurred('success'); } catch(e){}
   };
@@ -219,9 +253,10 @@ export default function App() {
   };
 
   const deletePreset = (idx: number) => {
+    if (!sessionToken) return;
     const newPresets = presets.filter((_, i) => i !== idx);
     setPresets(newPresets);
-    localStorage.setItem('mvp_presets', JSON.stringify(newPresets));
+    syncPresetsWithServer(newPresets, sessionToken); // Отправляем обновление на бэкенд
   };
 
   const clearGrid = () => {
