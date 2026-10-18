@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Plus, Check, Trash2, BarChart2, SlidersHorizontal, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen, PieChart } from 'lucide-react';
+import { Search, ListTodo, Plus, Check, Trash2, BarChart2, SlidersHorizontal, X, Lock, Save, Ban, Flame, Wallet, PieChart, NotebookPen } from 'lucide-react';
 
 interface Tournament {
   id: string; room: string; name: string; priority: string;
@@ -102,6 +102,11 @@ export default function App() {
 
   const logout = () => { localStorage.removeItem('mvp_token'); setSessionToken(null); setGrid([]); setPresets([]); setAuthStep('login'); };
 
+  // Функция переключения румов (была утеряна)
+  const toggleRoom = (roomId: string) => {
+    setSelectedRooms(prev => prev.includes(roomId) ? prev.filter(id => id !== roomId) : [...prev, roomId]);
+  };
+
   const fetchTournaments = async () => {
     setLoading(true);
     try {
@@ -158,6 +163,22 @@ export default function App() {
   const saveNote = (t: Tournament, tag: NoteTag, text: string) => {
     const key = getNoteKey(t); const newNotes = { ...notes, [key]: { tag, text } };
     setNotes(newNotes); apiCall('save_notes', { session_token: sessionToken, notes: newNotes });
+  };
+
+  // Логика шаблонов (была утеряна)
+  const savePreset = () => {
+    if (!newPresetName.trim() || grid.length === 0 || !sessionToken) return;
+    const newPresets = [...presets, { name: newPresetName, items: grid }];
+    setPresets(newPresets);
+    apiCall('save_presets', { session_token: sessionToken, presets: newPresets });
+    setNewPresetName('');
+    try { WebApp.HapticFeedback.notificationOccurred('success'); } catch(e){}
+  };
+  const loadPreset = (items: Tournament[]) => { setGrid(items); setShowPresetsModal(false); };
+  const deletePreset = (idx: number) => {
+    const newPresets = presets.filter((_, i) => i !== idx);
+    setPresets(newPresets);
+    apiCall('save_presets', { session_token: sessionToken, presets: newPresets });
   };
 
   const finishSession = async () => {
@@ -330,6 +351,19 @@ export default function App() {
         <div className="fixed inset-0 bg-slate-950/90 z-50 flex flex-col justify-end">
           <div className="bg-slate-900 rounded-t-3xl p-5 border-t border-slate-800 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black text-white">Фильтры</h2><button onClick={() => setShowFilters(false)} className="p-2 bg-slate-800 rounded-full text-slate-400"><X size={20} /></button></div>
+            
+            {/* Вернули инпуты даты */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-2 font-bold uppercase">От</label>
+                <input type="datetime-local" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-slate-200 focus:border-cyan-500 outline-none [color-scheme:dark]" />
+              </div>
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-2 font-bold uppercase">До</label>
+                <input type="datetime-local" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-slate-200 focus:border-cyan-500 outline-none [color-scheme:dark]" />
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto mb-4">
               {Object.entries(ROOMS).map(([id, name]) => {
                 const isSel = selectedRooms.includes(id);
@@ -366,7 +400,7 @@ export default function App() {
                 <button onClick={() => saveNote(activeStats, 'skip', note.text)} className={`flex-1 py-2 text-xs font-bold rounded-xl border ${note.tag==='skip' ? 'bg-rose-500/20 text-rose-400 border-rose-500/50' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🚫 Скип</button>
                 <button onClick={() => saveNote(activeStats, 'must', note.text)} className={`flex-1 py-2 text-xs font-bold rounded-xl border ${note.tag==='must' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🔥 Топ</button>
               </div>
-              <input value={note.text} onChange={e => saveNote(activeStats, note.tag, e.target.value)} placeholder="Напиши заметку (фиши, долго идет...)" className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white focus:border-cyan-500 outline-none" />
+              <input value={note.text} onChange={e => saveNote(activeStats, note.tag, e.target.value)} placeholder="Напиши заметку..." className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white focus:border-cyan-500 outline-none" />
             </div>
 
             <button onClick={() => { toggleGrid(activeStats); setActiveStats(null); }} className="w-full py-4 rounded-xl font-black bg-cyan-950/30 border-2 border-cyan-500/60 text-cyan-400">
@@ -392,10 +426,30 @@ export default function App() {
         </div>
       )}
 
-      {/* 💾 Модалка Шаблонов */}
+      {/* 💾 Модалка Шаблонов (Восстановлена) */}
       {showPresetsModal && (
         <div className="fixed inset-0 bg-slate-950/90 z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-sm"><button onClick={() => setShowPresetsModal(false)} className="absolute top-4 right-4 p-2 bg-slate-800 rounded-full text-slate-400"><X size={20}/></button><h2 className="text-xl font-black text-white mb-6">Шаблоны</h2></div>
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-sm">
+            <button onClick={() => setShowPresetsModal(false)} className="absolute top-4 right-4 p-2 bg-slate-800 rounded-full text-slate-400"><X size={20}/></button>
+            <h2 className="text-xl font-black text-white mb-6">Шаблоны</h2>
+            <div className="flex gap-2 mb-6">
+              <input value={newPresetName} onChange={e => setNewPresetName(e.target.value)} placeholder="Название (Воскресенье...)" className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:border-cyan-500 outline-none" />
+              <button onClick={savePreset} disabled={!newPresetName.trim() || grid.length === 0} className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 font-black px-4 rounded-xl disabled:opacity-30"><Save size={20} /></button>
+            </div>
+            <div className="space-y-3 max-h-[40vh] overflow-y-auto">
+              {presets.length === 0 ? <p className="text-slate-500 text-sm font-bold text-center py-4">Нет шаблонов</p> : 
+                presets.map((p, idx) => (
+                  <div key={idx} className="flex justify-between items-center bg-slate-950 border border-slate-800 rounded-xl p-3">
+                    <div><div className="font-bold text-white text-sm">{p.name}</div><div className="text-[10px] font-bold text-slate-500 uppercase">{p.items.length} турниров</div></div>
+                    <div className="flex gap-2">
+                      <button onClick={() => loadPreset(p.items)} className="p-2.5 bg-cyan-500/10 text-cyan-400 rounded-lg border border-cyan-500/20"><Check size={18} /></button>
+                      <button onClick={() => deletePreset(idx)} className="p-2.5 bg-rose-500/10 text-rose-400 rounded-lg border border-rose-500/20"><Trash2 size={18} /></button>
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
         </div>
       )}
 
