@@ -17,29 +17,32 @@ const ROOMS: Record<string, string> = {
   '250': 'PS(ES)', '251': 'Winamax', '252': 'WPN', '261': 'Pokerdom', '262': 'RPTBet', '263': 'CoinPoker'
 };
 
-// === ЛОГОТИПЫ РУМОВ (Clearbit API) ===
-const ROOM_LOGOS: Record<string, string> = {
-  'GGNetwork': 'https://logo.clearbit.com/ggpoker.com',
-  'PokerStars': 'https://logo.clearbit.com/pokerstars.com',
-  'PS(ES)': 'https://logo.clearbit.com/pokerstars.es',
-  '888Poker': 'https://logo.clearbit.com/888poker.com',
-  'Winamax': 'https://logo.clearbit.com/winamax.fr',
-  'Pokerdom': 'https://logo.clearbit.com/pokerdom.com',
-  'CoinPoker': 'https://logo.clearbit.com/coinpoker.com',
-  'PartyPoker': 'https://logo.clearbit.com/partypoker.com',
-  'WPN': 'https://logo.clearbit.com/americascardroom.eu',
-  'iPoker': 'https://logo.clearbit.com/redstarpoker.eu', 
-  'Chico': 'https://logo.clearbit.com/tigergaming.com'
+// === ЛОГОТИПЫ РУМОВ (Google Favicon API - работает всегда) ===
+const ROOM_DOMAINS: Record<string, string> = {
+  'GGNetwork': 'ggpoker.com',
+  'PokerStars': 'pokerstars.com',
+  'PS(ES)': 'pokerstars.es',
+  '888Poker': '888poker.com',
+  'Winamax': 'winamax.fr',
+  'Pokerdom': 'pokerdom.com',
+  'CoinPoker': 'coinpoker.com',
+  'PartyPoker': 'partypoker.com',
+  'WPN': 'americascardroom.eu',
+  'iPoker': 'redstarpoker.eu', 
+  'Chico': 'tigergaming.com',
+  'RPTBet': 'rptbet.com'
 };
 
 const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle: (n: string) => string }) => {
-  const logoUrl = ROOM_LOGOS[roomName];
+  // Находим домен рума (с защитой от разного регистра букв)
+  const domainKey = Object.keys(ROOM_DOMAINS).find(k => k.toLowerCase() === (roomName || '').toLowerCase());
+  const domain = domainKey ? ROOM_DOMAINS[domainKey] : null;
 
   return (
     <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded border ${getRoomStyle(roomName)}`}>
-      {logoUrl && (
+      {domain && (
         <img 
-          src={logoUrl} 
+          src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} 
           alt={roomName} 
           className="w-3.5 h-3.5 rounded-full object-cover bg-white/90 p-[1px] shadow-sm" 
           onError={(e) => { e.currentTarget.style.display = 'none'; }} 
