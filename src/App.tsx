@@ -110,10 +110,20 @@ export default function App() {
 
   const toggleRoom = (roomId: string) => setSelectedRooms(prev => prev.includes(roomId) ? prev.filter(id => id !== roomId) : [...prev, roomId]);
 
-  const fetchTournaments = async () => {
+const fetchTournaments = async () => {
     setLoading(true);
     try {
-      const data = await apiCall('tournaments', { session_token: sessionToken, date_from: dateFrom, date_to: dateTo, rooms: selectedRooms, structs: { isFreezeout: '1', isPko: '1', isTurbo: '1', isHyperTurbo: '1', is6MaxTurboPko: '1', isSeries: '1' }, priorities: { priority1: '1', priority2: '1', priority3: '1' } });
+      // Подготавливаем дату: убираем 'T' и добавляем секунды, чтобы бэкенд понял время
+      const formatApiDate = (dateStr: string) => dateStr ? dateStr.replace('T', ' ') + ':00' : '';
+
+      const data = await apiCall('tournaments', { 
+        session_token: sessionToken, 
+        date_from: formatApiDate(dateFrom), 
+        date_to: formatApiDate(dateTo), 
+        rooms: selectedRooms, 
+        structs: { isFreezeout: '1', isPko: '1', isTurbo: '1', isHyperTurbo: '1', is6MaxTurboPko: '1', isSeries: '1' }, 
+        priorities: { priority1: '1', priority2: '1', priority3: '1' } 
+      });
       if (data.detail) { logout(); return; }
       if (data.status === 'success') { setTournaments(data.data); setShowFilters(false); }
     } catch (e) {} finally { setLoading(false); }
