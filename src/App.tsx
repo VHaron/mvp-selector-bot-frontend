@@ -39,7 +39,6 @@ export default function App() {
   const [dateFrom, setDateFrom] = useState(''); 
   const [dateTo, setDateTo] = useState('');
   const [selectedRooms, setSelectedRooms] = useState<string[]>(Object.keys(ROOMS));
-  const [timeSlot, setTimeSlot] = useState<'all' | 'morning' | 'day' | 'evening' | 'night'>('all');
   const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
   const [activeStats, setActiveStats] = useState<Tournament | null>(null);
 
@@ -120,6 +119,7 @@ export default function App() {
     } catch (e) {} finally { setLoading(false); }
   };
 
+  // === ЦВЕТА РУМОВ (Новая фича) ===
   const getRoomStyle = (roomName: string) => {
     const name = roomName.toLowerCase();
     if (name.includes('gg') || name.includes('pokerstars') || name.includes('ps')) return 'bg-red-500/10 text-red-400 border-red-500/30 shadow-[0_0_8px_rgba(239,68,68,0.2)]';
@@ -181,21 +181,10 @@ export default function App() {
     return getTier(a).id - getTier(b).id;
   }), [grid, sortOrder]);
 
- /* const filterByTimeSlot = (t: Tournament) => {
-    if (timeSlot === 'all') return true;
-    const hour = parseInt(t.time_start.split(':')[0]) || 0;
-    
-    if (timeSlot === 'morning') return hour >= 6 && hour < 12;
-    if (timeSlot === 'day') return hour >= 12 && hour < 18;
-    if (timeSlot === 'evening') return hour >= 18 && hour < 24;
-    if (timeSlot === 'night') return hour >= 0 && hour < 6;
-    return true;
-  }; */
-  
-  const searchResults = useMemo(() => [...tournaments]./*filter(filterByTimeSlot).*/sort((a, b) => {
+  const searchResults = useMemo(() => [...tournaments].sort((a, b) => {
     if (sortOrder === 'tier') return getTier(a).id - getTier(b).id || a.time_start.localeCompare(b.time_start);
     return a.time_start.localeCompare(b.time_start);
-  }), [tournaments, sortOrder, timeSlot]);
+  }), [tournaments, sortOrder]);
 
   const toggleGrid = (t: Tournament) => {
     if (grid.some(item => item.id === t.id)) { setGrid(grid.filter(item => item.id !== t.id)); try { WebApp.HapticFeedback.impactOccurred('rigid'); } catch(e){} } 
@@ -245,8 +234,9 @@ export default function App() {
   const totalBuyin = grid.reduce((sum, t) => sum + parseNum(t.buyin), 0);
   const totalEV = grid.reduce((sum, t) => sum + parseNum(t.ev_mtt), 0);
 
+  // Для графика в дневнике
   const maxProfitAbs = Math.max(...sessionsHistory.map(s => Math.abs(s.profit)), 10);
-
+  // ===================== РЕНДЕР АВТОРИЗАЦИИ =====================
   if (authStep === 'login' || authStep === 'mfa') {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-slate-200 selection:bg-cyan-500/30">
@@ -275,7 +265,7 @@ export default function App() {
             </form>
           ) : (
             <form onSubmit={handleMfa} className="space-y-4">
-              <p className="text-sm text-center text-slate-400 font-bold mb-4">Введите код из приложения аутентификатора</p>
+              <p className="text-sm text-center text-slate-400 font-bold mb-4">На ваш Telegram отправлен код 2FA.</p>
               <input type="text" required placeholder="Код 2FA" value={otp} onChange={e => setOtp(e.target.value)} className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-3.5 text-center text-xl tracking-widest font-mono text-cyan-400 focus:outline-none focus:border-cyan-500/50 transition-all"/>
               <button type="submit" disabled={authLoading} className="w-full bg-gradient-to-r from-emerald-600 to-emerald-400 text-white font-black py-4 rounded-xl mt-4 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-95 disabled:opacity-50">{authLoading ? '...' : 'Подтвердить'}</button>
             </form>
@@ -285,6 +275,7 @@ export default function App() {
     );
   }
 
+  // ===================== РЕНДЕР ОСНОВНОГО ПРИЛОЖЕНИЯ =====================
   return (
     <div className="min-h-screen pb-24 bg-slate-950 text-slate-200 font-sans antialiased selection:bg-cyan-500/30">
       
@@ -317,29 +308,6 @@ export default function App() {
             <button onClick={() => setSortOrder(p => p === 'time' ? 'tier' : 'time')} className={`border-2 px-4 rounded-xl flex items-center justify-center active:scale-95 transition-all ${sortOrder === 'tier' ? 'bg-fuchsia-950/30 border-fuchsia-500/60 text-fuchsia-400 shadow-[0_0_15px_rgba(217,70,239,0.3)]' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-fuchsia-400'}`}>
               <Flame size={18} strokeWidth={2.5} />
             </button>
-          </div>
-
-          {/* 🕒 Панель временных слотов 
-          <div className="flex gap-1 bg-slate-900 p-1 rounded-2xl border border-slate-800">
-            {[
-              { id: 'all', label: 'Все' },
-              { id: 'morning', label: '🌅 Утро' },
-              { id: 'day', label: '☀️ День' },
-              { id: 'evening', label: '🔥 Вечер' },
-              { id: 'night', label: '🌙 Ночь' },
-            ].map((slot) => (
-              <button
-                key={slot.id}
-                onClick={() => setTimeSlot(slot.id as any)}
-                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-xl transition-all ${
-                  timeSlot === slot.id
-                    ? 'bg-cyan-950/40 text-cyan-400 border border-cyan-500/50 shadow-[0_0_10px_rgba(34,211,238,0.2)]'
-                    : 'text-slate-500 hover:text-slate-300 border border-transparent'
-                }`}
-              >
-                {slot.label}
-              </button>
-            ))}
           </div>
 
           <div className="space-y-4 mt-2">
@@ -383,6 +351,7 @@ export default function App() {
 
                   <div className="mb-4 flex items-center flex-wrap gap-1.5">
                     <h3 className="font-bold text-lg text-white leading-snug mr-1">{t.name}</h3>
+                    {/* НОВАЯ КРАСИВАЯ ПЛАШКА РУМА */}
                     <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider border ${getRoomStyle(t.room)}`}>{t.room}</span>
                   </div>
 
@@ -409,7 +378,7 @@ export default function App() {
             })}
           </div>
         </div>
-      )}*/}
+      )}
 
       {/* 📋 Контент: Сетка */}
       {activeTab === 'grid' && (
@@ -487,7 +456,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 📈 Контент: ДНЕВНИК */}
+      {/* 📈 Контент: ДНЕВНИК (Бывш. Статистика) */}
       {activeTab === 'diary' && (
         <div className="p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 mb-6 shadow-[0_0_20px_rgba(0,0,0,0.3)]">
@@ -498,13 +467,14 @@ export default function App() {
               </button>
             </div>
             
+            {/* ГРАФИК */}
             <div className="flex items-center gap-1 h-32 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/80 relative">
               <div className="absolute top-1/2 left-0 w-full h-[1px] bg-slate-700/50 z-0"></div>
               {sessionsHistory.length === 0 ? (
                 <div className="w-full text-center text-[10px] text-slate-500 font-bold z-10">Нет сыгранных сессий</div>
               ) : (
                 sessionsHistory.slice().reverse().map(h => {
-                  const heightPct = (Math.abs(h.profit) / maxProfitAbs) * 45;
+                  const heightPct = (Math.abs(h.profit) / maxProfitAbs) * 45; // Макс высота столбца 45% от половины (оставляем место для отступов)
                   return (
                     <div key={h.id} className="flex-1 flex flex-col items-center justify-center h-full z-10 group relative">
                       <div className="absolute -top-6 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-20 shadow-xl transition-opacity">
