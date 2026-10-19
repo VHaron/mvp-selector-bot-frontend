@@ -631,9 +631,9 @@ export default function App() {
                 })}
               </div>
             </div>
-            <button onClick={fetchTournaments} className="w-full bg-cyan-950/30 border-2 border-cyan-500/60 text-cyan-400 font-black py-4 rounded-xl active:scale-[0.98] transition-all uppercase tracking-widest text-sm">
+              <button onClick={() => setShowFilters(false)} className="w-full bg-cyan-950/30 border-2 border-cyan-500/60 text-cyan-400 font-black py-4 rounded-xl active:scale-[0.98] transition-all uppercase tracking-widest text-sm">
               Применить фильтры
-            </button>
+              </button>
           </div>
         </div>
       )}
