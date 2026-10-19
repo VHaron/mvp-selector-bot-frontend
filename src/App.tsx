@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Plus, Check, Trash2, BarChart2, SlidersHorizontal, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen } from 'lucide-react';
+import { Search, ListTodo, Plus, Check, Trash2, BarChart2, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen } from 'lucide-react';
 
 interface Tournament {
   id: string; room: string; name: string; priority: string;
@@ -70,7 +70,7 @@ export default function App() {
   const [grid, setGrid] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const [showFilters, setShowFilters] = useState(false);
+  // Модалка фильтров закомментирована/убрана, но стейт сохранен для совместимости
   const [dateFrom, setDateFrom] = useState(''); 
   const [dateTo, setDateTo] = useState('');
   const [selectedRooms, setSelectedRooms] = useState<string[]>(Object.keys(ROOMS));
@@ -159,7 +159,7 @@ export default function App() {
         priorities: { priority1: '1', priority2: '1', priority3: '1' } 
       });
       if (data.detail) { logout(); return; }
-      if (data.status === 'success') { setTournaments(data.data); setShowFilters(false); }
+      if (data.status === 'success') { setTournaments(data.data); }
     } catch (e) {} finally { setLoading(false); }
   };
 
@@ -337,13 +337,40 @@ export default function App() {
       {/* 🔍 Контент: Поиск */}
       {activeTab === 'search' && (
         <div className="p-4 space-y-4">
+          
+          {/* 🎛️ Прямая панель фильтров на главном экране (вместо модалки) */}
+          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3 space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[9px] text-slate-400 mb-1 font-bold uppercase tracking-wider">От</label>
+                <input type="datetime-local" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200 focus:border-cyan-500/50 outline-none transition-all [color-scheme:dark]" />
+              </div>
+              <div>
+                <label className="block text-[9px] text-slate-400 mb-1 font-bold uppercase tracking-wider">До</label>
+                <input type="datetime-local" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200 focus:border-cyan-500/50 outline-none transition-all [color-scheme:dark]" />
+              </div>
+            </div>
+
+            {/* Быстрый выбор румов */}
+            <div className="overflow-x-auto no-scrollbar flex gap-1.5 pt-1">
+              {Object.entries(ROOMS).map(([id, name]) => {
+                const isSel = selectedRooms.includes(id);
+                const domain = ROOM_DOMAINS[name];
+                return (
+                  <button key={id} onClick={() => toggleRoom(id)} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] font-bold border transition-all shrink-0 ${isSel ? 'bg-cyan-950/40 border-cyan-500/60 text-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.2)]' : 'bg-slate-950/60 border-slate-800 text-slate-600'}`}>
+                    {domain && (
+                      <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={name} className={`w-3 h-3 rounded-full object-cover bg-white p-[1px] transition-all ${isSel ? 'opacity-100' : 'opacity-30 grayscale'}`} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                    )}
+                    <span>{name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="flex gap-2">
             <button onClick={fetchTournaments} className="flex-1 bg-cyan-950/30 border-2 border-cyan-500/60 hover:bg-cyan-900/40 text-cyan-400 font-black py-3.5 rounded-xl active:scale-95 transition-all flex justify-center items-center gap-2 shadow-[0_0_20px_rgba(34,211,238,0.2)]">
               {loading ? <><Search className="animate-spin" size={18} /> Ищем...</> : <><Search size={18} strokeWidth={2.5} /> Найти турниры</>}
-            </button>
-            <button onClick={() => setShowFilters(true)} className="bg-slate-900 border-2 border-slate-800 hover:border-slate-700 px-4 rounded-xl flex items-center justify-center active:scale-95 text-slate-400 hover:text-cyan-400 relative transition-all">
-              <SlidersHorizontal size={18} strokeWidth={2.5} />
-              {(selectedRooms.length < Object.keys(ROOMS).length || dateFrom) && <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-cyan-400 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.8)]"></span>}
             </button>
             <button onClick={() => setSortOrder(p => p === 'time' ? 'tier' : 'time')} className={`border-2 px-4 rounded-xl flex items-center justify-center active:scale-95 transition-all ${sortOrder === 'tier' ? 'bg-fuchsia-950/30 border-fuchsia-500/60 text-fuchsia-400 shadow-[0_0_15px_rgba(217,70,239,0.3)]' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-fuchsia-400'}`}>
               <Flame size={18} strokeWidth={2.5} />
@@ -588,52 +615,6 @@ export default function App() {
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-      )}
-
-      {/* ⚙️ Настройки поиска */}
-      {showFilters && (
-        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity">
-          <div className="bg-slate-900 rounded-t-[28px] p-5 border-t border-slate-800 max-h-[90vh] overflow-y-auto shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-            <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-800">
-              <h2 className="text-xl font-black text-white">Настройки поиска</h2>
-              <button onClick={() => setShowFilters(false)} className="p-2 bg-slate-800 hover:bg-slate-700 rounded-full text-slate-400 transition"><X size={20} /></button>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div>
-                <label className="block text-[11px] text-slate-400 mb-2 font-bold uppercase tracking-wider">Начало (От)</label>
-                <input type="datetime-local" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-slate-200 focus:border-cyan-500/50 outline-none transition-all [color-scheme:dark]" />
-              </div>
-              <div>
-                <label className="block text-[11px] text-slate-400 mb-2 font-bold uppercase tracking-wider">Конец (До)</label>
-                <input type="datetime-local" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm text-slate-200 focus:border-cyan-500/50 outline-none transition-all [color-scheme:dark]" />
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <div className="flex justify-between items-center mb-3.5">
-                <label className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Покерные Румы</label>
-                <button onClick={() => setSelectedRooms(selectedRooms.length === Object.keys(ROOMS).length ? [] : Object.keys(ROOMS))} className="text-[10px] px-3 py-1.5 rounded-lg bg-slate-800/40 text-slate-300 border border-slate-700/50 font-bold uppercase active:scale-95 transition">
-                  {selectedRooms.length === Object.keys(ROOMS).length ? 'Сбросить всё' : 'Включить все'}
-                </button>
-              </div>
-              <div className="grid grid-cols-2 gap-2 max-h-[240px] overflow-y-auto pr-2">
-                {Object.entries(ROOMS).map(([id, name]) => {
-                  const isSel = selectedRooms.includes(id);
-                  return (
-                    <button key={id} onClick={() => toggleRoom(id)} className={`p-3 rounded-xl text-[11px] font-bold border transition-all flex items-center justify-center gap-2 ${isSel ? 'bg-cyan-950/30 border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.15)]' : 'bg-slate-950 border-slate-800 text-slate-500'}`}>
-                      <div className={`w-1.5 h-1.5 rounded-full transition-all ${isSel ? 'bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]' : 'bg-transparent'}`}></div>
-                      <span>{name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-              <button onClick={() => setShowFilters(false)} className="w-full bg-cyan-950/30 border-2 border-cyan-500/60 text-cyan-400 font-black py-4 rounded-xl active:scale-[0.98] transition-all uppercase tracking-widest text-sm">
-              Применить фильтры
-              </button>
           </div>
         </div>
       )}
