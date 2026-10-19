@@ -181,7 +181,7 @@ export default function App() {
     return getTier(a).id - getTier(b).id;
   }), [grid, sortOrder]);
 
-  const filterByTimeSlot = (t: Tournament) => {
+ /* const filterByTimeSlot = (t: Tournament) => {
     if (timeSlot === 'all') return true;
     const hour = parseInt(t.time_start.split(':')[0]) || 0;
     
@@ -190,9 +190,9 @@ export default function App() {
     if (timeSlot === 'evening') return hour >= 18 && hour < 24;
     if (timeSlot === 'night') return hour >= 0 && hour < 6;
     return true;
-  };
+  }; */
   
-  const searchResults = useMemo(() => [...tournaments].filter(filterByTimeSlot).sort((a, b) => {
+  const searchResults = useMemo(() => [...tournaments]./*filter(filterByTimeSlot).*/sort((a, b) => {
     if (sortOrder === 'tier') return getTier(a).id - getTier(b).id || a.time_start.localeCompare(b.time_start);
     return a.time_start.localeCompare(b.time_start);
   }), [tournaments, sortOrder, timeSlot]);
@@ -319,7 +319,7 @@ export default function App() {
             </button>
           </div>
 
-          {/* 🕒 Панель временных слотов (на своем месте) */}
+          {/* 🕒 Панель временных слотов 
           <div className="flex gap-1 bg-slate-900 p-1 rounded-2xl border border-slate-800">
             {[
               { id: 'all', label: 'Все' },
@@ -409,7 +409,7 @@ export default function App() {
             })}
           </div>
         </div>
-      )}
+      )}*/}
 
       {/* 📋 Контент: Сетка */}
       {activeTab === 'grid' && (
