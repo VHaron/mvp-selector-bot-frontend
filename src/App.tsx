@@ -192,8 +192,8 @@ const fetchTournaments = async () => {
   }), [grid, sortOrder]);
 
   const searchResults = useMemo(() => [...tournaments].sort((a, b) => {
-    if (sortOrder === 'tier') return getTier(a).id - getTier(b).id || a.time_start.localeCompare(b.time_start);
-    return a.time_start.localeCompare(b.time_start);
+    if (sortOrder === 'tier') return getTier(a).id - getTier(b).id;
+    return 0; // Сохраняем идеальный хронологический порядок от бэкенда
   }), [tournaments, sortOrder]);
 
   const toggleGrid = (t: Tournament) => {
