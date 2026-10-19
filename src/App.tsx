@@ -345,7 +345,7 @@ const fetchTournaments = async () => {
         <div className="p-4 space-y-4">
           <div className="flex gap-2">
             <button onClick={fetchTournaments} className="flex-1 bg-cyan-950/30 border-2 border-cyan-500/60 hover:bg-cyan-900/40 text-cyan-400 font-black py-3.5 rounded-xl active:scale-95 transition-all flex justify-center items-center gap-2 shadow-[0_0_20px_rgba(34,211,238,0.2)]">
-              {loading ? '⏳ Поиск...' : <><Search size={18} strokeWidth={2.5} /> Найти турниры</>}
+              {loading ? <><Search className="animate-spin" size={18} /> Ищем...</> : <><Search size={18} strokeWidth={2.5} /> Найти турниры</>}
             </button>
             <button onClick={() => setShowFilters(true)} className="bg-slate-900 border-2 border-slate-800 hover:border-slate-700 px-4 rounded-xl flex items-center justify-center active:scale-95 text-slate-400 hover:text-cyan-400 relative transition-all">
               <SlidersHorizontal size={18} strokeWidth={2.5} />
@@ -357,6 +357,29 @@ const fetchTournaments = async () => {
           </div>
 
           <div className="space-y-4 mt-2">
+            {/* Скелетон загрузки */}
+            {loading && (
+              <div className="space-y-4 mt-2">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="bg-slate-900/50 rounded-2xl p-4 border border-slate-800/50 animate-pulse">
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="flex gap-2"><div className="w-2 h-2 bg-slate-700 rounded-full"></div><div className="w-16 h-3 bg-slate-800 rounded"></div></div>
+                      <div className="w-12 h-4 bg-slate-800 rounded-lg"></div>
+                    </div>
+                    <div className="w-2/3 h-5 bg-slate-800 rounded mb-5"></div>
+                    <div className="grid grid-cols-3 gap-2 mb-5">
+                      <div className="h-[52px] bg-slate-800/50 rounded-xl border border-slate-800"></div>
+                      <div className="h-[52px] bg-slate-800/50 rounded-xl border border-slate-800"></div>
+                      <div className="h-[52px] bg-slate-800/50 rounded-xl border border-slate-800"></div>
+                    </div>
+                    <div className="flex gap-2.5">
+                      <div className="flex-[2] h-[46px] bg-slate-800/50 rounded-xl border border-slate-800"></div>
+                      <div className="flex-1 h-[46px] bg-slate-800/50 rounded-xl border border-slate-800"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
             {searchResults.length === 0 && !loading && (
               <div className="text-center py-16 px-6 bg-slate-900/50 rounded-2xl border border-slate-800/50">
                 <div className="text-4xl mb-4 opacity-40">🎲</div>
@@ -383,7 +406,7 @@ const fetchTournaments = async () => {
               const cardGlow = note?.tag === 'must' ? 'shadow-[0_0_20px_rgba(16,185,129,0.1)]' : prioStyles.glow;
               
               return (
-                <div key={t.id} className={`bg-slate-900 rounded-2xl p-4 border border-slate-800 transition-all ${cardBorder} ${cardGlow}`}>
+                <div key={t.id} className={`bg-slate-900 rounded-2xl p-4 border border-slate-800 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)] ${cardBorder} ${cardGlow}`}>
                   <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-2.5">
                       <div className={`w-2 h-2 rounded-full ${prioStyles.dot}`}></div>
@@ -393,7 +416,7 @@ const fetchTournaments = async () => {
                     </div>
                   </div>
                     <div className="flex gap-2 items-center">
-                      {overlay && <span className="bg-orange-500/20 text-orange-400 text-[9px] px-2 py-1 rounded-lg border border-orange-500/30 font-black uppercase flex items-center gap-1 shadow-[0_0_8px_rgba(249,115,22,0.2)]"><Flame size={10}/> Overlay</span>}
+                      {overlay && <span className="bg-orange-500/20 text-orange-400 text-[9px] px-2 py-1 rounded-lg border border-orange-500/30 font-black uppercase flex items-center gap-1 shadow-[0_0_8px_rgba(249,115,22,0.2)]"><Flame size={10} className="animate-pulse text-orange-500"/> Overlay</span>}
                       <span className={`text-[10px] px-2.5 py-1 rounded-lg font-black border uppercase tracking-wider ${tier.color}`}>{tier.label}</span>
                     </div>
                   </div>
@@ -417,7 +440,7 @@ const fetchTournaments = async () => {
                   </div>
 
                   <div className="flex gap-2.5">
-                    <button onClick={() => toggleGrid(t)} className={`flex-2/3 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold active:scale-95 transition-all ${isAdded ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
+                      <button onClick={() => toggleGrid(t)} className={`flex-2/3 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold active:scale-95 transition-all ${isAdded ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/40 shadow-[inset_0_0_15px_rgba(16,185,129,0.15)]' : 'bg-blue-500/5 hover:bg-blue-500/10 text-blue-400 border border-blue-500/30 shadow-[inset_0_0_15px_rgba(59,130,246,0.1)]'}`}>
                       {isAdded ? <><Check size={18} strokeWidth={2.5} /> В сетке</> : <><Plus size={18} strokeWidth={2.5} /> Добавить</>}
                     </button>
                     <button onClick={() => setActiveStats(t)} className="flex-1/3 bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center py-3 rounded-xl active:scale-95 transition-all"><BarChart2 size={16} /></button>
@@ -719,18 +742,28 @@ const fetchTournaments = async () => {
         </div>
       )}
 
-      {/* 🧭 Навигация */}
+{/* 🧭 Навигация */}
       <div className="fixed bottom-0 w-full bg-slate-950/90 backdrop-blur-xl border-t border-slate-800 flex pb-safe z-40">
-        <button onClick={() => setActiveTab('search')} className={`flex-1 flex flex-col items-center py-4 transition-all duration-200 ${activeTab === 'search' ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]' : 'text-slate-500 hover:text-slate-400'}`}><Search size={22} className={`mb-1 transition-transform ${activeTab === 'search' ? 'scale-110' : ''}`} /><span className="text-[11px] font-bold tracking-wide">Поиск</span></button>
+        <button onClick={() => setActiveTab('search')} className={`flex-1 flex flex-col items-center py-4 relative transition-all duration-200 ${activeTab === 'search' ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]' : 'text-slate-500 hover:text-slate-400'}`}>
+          {activeTab === 'search' && <div className="absolute top-0 w-8 h-[3px] bg-cyan-400 rounded-b-full shadow-[0_0_12px_rgba(34,211,238,1)]"></div>}
+          <Search size={22} className={`mb-1 transition-transform ${activeTab === 'search' ? 'scale-110' : ''}`} />
+          <span className="text-[11px] font-bold tracking-wide">Поиск</span>
+        </button>
+
         <button onClick={() => setActiveTab('grid')} className={`flex-1 flex flex-col items-center py-4 relative transition-all duration-200 ${activeTab === 'grid' ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]' : 'text-slate-500 hover:text-slate-400'}`}>
+          {activeTab === 'grid' && <div className="absolute top-0 w-8 h-[3px] bg-emerald-400 rounded-b-full shadow-[0_0_12px_rgba(52,211,153,1)]"></div>}
           <div className="relative">
             <ListTodo size={22} className={`mb-1 transition-transform ${activeTab === 'grid' ? 'scale-110' : ''}`} />
-            {grid.length>0&&<span className="absolute -top-1.5 -right-2.5 bg-emerald-500 text-slate-950 text-[10px] font-black h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center shadow-[0_0_10px_rgba(16,185,129,0.5)] border-2 border-slate-950">{grid.length}</span>}
+            {grid.length > 0 && <span className="absolute -top-1.5 -right-2.5 bg-emerald-500 text-slate-950 text-[10px] font-black h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center shadow-[0_0_10px_rgba(16,185,129,0.5)] border-2 border-slate-950">{grid.length}</span>}
           </div>
           <span className="text-[11px] font-bold tracking-wide">Сетка</span>
         </button>
-        <button onClick={() => setActiveTab('diary')} className={`flex-1 flex flex-col items-center py-4 transition-all duration-200 ${activeTab === 'diary' ? 'text-fuchsia-400 drop-shadow-[0_0_8px_rgba(217,70,239,0.5)]' : 'text-slate-500 hover:text-slate-400'}`}><TrendingUp size={22} className={`mb-1 transition-transform ${activeTab === 'diary' ? 'scale-110' : ''}`} /><span className="text-[11px] font-bold tracking-wide">Дневник</span></button>
+
+        <button onClick={() => setActiveTab('diary')} className={`flex-1 flex flex-col items-center py-4 relative transition-all duration-200 ${activeTab === 'diary' ? 'text-fuchsia-400 drop-shadow-[0_0_8px_rgba(217,70,239,0.5)]' : 'text-slate-500 hover:text-slate-400'}`}>
+          {activeTab === 'diary' && <div className="absolute top-0 w-8 h-[3px] bg-fuchsia-400 rounded-b-full shadow-[0_0_12px_rgba(217,70,239,1)]"></div>}
+          <TrendingUp size={22} className={`mb-1 transition-transform ${activeTab === 'diary' ? 'scale-110' : ''}`} />
+          <span className="text-[11px] font-bold tracking-wide">Дневник</span>
+        </button>
       </div>
-    </div>
   );
 }
