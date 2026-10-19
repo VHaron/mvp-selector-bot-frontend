@@ -36,7 +36,7 @@ const ROOM_DOMAINS: Record<string, string> = {
 const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle: (n: string) => string }) => {
   // Находим домен рума (с защитой от разного регистра букв)
   const domainKey = Object.keys(ROOM_DOMAINS).find(k => k.toLowerCase() === (roomName || '').toLowerCase());
-  const domain = domainKey ? ROOM_DOMAINS[domainKey] : null;
+  const domain = domainKey ? ROOM_DOMAINS[domainKey] : nul;
 
   return (
     <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded border ${getRoomStyle(roomName)}`}>
