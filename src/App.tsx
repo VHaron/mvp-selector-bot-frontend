@@ -265,7 +265,7 @@ export default function App() {
             </form>
           ) : (
             <form onSubmit={handleMfa} className="space-y-4">
-              <p className="text-sm text-center text-slate-400 font-bold mb-4">На ваш Telegram отправлен код 2FA.</p>
+              <p className="text-sm text-center text-slate-400 font-bold mb-4">Введите код из приложения аутентификатора</p>
               <input type="text" required placeholder="Код 2FA" value={otp} onChange={e => setOtp(e.target.value)} className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-3.5 text-center text-xl tracking-widest font-mono text-cyan-400 focus:outline-none focus:border-cyan-500/50 transition-all"/>
               <button type="submit" disabled={authLoading} className="w-full bg-gradient-to-r from-emerald-600 to-emerald-400 text-white font-black py-4 rounded-xl mt-4 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-95 disabled:opacity-50">{authLoading ? '...' : 'Подтвердить'}</button>
             </form>
