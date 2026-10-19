@@ -17,6 +17,39 @@ const ROOMS: Record<string, string> = {
   '250': 'PS(ES)', '251': 'Winamax', '252': 'WPN', '261': 'Pokerdom', '262': 'RPTBet', '263': 'CoinPoker'
 };
 
+// === ЛОГОТИПЫ РУМОВ (Clearbit API) ===
+const ROOM_LOGOS: Record<string, string> = {
+  'GGNetwork': 'https://logo.clearbit.com/ggpoker.com',
+  'PokerStars': 'https://logo.clearbit.com/pokerstars.com',
+  'PS(ES)': 'https://logo.clearbit.com/pokerstars.es',
+  '888Poker': 'https://logo.clearbit.com/888poker.com',
+  'Winamax': 'https://logo.clearbit.com/winamax.fr',
+  'Pokerdom': 'https://logo.clearbit.com/pokerdom.com',
+  'CoinPoker': 'https://logo.clearbit.com/coinpoker.com',
+  'PartyPoker': 'https://logo.clearbit.com/partypoker.com',
+  'WPN': 'https://logo.clearbit.com/americascardroom.eu',
+  'iPoker': 'https://logo.clearbit.com/redstarpoker.eu', 
+  'Chico': 'https://logo.clearbit.com/tigergaming.com'
+};
+
+const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle: (n: string) => string }) => {
+  const logoUrl = ROOM_LOGOS[roomName];
+
+  return (
+    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded border ${getRoomStyle(roomName)}`}>
+      {logoUrl && (
+        <img 
+          src={logoUrl} 
+          alt={roomName} 
+          className="w-3.5 h-3.5 rounded-full object-cover bg-white/90 p-[1px] shadow-sm" 
+          onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+        />
+      )}
+      <span className="text-[8px] font-bold uppercase tracking-widest">{roomName}</span>
+    </div>
+  );
+};
+
 const API_BASE_URL = 'https://mvp-selector-bot-joinweb3.msk1.amvera.tech/api';
 
 const parseNum = (str: string) => parseFloat(str?.replace(/[^\d.-]/g, '')) || 0;
@@ -365,7 +398,7 @@ const fetchTournaments = async () => {
                   <div className="mb-4 flex items-center flex-wrap gap-1.5">
                     <h3 className="font-bold text-lg text-white leading-snug mr-1">{t.name}</h3>
                     {/* НОВАЯ КРАСИВАЯ ПЛАШКА РУМА */}
-                    <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider border ${getRoomStyle(t.room)}`}>{t.room}</span>
+                    <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />                  
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 text-xs mb-5">
@@ -459,7 +492,7 @@ const fetchTournaments = async () => {
                           <span className="text-[9px] font-bold text-slate-500 uppercase">{t.day_week}</span>
                           <span className="text-xs font-mono font-bold text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.4)]">{t.time_start}</span>
                     </div>
-                          <span className={`text-[8px] uppercase font-bold px-1.5 py-0.5 rounded tracking-wider border ml-1 ${getRoomStyle(t.room)}`}>{t.room}</span>
+                    <div className="ml-1 scale-90 origin-left"><RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} /></div>                    
                     </div>
                     <div className="font-bold text-sm text-slate-100 mt-1.5 leading-snug">{t.name}</div>
                     <div className="text-sm font-black text-emerald-400 mt-1">${t.buyin} <span className="text-xs text-blue-400 font-normal ml-2">EV: {t.ev_mtt}</span></div>
@@ -601,8 +634,7 @@ const fetchTournaments = async () => {
                <div className={`w-2.5 h-2.5 rounded-full ${prioStyles.dot}`}></div>
                <h3 className="font-black text-xl text-white leading-tight">{activeStats.name}</h3>
             </div>
-            <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded border inline-block ${getRoomStyle(activeStats.room)}`}>{activeStats.room}</span>
-            
+            <div className="inline-block mt-1"><RoomBadge roomName={activeStats.room} getRoomStyle={getRoomStyle} /></div>            
             <div className="grid grid-cols-2 gap-2 mt-5 mb-5">
               <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col"><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">GTD</span><div className="font-black text-white text-lg">${activeStats.gtd}</div></div>
               <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col"><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Бай-ин</span><div className="font-black text-emerald-400 text-lg">${activeStats.buyin}</div></div>
