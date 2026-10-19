@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Plus, Check, Trash2, BarChart2, SlidersHorizontal, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, PieChart, NotebookPen } from 'lucide-react';
+import { Search, ListTodo, Plus, Check, Trash2, BarChart2, SlidersHorizontal, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen } from 'lucide-react';
 
 interface Tournament {
   id: string; room: string; name: string; priority: string;
@@ -19,11 +19,9 @@ const ROOMS: Record<string, string> = {
 
 const API_BASE_URL = 'https://mvp-selector-bot-joinweb3.msk1.amvera.tech/api';
 
-// Хелпер для парсинга чисел (убирает $, запятые и буквы)
 const parseNum = (str: string) => parseFloat(str?.replace(/[^\d.-]/g, '')) || 0;
 
 export default function App() {
-  // === СТЕЙТЫ АВТОРИЗАЦИИ ===
   const [authStep, setAuthStep] = useState<'login' | 'mfa' | 'app'>('login');
   const [sessionToken, setSessionToken] = useState<string | null>(localStorage.getItem('mvp_token'));
   const [username, setUsername] = useState(''); 
@@ -32,13 +30,11 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false); 
   const [authError, setAuthError] = useState('');
 
-  // === СТЕЙТЫ ПРИЛОЖЕНИЯ ===
-  const [activeTab, setActiveTab] = useState<'search' | 'grid' | 'stats'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'grid' | 'diary'>('search');
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [grid, setGrid] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // === СТЕЙТЫ ФИЛЬТРОВ ===
   const [showFilters, setShowFilters] = useState(false);
   const [dateFrom, setDateFrom] = useState(''); 
   const [dateTo, setDateTo] = useState('');
@@ -46,24 +42,19 @@ export default function App() {
   const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
   const [activeStats, setActiveStats] = useState<Tournament | null>(null);
 
-  // === СТЕЙТЫ СОРТИРОВКИ И ШАБЛОНОВ ===
   const [sortOrder, setSortOrder] = useState<'time' | 'buyin' | 'ev' | 'tier'>('time');
   const [showPresetsModal, setShowPresetsModal] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
   const [presets, setPresets] = useState<{name: string, items: Tournament[]}[]>([]);
   
-  // === СТЕЙТЫ ПРОФИЛЯ ===
   const [notes, setNotes] = useState<Record<string, NoteData>>({});
   const [sessionsHistory, setSessionsHistory] = useState<SessionData[]>([]);
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [sessionCashes, setSessionCashes] = useState('');
 
-  // === СИНХРОНИЗАЦИЯ С БЭКЕНДОМ ===
   const apiCall = async (endpoint: string, body: any) => {
     const res = await fetch(`${API_BASE_URL}/${endpoint}`, { 
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify(body) 
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) 
     });
     return res.json();
   };
@@ -80,11 +71,7 @@ export default function App() {
       if (setRes.status === 'success' && setRes.selected_rooms) setSelectedRooms(setRes.selected_rooms);
       if (notRes.status === 'success' && notRes.notes) setNotes(notRes.notes);
       if (histRes.status === 'success' && histRes.history) setSessionsHistory(histRes.history.reverse());
-    } catch (e) { 
-      console.error(e); 
-    } finally { 
-      setIsSettingsLoaded(true); 
-    }
+    } catch (e) { console.error(e); } finally { setIsSettingsLoaded(true); }
   };
 
   useEffect(() => {
@@ -94,17 +81,9 @@ export default function App() {
   }, [selectedRooms, isSettingsLoaded, sessionToken]);
 
   useEffect(() => {
-    try { 
-      WebApp.ready(); WebApp.expand(); 
-      WebApp.setHeaderColor('#020617'); WebApp.setBackgroundColor('#020617'); 
-    } catch (e) {}
-    
+    try { WebApp.ready(); WebApp.expand(); WebApp.setHeaderColor('#020617'); WebApp.setBackgroundColor('#020617'); } catch (e) {}
     const t = localStorage.getItem('mvp_token');
-    if (t) { 
-      setSessionToken(t); 
-      loadAllUserData(t); 
-      setAuthStep('app'); 
-    }
+    if (t) { setSessionToken(t); loadAllUserData(t); setAuthStep('app'); }
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -113,13 +92,8 @@ export default function App() {
       const data = await apiCall('login', { username, password });
       if (data.detail) throw new Error(data.detail);
       setSessionToken(data.session_token);
-      if (data.status === 'mfa_required') {
-        setAuthStep('mfa');
-      } else { 
-        localStorage.setItem('mvp_token', data.session_token); 
-        loadAllUserData(data.session_token); 
-        setAuthStep('app'); 
-      }
+      if (data.status === 'mfa_required') setAuthStep('mfa');
+      else { localStorage.setItem('mvp_token', data.session_token); loadAllUserData(data.session_token); setAuthStep('app'); }
     } catch (err: any) { setAuthError(err.message); } finally { setAuthLoading(false); }
   };
 
@@ -128,46 +102,41 @@ export default function App() {
     try {
       const data = await apiCall('mfa', { session_token: sessionToken, otp });
       if (data.detail) throw new Error(data.detail);
-      localStorage.setItem('mvp_token', sessionToken as string); 
-      loadAllUserData(sessionToken as string); 
-      setAuthStep('app');
+      localStorage.setItem('mvp_token', sessionToken as string); loadAllUserData(sessionToken as string); setAuthStep('app');
     } catch (err: any) { setAuthError(err.message); } finally { setAuthLoading(false); }
   };
 
-  const logout = () => { 
-    localStorage.removeItem('mvp_token'); 
-    setSessionToken(null); setGrid([]); setPresets([]); 
-    setAuthStep('login'); 
-  };
+  const logout = () => { localStorage.removeItem('mvp_token'); setSessionToken(null); setGrid([]); setPresets([]); setAuthStep('login'); };
 
-  const toggleRoom = (roomId: string) => {
-    setSelectedRooms(prev => prev.includes(roomId) ? prev.filter(id => id !== roomId) : [...prev, roomId]);
-  };
+  const toggleRoom = (roomId: string) => setSelectedRooms(prev => prev.includes(roomId) ? prev.filter(id => id !== roomId) : [...prev, roomId]);
 
   const fetchTournaments = async () => {
     setLoading(true);
     try {
-      const data = await apiCall('tournaments', { 
-        session_token: sessionToken, 
-        date_from: dateFrom, 
-        date_to: dateTo, 
-        rooms: selectedRooms, 
-        structs: { isFreezeout: '1', isPko: '1', isTurbo: '1', isHyperTurbo: '1', is6MaxTurboPko: '1', isSeries: '1' }, 
-        priorities: { priority1: '1', priority2: '1', priority3: '1' } 
-      });
+      const data = await apiCall('tournaments', { session_token: sessionToken, date_from: dateFrom, date_to: dateTo, rooms: selectedRooms, structs: { isFreezeout: '1', isPko: '1', isTurbo: '1', isHyperTurbo: '1', is6MaxTurboPko: '1', isSeries: '1' }, priorities: { priority1: '1', priority2: '1', priority3: '1' } });
       if (data.detail) { logout(); return; }
       if (data.status === 'success') { setTournaments(data.data); setShowFilters(false); }
     } catch (e) {} finally { setLoading(false); }
   };
 
-  // === ВИЗУАЛЬНЫЕ СТИЛИ (Вернул приоритеты) ===
+  // === ЦВЕТА РУМОВ (Новая фича) ===
+  const getRoomStyle = (roomName: string) => {
+    const name = roomName.toLowerCase();
+    if (name.includes('gg') || name.includes('pokerstars') || name.includes('ps')) return 'bg-red-500/10 text-red-400 border-red-500/30 shadow-[0_0_8px_rgba(239,68,68,0.2)]';
+    if (name.includes('888') || name.includes('wpn') || name.includes('rpt')) return 'bg-blue-500/10 text-blue-400 border-blue-500/30 shadow-[0_0_8px_rgba(59,130,246,0.2)]';
+    if (name.includes('pokerdom') || name.includes('ipoker')) return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.2)]';
+    if (name.includes('chico') || name.includes('party')) return 'bg-orange-500/10 text-orange-400 border-orange-500/30 shadow-[0_0_8px_rgba(249,115,22,0.2)]';
+    if (name.includes('coinpoker')) return 'bg-slate-500/20 text-slate-300 border-slate-500/50 shadow-[0_0_8px_rgba(100,116,139,0.2)]';
+    if (name.includes('winamax')) return 'bg-zinc-500/20 text-white border-zinc-500/50 shadow-[0_0_8px_rgba(255,255,255,0.2)]';
+    return 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30 shadow-[0_0_8px_rgba(99,102,241,0.2)]';
+  };
+
   const getPriorityStyles = (prio: string) => {
     if (prio === '1') return { border: 'border-l-emerald-500', glow: 'shadow-[0_0_20px_rgba(16,185,129,0.07)] hover:shadow-[0_0_25px_rgba(16,185,129,0.15)]', dot: 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]' };
     if (prio === '2') return { border: 'border-l-amber-500', glow: 'shadow-[0_0_20px_rgba(245,158,11,0.07)] hover:shadow-[0_0_25px_rgba(245,158,11,0.15)]', dot: 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]' };
     return { border: 'border-l-rose-500', glow: 'shadow-[0_0_20px_rgba(244,63,94,0.07)] hover:shadow-[0_0_25px_rgba(244,63,94,0.15)]', dot: 'bg-rose-400 shadow-[0_0_8px_rgba(251,113,133,0.8)]' };
   };
 
-  // === НОВЫЕ ФИЧИ (Математика) ===
   const isOverlay = (t: Tournament) => {
     const buyin = parseNum(t.buyin); const gtd = parseNum(t.gtd); const afs = parseNum(t.afs);
     return (gtd > 0 && buyin > 0 && afs > 0 && (buyin * afs * 0.9) < gtd);
@@ -199,16 +168,12 @@ export default function App() {
       const [hours, minutes] = t.time_start.split(':').map(Number);
       const startMins = (hours * 60) + (minutes || 0);
       const durationHours = parseFloat(t.duration.replace(',', '.'));
-      const durationMins = durationHours * 60;
-      const endMins = startMins + durationMins;
+      const endMins = startMins + (durationHours * 60);
       if (endMins > maxEndTimeMins) maxEndTimeMins = endMins;
     });
-    const finalHours = Math.floor(maxEndTimeMins / 60) % 24;
-    const finalMinutes = Math.round(maxEndTimeMins % 60);
-    return `${String(finalHours).padStart(2, '0')}:${String(finalMinutes).padStart(2, '0')}`;
+    return `${String(Math.floor(maxEndTimeMins / 60) % 24).padStart(2, '0')}:${String(Math.round(maxEndTimeMins % 60)).padStart(2, '0')}`;
   };
 
-  // === СОРТИРОВКА ===
   const sortedGrid = useMemo(() => [...grid].sort((a, b) => {
     if (sortOrder === 'time') return a.time_start.localeCompare(b.time_start);
     if (sortOrder === 'buyin') return parseNum(b.buyin) - parseNum(a.buyin);
@@ -221,21 +186,12 @@ export default function App() {
     return a.time_start.localeCompare(b.time_start);
   }), [tournaments, sortOrder]);
 
-  // === УПРАВЛЕНИЕ СЕТКОЙ И ЗАМЕТКАМИ ===
   const toggleGrid = (t: Tournament) => {
-    if (grid.some(item => item.id === t.id)) { 
-      setGrid(grid.filter(item => item.id !== t.id)); 
-      try { WebApp.HapticFeedback.impactOccurred('rigid'); } catch(e){} 
-    } else { 
-      setGrid([...grid, t]); 
-      try { WebApp.HapticFeedback.impactOccurred('light'); } catch(e){} 
-    }
+    if (grid.some(item => item.id === t.id)) { setGrid(grid.filter(item => item.id !== t.id)); try { WebApp.HapticFeedback.impactOccurred('rigid'); } catch(e){} } 
+    else { setGrid([...grid, t]); try { WebApp.HapticFeedback.impactOccurred('light'); } catch(e){} }
   };
 
-  const clearGrid = () => {
-    setGrid([]);
-    try { WebApp.HapticFeedback.impactOccurred('heavy'); } catch(e){}
-  };
+  const clearGrid = () => { setGrid([]); try { WebApp.HapticFeedback.impactOccurred('heavy'); } catch(e){} };
 
   const getNoteKey = (t: Tournament) => `${t.room}_${t.name}`;
   const saveNote = (t: Tournament, tag: NoteTag, text: string) => {
@@ -246,18 +202,14 @@ export default function App() {
   const savePreset = () => {
     if (!newPresetName.trim() || grid.length === 0 || !sessionToken) return;
     const newPresets = [...presets, { name: newPresetName, items: grid }];
-    setPresets(newPresets);
-    apiCall('save_presets', { session_token: sessionToken, presets: newPresets });
-    setNewPresetName('');
-    try { WebApp.HapticFeedback.notificationOccurred('success'); } catch(e){}
+    setPresets(newPresets); apiCall('save_presets', { session_token: sessionToken, presets: newPresets });
+    setNewPresetName(''); try { WebApp.HapticFeedback.notificationOccurred('success'); } catch(e){}
   };
   
   const loadPreset = (items: Tournament[]) => { setGrid(items); setShowPresetsModal(false); };
-  
   const deletePreset = (idx: number) => {
     const newPresets = presets.filter((_, i) => i !== idx);
-    setPresets(newPresets);
-    apiCall('save_presets', { session_token: sessionToken, presets: newPresets });
+    setPresets(newPresets); apiCall('save_presets', { session_token: sessionToken, presets: newPresets });
   };
 
   const finishSession = async () => {
@@ -265,62 +217,57 @@ export default function App() {
     const s: SessionData = { id: uuidv4(), date: new Date().toLocaleDateString('ru-RU'), total_buyin: totalBuyin, total_cashes: cashes, profit: cashes - totalBuyin, tournaments_count: grid.length };
     const newHist = [s, ...sessionsHistory]; setSessionsHistory(newHist);
     await apiCall('save_session_history', { session_token: sessionToken, session_data: s });
-    setGrid([]); setShowSessionModal(false); setSessionCashes(''); setActiveTab('stats');
+    setGrid([]); setShowSessionModal(false); setSessionCashes(''); setActiveTab('diary');
     try { WebApp.HapticFeedback.notificationOccurred('success'); } catch(e){}
+  };
+
+  const clearHistory = async () => {
+    if (confirm('Точно удалить всю историю дневника? Это действие необратимо.')) {
+      setSessionsHistory([]);
+      await apiCall('clear_sessions_history', { session_token: sessionToken });
+      try { WebApp.HapticFeedback.notificationOccurred('success'); } catch(e){}
+    }
   };
 
   const uuidv4 = () => "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c => (+c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16));
 
   const totalBuyin = grid.reduce((sum, t) => sum + parseNum(t.buyin), 0);
   const totalEV = grid.reduce((sum, t) => sum + parseNum(t.ev_mtt), 0);
+
+  // Для графика в дневнике
+  const maxProfitAbs = Math.max(...sessionsHistory.map(s => Math.abs(s.profit)), 10);
   // ===================== РЕНДЕР АВТОРИЗАЦИИ =====================
   if (authStep === 'login' || authStep === 'mfa') {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-slate-200 selection:bg-cyan-500/30">
         <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-[0_0_40px_rgba(34,211,238,0.05)] relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-cyan-400"></div>
-          
           <div className="flex flex-col items-center mb-8">
             <div className="w-16 h-16 bg-cyan-950/30 rounded-full flex items-center justify-center border-2 border-cyan-500/40 shadow-[0_0_20px_rgba(34,211,238,0.2)] mb-4">
               <Lock className="text-cyan-400" size={28} />
             </div>
             <h1 className="text-2xl font-black text-white">Вход в систему</h1>
-            <p className="text-sm text-slate-500 mt-1">Доступ к турнирам</p>
           </div>
 
-          {authError && (
-            <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm font-bold p-3 rounded-xl mb-6 text-center">
-              {authError}
-            </div>
-          )}
+          {authError && <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm font-bold p-3 rounded-xl mb-6 text-center">{authError}</div>}
 
           {authStep === 'login' ? (
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <User size={18} className="text-slate-500 group-hover:text-cyan-400 transition-colors" />
-                </div>
-                <input type="text" required placeholder="Логин" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl pl-11 pr-4 py-3.5 text-sm text-white focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all"/>
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><User size={18} className="text-slate-500 group-hover:text-cyan-400 transition-colors" /></div>
+                <input type="text" required placeholder="Логин" value={username} onChange={e => setUsername(e.target.value)} className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl pl-11 pr-4 py-3.5 text-sm text-white focus:outline-none focus:border-cyan-500/50 transition-all"/>
               </div>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <KeyRound size={18} className="text-slate-500 group-hover:text-cyan-400 transition-colors" />
-                </div>
-                <input type="password" required placeholder="Пароль" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl pl-11 pr-4 py-3.5 text-sm text-white focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all"/>
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><KeyRound size={18} className="text-slate-500 group-hover:text-cyan-400 transition-colors" /></div>
+                <input type="password" required placeholder="Пароль" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl pl-11 pr-4 py-3.5 text-sm text-white focus:outline-none focus:border-cyan-500/50 transition-all"/>
               </div>
-              <button type="submit" disabled={authLoading} className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black py-4 rounded-xl mt-4 transition-all shadow-[0_0_20px_rgba(14,165,233,0.3)] active:scale-[0.98] flex justify-center disabled:opacity-50">
-                {authLoading ? 'Авторизация...' : 'Войти'}
-              </button>
+              <button type="submit" disabled={authLoading} className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black py-4 rounded-xl mt-4 transition-all shadow-[0_0_20px_rgba(14,165,233,0.3)] active:scale-95 disabled:opacity-50">{authLoading ? '...' : 'Войти'}</button>
             </form>
           ) : (
             <form onSubmit={handleMfa} className="space-y-4">
-              <p className="text-sm text-center text-slate-400 font-bold mb-4">На ваш Telegram отправлен код подтверждения 2FA.</p>
-              <div className="relative group">
-                <input type="text" required placeholder="Код 2FA" value={otp} onChange={(e) => setOtp(e.target.value)} className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-3.5 text-center text-xl tracking-widest font-mono text-cyan-400 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all"/>
-              </div>
-              <button type="submit" disabled={authLoading} className="w-full bg-gradient-to-r from-emerald-600 to-emerald-400 hover:from-emerald-500 hover:to-emerald-300 text-white font-black py-4 rounded-xl mt-4 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-[0.98] flex justify-center disabled:opacity-50">
-                {authLoading ? 'Проверка...' : 'Подтвердить код'}
-              </button>
+              <p className="text-sm text-center text-slate-400 font-bold mb-4">На ваш Telegram отправлен код 2FA.</p>
+              <input type="text" required placeholder="Код 2FA" value={otp} onChange={e => setOtp(e.target.value)} className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-3.5 text-center text-xl tracking-widest font-mono text-cyan-400 focus:outline-none focus:border-cyan-500/50 transition-all"/>
+              <button type="submit" disabled={authLoading} className="w-full bg-gradient-to-r from-emerald-600 to-emerald-400 text-white font-black py-4 rounded-xl mt-4 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-95 disabled:opacity-50">{authLoading ? '...' : 'Подтвердить'}</button>
             </form>
           )}
         </div>
@@ -351,25 +298,14 @@ export default function App() {
       {activeTab === 'search' && (
         <div className="p-4 space-y-4">
           <div className="flex gap-2">
-            <button 
-              onClick={fetchTournaments}
-              className="flex-1 bg-cyan-950/30 border-2 border-cyan-500/60 hover:bg-cyan-900/40 hover:border-cyan-400 text-cyan-400 hover:text-cyan-300 font-black py-3.5 rounded-xl active:scale-[0.98] transition-all duration-300 flex justify-center items-center gap-2 shadow-[0_0_20px_rgba(34,211,238,0.2)] hover:shadow-[0_0_30px_rgba(34,211,238,0.4)]"
-            >
+            <button onClick={fetchTournaments} className="flex-1 bg-cyan-950/30 border-2 border-cyan-500/60 hover:bg-cyan-900/40 text-cyan-400 font-black py-3.5 rounded-xl active:scale-95 transition-all flex justify-center items-center gap-2 shadow-[0_0_20px_rgba(34,211,238,0.2)]">
               {loading ? '⏳ Поиск...' : <><Search size={18} strokeWidth={2.5} /> Найти турниры</>}
             </button>
-            <button 
-              onClick={() => setShowFilters(true)}
-              className="bg-slate-900 hover:bg-slate-800 border-2 border-slate-800 hover:border-slate-700 px-4 rounded-xl flex items-center justify-center transition-all duration-300 active:scale-95 text-slate-400 hover:text-cyan-400 relative"
-            >
+            <button onClick={() => setShowFilters(true)} className="bg-slate-900 border-2 border-slate-800 hover:border-slate-700 px-4 rounded-xl flex items-center justify-center active:scale-95 text-slate-400 hover:text-cyan-400 relative transition-all">
               <SlidersHorizontal size={18} strokeWidth={2.5} />
-              {(selectedRooms.length < Object.keys(ROOMS).length || dateFrom) && (
-                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-cyan-400 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.8)]"></span>
-              )}
+              {(selectedRooms.length < Object.keys(ROOMS).length || dateFrom) && <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-cyan-400 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.8)]"></span>}
             </button>
-            <button 
-              onClick={() => setSortOrder(p => p === 'time' ? 'tier' : 'time')}
-              className={`border-2 px-4 rounded-xl flex items-center justify-center transition-all duration-300 active:scale-95 ${sortOrder === 'tier' ? 'bg-fuchsia-950/30 border-fuchsia-500/60 text-fuchsia-400 shadow-[0_0_15px_rgba(217,70,239,0.3)]' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-fuchsia-400 hover:border-slate-700'}`}
-            >
+            <button onClick={() => setSortOrder(p => p === 'time' ? 'tier' : 'time')} className={`border-2 px-4 rounded-xl flex items-center justify-center active:scale-95 transition-all ${sortOrder === 'tier' ? 'bg-fuchsia-950/30 border-fuchsia-500/60 text-fuchsia-400 shadow-[0_0_15px_rgba(217,70,239,0.3)]' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-fuchsia-400'}`}>
               <Flame size={18} strokeWidth={2.5} />
             </button>
           </div>
@@ -388,7 +324,7 @@ export default function App() {
               if (note?.tag === 'skip') return (
                 <div key={t.id} className="bg-slate-900/50 rounded-xl p-3 border border-slate-800/50 flex justify-between items-center opacity-40 grayscale">
                   <div className="flex items-center gap-3"><Ban size={16} className="text-rose-500"/><span className="text-sm font-bold text-white line-through">{t.name}</span></div>
-                  <button onClick={() => setActiveStats(t)} className="text-xs text-blue-400 bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20 font-bold transition active:scale-95">Вернуть</button>
+                  <button onClick={() => setActiveStats(t)} className="text-xs text-blue-400 bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20 font-bold active:scale-95">Вернуть</button>
                 </div>
               );
 
@@ -397,17 +333,15 @@ export default function App() {
               const overlay = isOverlay(t);
               const prioStyles = getPriorityStyles(t.priority);
               
-              // Если есть заметка "must" - рамка зеленая, иначе берем рамку приоритета (и свечение тоже)
               const cardBorder = note?.tag === 'must' ? 'border-l-4 border-l-emerald-500' : `border-l-[3px] ${prioStyles.border}`;
               const cardGlow = note?.tag === 'must' ? 'shadow-[0_0_20px_rgba(16,185,129,0.1)]' : prioStyles.glow;
               
               return (
-                <div key={t.id} className={`bg-slate-900 rounded-2xl p-4 border border-slate-800 transition-all duration-300 ${cardBorder} ${cardGlow}`}>
+                <div key={t.id} className={`bg-slate-900 rounded-2xl p-4 border border-slate-800 transition-all ${cardBorder} ${cardGlow}`}>
                   <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-2.5">
-                      {/* Цветная точка приоритета */}
                       <div className={`w-2 h-2 rounded-full ${prioStyles.dot}`}></div>
-                      <span className="text-sm text-cyan-400 font-mono font-extrabold tracking-wide drop-shadow-[0_0_8px_rgba(34,211,238,0.3)]">{t.time_start}</span>
+                      <span className="text-sm text-cyan-400 font-mono font-extrabold drop-shadow-[0_0_8px_rgba(34,211,238,0.3)]">{t.time_start}</span>
                     </div>
                     <div className="flex gap-2 items-center">
                       {overlay && <span className="bg-orange-500/20 text-orange-400 text-[9px] px-2 py-1 rounded-lg border border-orange-500/30 font-black uppercase flex items-center gap-1 shadow-[0_0_8px_rgba(249,115,22,0.2)]"><Flame size={10}/> Overlay</span>}
@@ -415,32 +349,29 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="mb-4">
-                    <h3 className="font-bold text-lg text-white leading-snug inline-block">{t.name} <span className="text-xs text-slate-500 font-normal ml-1 bg-slate-950 px-1.5 py-0.5 rounded uppercase tracking-wider">{t.room}</span></h3>
+                  <div className="mb-4 flex items-center flex-wrap gap-1.5">
+                    <h3 className="font-bold text-lg text-white leading-snug mr-1">{t.name}</h3>
+                    {/* НОВАЯ КРАСИВАЯ ПЛАШКА РУМА */}
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider border ${getRoomStyle(t.room)}`}>{t.room}</span>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 text-xs mb-5">
                     <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/50 flex flex-col items-center">
-                      <span className="text-slate-500 text-[9px] uppercase tracking-wider mb-1 font-bold">Бай-ин</span>
-                      <span className="font-black text-emerald-400 text-sm">${t.buyin}</span>
+                      <span className="text-slate-500 text-[9px] uppercase tracking-wider mb-1 font-bold">Бай-ин</span><span className="font-black text-emerald-400 text-sm">${t.buyin}</span>
                     </div>
                     <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/50 flex flex-col items-center">
-                      <span className="text-slate-500 text-[9px] uppercase tracking-wider mb-1 font-bold">ROI / EV</span>
-                      <span className="font-black text-blue-400 text-sm">{t.roi_str}</span>
+                      <span className="text-slate-500 text-[9px] uppercase tracking-wider mb-1 font-bold">ROI / EV</span><span className="font-black text-blue-400 text-sm">{t.roi_str}</span>
                     </div>
                     <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/50 flex flex-col items-center">
-                      <span className="text-slate-500 text-[9px] uppercase tracking-wider mb-1 font-bold">Игроки</span>
-                      <span className="font-black text-purple-400 text-sm">{t.afs}</span>
+                      <span className="text-slate-500 text-[9px] uppercase tracking-wider mb-1 font-bold">Игроки</span><span className="font-black text-purple-400 text-sm">{t.afs}</span>
                     </div>
                   </div>
 
                   <div className="flex gap-2.5">
-                    <button onClick={() => toggleGrid(t)} className={`flex-2/3 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all duration-200 active:scale-[0.97] ${isAdded ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
+                    <button onClick={() => toggleGrid(t)} className={`flex-2/3 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold active:scale-95 transition-all ${isAdded ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
                       {isAdded ? <><Check size={18} strokeWidth={2.5} /> В сетке</> : <><Plus size={18} strokeWidth={2.5} /> Добавить</>}
                     </button>
-                    <button onClick={() => setActiveStats(t)} className="flex-1/3 bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center gap-1.5 py-3 rounded-xl text-sm font-bold border border-slate-700 transition active:scale-[0.97]">
-                      <BarChart2 size={16} /> Статы
-                    </button>
+                    <button onClick={() => setActiveStats(t)} className="flex-1/3 bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center py-3 rounded-xl active:scale-95 transition-all"><BarChart2 size={16} /></button>
                   </div>
                 </div>
               );
@@ -452,14 +383,12 @@ export default function App() {
       {/* 📋 Контент: Сетка */}
       {activeTab === 'grid' && (
         <div className="p-4 space-y-3">
-          
-          {/* ПЛАШКА СТАТИСТИКИ */}
           {grid.length > 0 && (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 mb-4 shadow-[0_0_20px_rgba(34,211,238,0.05)]">
               <div className="grid grid-cols-3 gap-2 mb-3 pb-3 border-b border-slate-800/80">
                 <div className="text-left flex flex-col justify-center">
                   <span className="text-[9px] uppercase font-bold text-slate-500 tracking-wider block mb-1">Турниров</span>
-                  <div className="text-xl font-black text-white leading-none">{grid.length} <span className="text-xs text-slate-500 font-medium tracking-normal">шт.</span></div>
+                  <div className="text-xl font-black text-white leading-none">{grid.length}</div>
                 </div>
                 <div className="text-center border-x border-slate-800/50 flex flex-col justify-center">
                   <span className="text-[9px] uppercase font-bold text-slate-500 tracking-wider block mb-1">Ожидание</span>
@@ -479,19 +408,18 @@ export default function App() {
             </div>
           )}
 
-          {/* ПАНЕЛЬ ИНСТРУМЕНТОВ */}
           {grid.length > 0 && (
             <div className="flex gap-2 mb-4">
-              <button onClick={() => setShowSessionModal(true)} className="flex-[2] bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/30 rounded-xl py-2.5 flex items-center justify-center gap-2 text-[11px] uppercase font-black tracking-wider transition active:scale-95 shadow-sm">
-                <Wallet size={16} /> Завершить сессию
+              <button onClick={() => setShowSessionModal(true)} className="flex-[2] bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/30 rounded-xl py-2.5 flex items-center justify-center gap-2 text-[11px] uppercase font-black tracking-wider transition active:scale-95">
+                <Wallet size={16} /> Завершить
               </button>
-              <button onClick={() => setSortOrder(prev => prev === 'time' ? 'buyin' : prev === 'buyin' ? 'ev' : 'time')} className="flex-1 bg-slate-900 border border-slate-800 rounded-xl py-2.5 flex items-center justify-center gap-1.5 text-[10px] uppercase font-black tracking-wider text-blue-400 hover:bg-blue-500/10 transition active:scale-95 shadow-sm">
+              <button onClick={() => setSortOrder(prev => prev === 'time' ? 'buyin' : prev === 'buyin' ? 'ev' : 'time')} className="flex-1 bg-slate-900 border border-slate-800 rounded-xl py-2.5 flex items-center justify-center gap-1.5 text-[10px] uppercase font-black tracking-wider text-blue-400 hover:bg-blue-500/10 transition active:scale-95">
                 <ArrowUpDown size={14} /> {sortOrder === 'time' ? 'Время' : sortOrder === 'buyin' ? 'Бай-ин' : 'EV'}
               </button>
-              <button onClick={() => setShowPresetsModal(true)} className="flex-1 bg-slate-900 border border-slate-800 rounded-xl py-2.5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition active:scale-95 shadow-sm">
+              <button onClick={() => setShowPresetsModal(true)} className="flex-1 bg-slate-900 border border-slate-800 rounded-xl py-2.5 flex items-center justify-center text-slate-400 hover:text-white transition active:scale-95">
                 <Save size={16} />
               </button>
-              <button onClick={clearGrid} className="flex-1 bg-rose-500/10 border border-rose-500/20 rounded-xl py-2.5 flex items-center justify-center text-rose-400 hover:bg-rose-500/20 transition active:scale-95 shadow-sm">
+              <button onClick={clearGrid} className="flex-1 bg-rose-500/10 border border-rose-500/20 rounded-xl py-2.5 flex items-center justify-center text-rose-400 hover:bg-rose-500/20 transition active:scale-95">
                 <Trash2 size={16} />
               </button>
             </div>
@@ -500,16 +428,10 @@ export default function App() {
           {grid.length === 0 ? (
             <div className="text-center py-20 px-6 bg-slate-900/50 rounded-2xl border border-slate-800/50">
               <div className="text-5xl mb-5 opacity-30">📋</div>
-              <h3 className="text-slate-200 font-bold text-lg">Ваша сетка пуста</h3>
-              <p className="text-slate-500 text-sm mt-2 max-w-[240px] mx-auto mb-8">Здесь появятся турниры, которые вы выберете для загрузки.</p>
-              
-              <div className="flex flex-col gap-3 max-w-[200px] mx-auto">
-                <button onClick={() => setActiveTab('search')} className="inline-flex items-center justify-center gap-2 bg-cyan-950/30 border-2 border-cyan-500/50 hover:bg-cyan-900/40 text-cyan-400 font-bold text-sm py-3 rounded-xl transition-all shadow-[0_0_15px_rgba(34,211,238,0.2)] active:scale-95">
-                  <Search size={16} /> Искать турниры
-                </button>
-                <button onClick={() => setShowPresetsModal(true)} className="inline-flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-sm py-3 rounded-xl transition-all active:scale-95">
-                  <Save size={16} /> Мои шаблоны
-                </button>
+              <h3 className="text-slate-200 font-bold text-lg">Сетка пуста</h3>
+              <div className="flex flex-col gap-3 max-w-[200px] mx-auto mt-6">
+                <button onClick={() => setActiveTab('search')} className="inline-flex items-center justify-center gap-2 bg-cyan-950/30 border-2 border-cyan-500/50 hover:bg-cyan-900/40 text-cyan-400 font-bold text-sm py-3 rounded-xl transition-all shadow-[0_0_15px_rgba(34,211,238,0.2)] active:scale-95"><Search size={16} /> Искать турниры</button>
+                <button onClick={() => setShowPresetsModal(true)} className="inline-flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-sm py-3 rounded-xl transition-all active:scale-95"><Save size={16} /> Шаблоны</button>
               </div>
             </div>
           ) : (
@@ -521,14 +443,12 @@ export default function App() {
                     <div className="flex items-center gap-2.5">
                       <div className={`w-1.5 h-1.5 rounded-full ${prioStyles.dot}`}></div>
                       <span className="text-xs font-mono font-bold text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.4)]">{t.time_start}</span>
-                      <span className="text-[9px] uppercase font-bold text-slate-400 bg-slate-950 px-1.5 py-0.5 rounded tracking-wider border border-slate-800">{t.room}</span>
+                      <span className={`text-[8px] uppercase font-bold px-1.5 py-0.5 rounded tracking-wider border ${getRoomStyle(t.room)}`}>{t.room}</span>
                     </div>
                     <div className="font-bold text-sm text-slate-100 mt-1.5 leading-snug">{t.name}</div>
                     <div className="text-sm font-black text-emerald-400 mt-1">${t.buyin} <span className="text-xs text-blue-400 font-normal ml-2">EV: {t.ev_mtt}</span></div>
                   </div>
-                  <button onClick={() => toggleGrid(t)} className="p-3.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 rounded-xl border border-rose-500/20 transition active:scale-90">
-                    <Trash2 size={20} />
-                  </button>
+                  <button onClick={() => toggleGrid(t)} className="p-3.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 rounded-xl border border-rose-500/20 transition active:scale-90"><Trash2 size={20} /></button>
                 </div>
               );
             })
@@ -536,23 +456,57 @@ export default function App() {
         </div>
       )}
 
-      {/* 📈 Контент: Статистика */}
-      {activeTab === 'stats' && (
+      {/* 📈 Контент: ДНЕВНИК (Бывш. Статистика) */}
+      {activeTab === 'diary' && (
         <div className="p-4">
-          <div className="bg-gradient-to-br from-blue-900/40 to-fuchsia-900/20 border border-slate-800 rounded-3xl p-6 mb-6 shadow-[0_0_30px_rgba(217,70,239,0.1)] relative overflow-hidden">
-            <div className="absolute -top-10 -right-10 opacity-20"><PieChart size={120} /></div>
-            <h2 className="text-slate-400 font-bold uppercase text-xs tracking-wider mb-2 relative z-10">Общий профит (В приложении)</h2>
-            <div className={`text-4xl font-black relative z-10 drop-shadow-md ${sessionsHistory.reduce((s, h) => s + h.profit, 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-              ${sessionsHistory.reduce((s, h) => s + h.profit, 0).toFixed(2)}
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 mb-6 shadow-[0_0_20px_rgba(0,0,0,0.3)]">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">График профита сессий</h2>
+              <button onClick={clearHistory} className="bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 p-2 rounded-xl transition-all active:scale-90">
+                <Trash2 size={14} />
+              </button>
+            </div>
+            
+            {/* ГРАФИК */}
+            <div className="flex items-center gap-1 h-32 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/80 relative">
+              <div className="absolute top-1/2 left-0 w-full h-[1px] bg-slate-700/50 z-0"></div>
+              {sessionsHistory.length === 0 ? (
+                <div className="w-full text-center text-[10px] text-slate-500 font-bold z-10">Нет сыгранных сессий</div>
+              ) : (
+                sessionsHistory.slice().reverse().map(h => {
+                  const heightPct = (Math.abs(h.profit) / maxProfitAbs) * 45; // Макс высота столбца 45% от половины (оставляем место для отступов)
+                  return (
+                    <div key={h.id} className="flex-1 flex flex-col items-center justify-center h-full z-10 group relative">
+                      <div className="absolute -top-6 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-20 shadow-xl transition-opacity">
+                        ${h.profit.toFixed(2)}
+                      </div>
+                      <div className="w-full h-1/2 flex flex-col justify-end">
+                          {h.profit >= 0 && <div className="w-full bg-emerald-500/80 rounded-t-[2px] transition-all group-hover:bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.3)]" style={{height: `${heightPct}%`}}></div>}
+                      </div>
+                      <div className="w-full h-1/2 flex flex-col justify-start">
+                          {h.profit < 0 && <div className="w-full bg-rose-500/80 rounded-b-[2px] transition-all group-hover:bg-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.3)]" style={{height: `${heightPct}%`}}></div>}
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-slate-800/50 flex justify-between items-end">
+              <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Итог (App)</span>
+              <div className={`text-2xl font-black ${sessionsHistory.reduce((s, h) => s + h.profit, 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                ${sessionsHistory.reduce((s, h) => s + h.profit, 0).toFixed(2)}
+              </div>
             </div>
           </div>
-          <h3 className="font-bold text-lg text-white mb-3 px-1">История сессий</h3>
+
+          <h3 className="font-bold text-lg text-white mb-3 px-1">История записей</h3>
           <div className="space-y-3">
             {sessionsHistory.length === 0 && (
               <div className="text-center py-10 px-6 bg-slate-900/50 rounded-2xl border border-slate-800/50">
-                <div className="text-4xl mb-4 opacity-40">📊</div>
-                <h3 className="text-slate-300 font-bold text-base">Нет данных</h3>
-                <p className="text-slate-500 text-xs mt-1 max-w-[200px] mx-auto">Соберите сетку и нажмите "Завершить сессию", чтобы начать трекинг профита.</p>
+                <div className="text-4xl mb-4 opacity-40">📓</div>
+                <h3 className="text-slate-300 font-bold text-base">Дневник пуст</h3>
+                <p className="text-slate-500 text-xs mt-1 max-w-[200px] mx-auto">Соберите сетку и нажмите "Завершить сессию", чтобы сохранить результат.</p>
               </div>
             )}
             {sessionsHistory.map(h => (
@@ -602,7 +556,7 @@ export default function App() {
                 {Object.entries(ROOMS).map(([id, name]) => {
                   const isSel = selectedRooms.includes(id);
                   return (
-                    <button key={id} onClick={() => toggleRoom(id)} className={`p-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${isSel ? 'bg-cyan-950/30 border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.15)]' : 'bg-slate-950 border-slate-800 text-slate-500'}`}>
+                    <button key={id} onClick={() => toggleRoom(id)} className={`p-3 rounded-xl text-[11px] font-bold border transition-all flex items-center justify-center gap-2 ${isSel ? 'bg-cyan-950/30 border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.15)]' : 'bg-slate-950 border-slate-800 text-slate-500'}`}>
                       <div className={`w-1.5 h-1.5 rounded-full transition-all ${isSel ? 'bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]' : 'bg-transparent'}`}></div>
                       <span>{name}</span>
                     </button>
@@ -627,11 +581,11 @@ export default function App() {
           <div className="bg-slate-900 border border-slate-800 rounded-[24px] p-6 w-full max-w-sm shadow-2xl relative">
             <button onClick={() => setActiveStats(null)} className="absolute top-4 right-4 p-2 bg-slate-800 hover:bg-slate-700 rounded-full text-slate-400 transition"><X size={20}/></button>
             
-            <div className="flex items-center gap-2 mb-1 pr-8">
+            <div className="flex items-center gap-2 mb-2 pr-8">
                <div className={`w-2.5 h-2.5 rounded-full ${prioStyles.dot}`}></div>
                <h3 className="font-black text-xl text-white leading-tight">{activeStats.name}</h3>
             </div>
-            <span className="text-[10px] text-indigo-400 uppercase font-bold bg-indigo-500/10 px-2 py-1 rounded border border-indigo-500/20 inline-block">{activeStats.room}</span>
+            <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded border inline-block ${getRoomStyle(activeStats.room)}`}>{activeStats.room}</span>
             
             <div className="grid grid-cols-2 gap-2 mt-5 mb-5">
               <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col"><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">GTD</span><div className="font-black text-white text-lg">${activeStats.gtd}</div></div>
@@ -724,7 +678,7 @@ export default function App() {
           </div>
           <span className="text-[11px] font-bold tracking-wide">Сетка</span>
         </button>
-        <button onClick={() => setActiveTab('stats')} className={`flex-1 flex flex-col items-center py-4 transition-all duration-200 ${activeTab === 'stats' ? 'text-fuchsia-400 drop-shadow-[0_0_8px_rgba(217,70,239,0.5)]' : 'text-slate-500 hover:text-slate-400'}`}><PieChart size={22} className={`mb-1 transition-transform ${activeTab === 'stats' ? 'scale-110' : ''}`} /><span className="text-[11px] font-bold tracking-wide">Статы</span></button>
+        <button onClick={() => setActiveTab('diary')} className={`flex-1 flex flex-col items-center py-4 transition-all duration-200 ${activeTab === 'diary' ? 'text-fuchsia-400 drop-shadow-[0_0_8px_rgba(217,70,239,0.5)]' : 'text-slate-500 hover:text-slate-400'}`}><TrendingUp size={22} className={`mb-1 transition-transform ${activeTab === 'diary' ? 'scale-110' : ''}`} /><span className="text-[11px] font-bold tracking-wide">Дневник</span></button>
       </div>
     </div>
   );
