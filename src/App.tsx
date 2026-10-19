@@ -34,7 +34,6 @@ const ROOM_DOMAINS: Record<string, string> = {
 };
 
 const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle: (n: string) => string }) => {
-  // Находим домен рума (с защитой от разного регистра букв)
   const domainKey = Object.keys(ROOM_DOMAINS).find(k => k.toLowerCase() === (roomName || '').toLowerCase());
   const domain = domainKey ? ROOM_DOMAINS[domainKey] : null;
 
@@ -146,10 +145,9 @@ export default function App() {
 
   const toggleRoom = (roomId: string) => setSelectedRooms(prev => prev.includes(roomId) ? prev.filter(id => id !== roomId) : [...prev, roomId]);
 
-const fetchTournaments = async () => {
+  const fetchTournaments = async () => {
     setLoading(true);
     try {
-      // Подготавливаем дату: убираем 'T' и добавляем секунды, чтобы бэкенд понял время
       const formatApiDate = (dateStr: string) => dateStr ? dateStr.replace('T', ' ') + ':00' : '';
 
       const data = await apiCall('tournaments', { 
@@ -165,7 +163,6 @@ const fetchTournaments = async () => {
     } catch (e) {} finally { setLoading(false); }
   };
 
-  // === ЦВЕТА РУМОВ (Новая фича) ===
   const getRoomStyle = (roomName: string) => {
     const name = roomName.toLowerCase();
     if (name.includes('gg') || name.includes('pokerstars') || name.includes('ps')) return 'bg-red-500/10 text-red-400 border-red-500/30 shadow-[0_0_8px_rgba(239,68,68,0.2)]';
@@ -192,7 +189,7 @@ const fetchTournaments = async () => {
     const ev = parseNum(t.ev_mtt); const buyin = parseNum(t.buyin);
     if (buyin <= 0) return { id: 3, label: 'C-Tier', color: 'text-slate-500 bg-slate-800/50 border-slate-700/50' };
     const roi = ev / buyin;
-    if (roi >= 0.3) return { id: 0, label: 'S-Tier', color: 'text-fuchsia-400 bg-fuchsia-500/10 border-fuchsia-500/30 shadow-[0_0_10px_rgba(232,121,249,0.2)]' };
+    if (roi >= 0.3) return { id: 0, label: 'S-TIER', color: 'text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-fuchsia-500/10 border-fuchsia-500/50 shadow-[0_0_15px_rgba(232,121,249,0.4)] animate-pulse' };
     if (roi >= 0.15) return { id: 1, label: 'A-Tier', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' };
     if (roi > 0) return { id: 2, label: 'B-Tier', color: 'text-blue-400 bg-blue-500/10 border-blue-500/30' };
     return { id: 3, label: 'Trash', color: 'text-slate-500 bg-slate-800/50 border-slate-700/50' };
@@ -229,7 +226,7 @@ const fetchTournaments = async () => {
 
   const searchResults = useMemo(() => [...tournaments].sort((a, b) => {
     if (sortOrder === 'tier') return getTier(a).id - getTier(b).id;
-    return 0; // Сохраняем идеальный хронологический порядок от бэкенда
+    return 0;
   }), [tournaments, sortOrder]);
 
   const toggleGrid = (t: Tournament) => {
@@ -279,10 +276,8 @@ const fetchTournaments = async () => {
 
   const totalBuyin = grid.reduce((sum, t) => sum + parseNum(t.buyin), 0);
   const totalEV = grid.reduce((sum, t) => sum + parseNum(t.ev_mtt), 0);
-
-  // Для графика в дневнике
   const maxProfitAbs = Math.max(...sessionsHistory.map(s => Math.abs(s.profit)), 10);
-  // ===================== РЕНДЕР АВТОРИЗАЦИИ =====================
+
   if (authStep === 'login' || authStep === 'mfa') {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-slate-200 selection:bg-cyan-500/30">
@@ -321,7 +316,6 @@ const fetchTournaments = async () => {
     );
   }
 
-  // ===================== РЕНДЕР ОСНОВНОГО ПРИЛОЖЕНИЯ =====================
   return (
     <div className="min-h-screen pb-24 bg-slate-950 text-slate-200 font-sans antialiased selection:bg-cyan-500/30">
       
@@ -357,7 +351,6 @@ const fetchTournaments = async () => {
           </div>
 
           <div className="space-y-4 mt-2">
-            {/* Скелетон загрузки */}
             {loading && (
               <div className="space-y-4 mt-2">
                 {[1, 2, 3].map(i => (
@@ -380,6 +373,7 @@ const fetchTournaments = async () => {
                 ))}
               </div>
             )}
+            
             {searchResults.length === 0 && !loading && (
               <div className="text-center py-16 px-6 bg-slate-900/50 rounded-2xl border border-slate-800/50">
                 <div className="text-4xl mb-4 opacity-40">🎲</div>
@@ -410,11 +404,11 @@ const fetchTournaments = async () => {
                   <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-2.5">
                       <div className={`w-2 h-2 rounded-full ${prioStyles.dot}`}></div>
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t.day_week}</span>
-                          <span className="text-sm text-cyan-400 font-mono font-extrabold drop-shadow-[0_0_8px_rgba(34,211,238,0.3)]">{t.time_start}</span>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t.day_week}</span>
+                        <span className="text-sm text-cyan-400 font-mono font-extrabold drop-shadow-[0_0_8px_rgba(34,211,238,0.3)]">{t.time_start}</span>
+                      </div>
                     </div>
-                  </div>
                     <div className="flex gap-2 items-center">
                       {overlay && <span className="bg-orange-500/20 text-orange-400 text-[9px] px-2 py-1 rounded-lg border border-orange-500/30 font-black uppercase flex items-center gap-1 shadow-[0_0_8px_rgba(249,115,22,0.2)]"><Flame size={10} className="animate-pulse text-orange-500"/> Overlay</span>}
                       <span className={`text-[10px] px-2.5 py-1 rounded-lg font-black border uppercase tracking-wider ${tier.color}`}>{tier.label}</span>
@@ -423,7 +417,6 @@ const fetchTournaments = async () => {
 
                   <div className="mb-4 flex items-center flex-wrap gap-1.5">
                     <h3 className="font-bold text-lg text-white leading-snug mr-1">{t.name}</h3>
-                    {/* НОВАЯ КРАСИВАЯ ПЛАШКА РУМА */}
                     <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />                  
                   </div>
 
@@ -440,7 +433,7 @@ const fetchTournaments = async () => {
                   </div>
 
                   <div className="flex gap-2.5">
-                      <button onClick={() => toggleGrid(t)} className={`flex-2/3 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold active:scale-95 transition-all ${isAdded ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/40 shadow-[inset_0_0_15px_rgba(16,185,129,0.15)]' : 'bg-blue-500/5 hover:bg-blue-500/10 text-blue-400 border border-blue-500/30 shadow-[inset_0_0_15px_rgba(59,130,246,0.1)]'}`}>
+                    <button onClick={() => toggleGrid(t)} className={`flex-2/3 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold active:scale-95 transition-all ${isAdded ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/40 shadow-[inset_0_0_15px_rgba(16,185,129,0.15)]' : 'bg-blue-500/5 hover:bg-blue-500/10 text-blue-400 border border-blue-500/30 shadow-[inset_0_0_15px_rgba(59,130,246,0.1)]'}`}>
                       {isAdded ? <><Check size={18} strokeWidth={2.5} /> В сетке</> : <><Plus size={18} strokeWidth={2.5} /> Добавить</>}
                     </button>
                     <button onClick={() => setActiveStats(t)} className="flex-1/3 bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center py-3 rounded-xl active:scale-95 transition-all"><BarChart2 size={16} /></button>
@@ -514,11 +507,11 @@ const fetchTournaments = async () => {
                   <div className="flex-1 pl-1">
                     <div className="flex items-center gap-2.5">
                       <div className={`w-1.5 h-1.5 rounded-full ${prioStyles.dot}`}></div>
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-[9px] font-bold text-slate-500 uppercase">{t.day_week}</span>
-                          <span className="text-xs font-mono font-bold text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.4)]">{t.time_start}</span>
-                    </div>
-                    <div className="ml-1 scale-90 origin-left"><RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} /></div>                    
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-[9px] font-bold text-slate-500 uppercase">{t.day_week}</span>
+                        <span className="text-xs font-mono font-bold text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.4)]">{t.time_start}</span>
+                      </div>
+                      <div className="ml-1 scale-90 origin-left"><RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} /></div>                    
                     </div>
                     <div className="font-bold text-sm text-slate-100 mt-1.5 leading-snug">{t.name}</div>
                     <div className="text-sm font-black text-emerald-400 mt-1">${t.buyin} <span className="text-xs text-blue-400 font-normal ml-2">EV: {t.ev_mtt}</span></div>
@@ -531,7 +524,7 @@ const fetchTournaments = async () => {
         </div>
       )}
 
-      {/* 📈 Контент: ДНЕВНИК (Бывш. Статистика) */}
+      {/* 📈 Контент: ДНЕВНИК */}
       {activeTab === 'diary' && (
         <div className="p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 mb-6 shadow-[0_0_20px_rgba(0,0,0,0.3)]">
@@ -542,24 +535,23 @@ const fetchTournaments = async () => {
               </button>
             </div>
             
-            {/* ГРАФИК */}
             <div className="flex items-center gap-1 h-32 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/80 relative">
               <div className="absolute top-1/2 left-0 w-full h-[1px] bg-slate-700/50 z-0"></div>
               {sessionsHistory.length === 0 ? (
                 <div className="w-full text-center text-[10px] text-slate-500 font-bold z-10">Нет сыгранных сессий</div>
               ) : (
                 sessionsHistory.slice().reverse().map(h => {
-                  const heightPct = (Math.abs(h.profit) / maxProfitAbs) * 45; // Макс высота столбца 45% от половины (оставляем место для отступов)
+                  const heightPct = (Math.abs(h.profit) / maxProfitAbs) * 45;
                   return (
                     <div key={h.id} className="flex-1 flex flex-col items-center justify-center h-full z-10 group relative">
                       <div className="absolute -top-6 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-20 shadow-xl transition-opacity">
                         ${h.profit.toFixed(2)}
                       </div>
                       <div className="w-full h-1/2 flex flex-col justify-end">
-                          {h.profit >= 0 && <div className="w-full bg-emerald-500/80 rounded-t-[2px] transition-all group-hover:bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.3)]" style={{height: `${heightPct}%`}}></div>}
+                        {h.profit >= 0 && <div className="w-full bg-emerald-500/80 rounded-t-[2px] transition-all group-hover:bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.3)]" style={{height: `${heightPct}%`}}></div>}
                       </div>
                       <div className="w-full h-1/2 flex flex-col justify-start">
-                          {h.profit < 0 && <div className="w-full bg-rose-500/80 rounded-b-[2px] transition-all group-hover:bg-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.3)]" style={{height: `${heightPct}%`}}></div>}
+                        {h.profit < 0 && <div className="w-full bg-rose-500/80 rounded-b-[2px] transition-all group-hover:bg-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.3)]" style={{height: `${heightPct}%`}}></div>}
                       </div>
                     </div>
                   )
@@ -600,7 +592,7 @@ const fetchTournaments = async () => {
         </div>
       )}
 
-      {/* ⚙️ Настройки поиска (Модалка) */}
+      {/* ⚙️ Настройки поиска */}
       {showFilters && (
         <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-50 flex flex-col justify-end transition-opacity">
           <div className="bg-slate-900 rounded-t-[28px] p-5 border-t border-slate-800 max-h-[90vh] overflow-y-auto shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
@@ -652,38 +644,37 @@ const fetchTournaments = async () => {
         const note = notes[key] || { tag: 'none', text: '' };
         const prioStyles = getPriorityStyles(activeStats.priority);
         return (
-        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-[24px] p-6 w-full max-w-sm shadow-2xl relative">
-            <button onClick={() => setActiveStats(null)} className="absolute top-4 right-4 p-2 bg-slate-800 hover:bg-slate-700 rounded-full text-slate-400 transition"><X size={20}/></button>
-            
-            <div className="flex items-center gap-2 mb-2 pr-8">
-               <div className={`w-2.5 h-2.5 rounded-full ${prioStyles.dot}`}></div>
-               <h3 className="font-black text-xl text-white leading-tight">{activeStats.name}</h3>
-            </div>
-            <div className="inline-block mt-1"><RoomBadge roomName={activeStats.room} getRoomStyle={getRoomStyle} /></div>            
-            <div className="grid grid-cols-2 gap-2 mt-5 mb-5">
-              <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col"><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">GTD</span><div className="font-black text-white text-lg">${activeStats.gtd}</div></div>
-              <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col"><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Бай-ин</span><div className="font-black text-emerald-400 text-lg">${activeStats.buyin}</div></div>
-              <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col"><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">AFS</span><div className="font-black text-purple-400 text-lg">{activeStats.afs}</div></div>
-              <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col"><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">ROI</span><div className="font-black text-blue-400 text-lg">{activeStats.roi_str}</div></div>
-            </div>
-
-            <div className="bg-slate-950 rounded-2xl p-4 border border-slate-800 mb-5">
-              <div className="flex items-center gap-2 mb-3 text-slate-400 text-xs font-bold uppercase tracking-wider"><NotebookPen size={14}/> Заметка и статус</div>
-              <div className="flex gap-2 mb-3">
-                <button onClick={() => saveNote(activeStats, 'none', note.text)} className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${note.tag==='none' ? 'bg-slate-800 text-white border-slate-600' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>Сброс</button>
-                <button onClick={() => saveNote(activeStats, 'skip', note.text)} className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${note.tag==='skip' ? 'bg-rose-500/20 text-rose-400 border-rose-500/50 shadow-[0_0_10px_rgba(244,63,94,0.15)]' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🚫 Скип</button>
-                <button onClick={() => saveNote(activeStats, 'must', note.text)} className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${note.tag==='must' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.15)]' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🔥 Топ</button>
+          <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-[24px] p-6 w-full max-w-sm shadow-2xl relative">
+              <button onClick={() => setActiveStats(null)} className="absolute top-4 right-4 p-2 bg-slate-800 hover:bg-slate-700 rounded-full text-slate-400 transition"><X size={20}/></button>
+              
+              <div className="flex items-center gap-2 mb-2 pr-8">
+                 <div className={`w-2.5 h-2.5 rounded-full ${prioStyles.dot}`}></div>
+                 <h3 className="font-black text-xl text-white leading-tight">{activeStats.name}</h3>
               </div>
-              <input value={note.text} onChange={e => saveNote(activeStats, note.tag, e.target.value)} placeholder="Напиши заметку (например: много фишей)..." className="w-full bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-3.5 text-sm text-white focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all" />
-            </div>
+              <div className="inline-block mt-1"><RoomBadge roomName={activeStats.room} getRoomStyle={getRoomStyle} /></div>            
+              <div className="grid grid-cols-2 gap-2 mt-5 mb-5">
+                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col"><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">GTD</span><div className="font-black text-white text-lg">${activeStats.gtd}</div></div>
+                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col"><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Бай-ин</span><div className="font-black text-emerald-400 text-lg">${activeStats.buyin}</div></div>
+                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col"><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">AFS</span><div className="font-black text-purple-400 text-lg">{activeStats.afs}</div></div>
+                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col"><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">ROI</span><div className="font-black text-blue-400 text-lg">{activeStats.roi_str}</div></div>
+              </div>
 
-            <button onClick={() => { toggleGrid(activeStats); setActiveStats(null); }} className={`w-full py-4 rounded-xl font-black text-sm transition-all active:scale-95 ${grid.some(item => item.id === activeStats.id) ? 'bg-rose-500/10 border-2 border-rose-500/40 text-rose-400' : 'bg-cyan-950/30 border-2 border-cyan-500/60 text-cyan-400'}`}>
-              {grid.some(item => item.id === activeStats.id) ? 'Убрать из сетки' : 'Добавить в сетку'}
-            </button>
+              <div className="bg-slate-950 rounded-2xl p-4 border border-slate-800 mb-5">
+                <div className="flex items-center gap-2 mb-3 text-slate-400 text-xs font-bold uppercase tracking-wider"><NotebookPen size={14}/> Заметка и статус</div>
+                <div className="flex gap-2 mb-3">
+                  <button onClick={() => saveNote(activeStats, 'none', note.text)} className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${note.tag==='none' ? 'bg-slate-800 text-white border-slate-600' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>Сброс</button>
+                  <button onClick={() => saveNote(activeStats, 'skip', note.text)} className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${note.tag==='skip' ? 'bg-rose-500/20 text-rose-400 border-rose-500/50 shadow-[0_0_10px_rgba(244,63,94,0.15)]' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🚫 Скип</button>
+                  <button onClick={() => saveNote(activeStats, 'must', note.text)} className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${note.tag==='must' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.15)]' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🔥 Топ</button>
+                </div>
+                <input value={note.text} onChange={e => saveNote(activeStats, note.tag, e.target.value)} placeholder="Напиши заметку (например: много фишей)..." className="w-full bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-3.5 text-sm text-white focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all" />
+              </div>
+
+              <button onClick={() => { toggleGrid(activeStats); setActiveStats(null); }} className={`w-full py-4 rounded-xl font-black text-sm transition-all active:scale-95 ${grid.some(item => item.id === activeStats.id) ? 'bg-rose-500/10 border-2 border-rose-500/40 text-rose-400' : 'bg-cyan-950/30 border-2 border-cyan-500/60 text-cyan-400'}`}>
+                {grid.some(item => item.id === activeStats.id) ? 'Убрать из сетки' : 'Добавить в сетку'}
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
         );
       })()}
 
@@ -743,7 +734,7 @@ const fetchTournaments = async () => {
         </div>
       )}
 
-{/* 🧭 Навигация */}
+      {/* 🧭 Навигация */}
       <div className="fixed bottom-0 w-full bg-slate-950/90 backdrop-blur-xl border-t border-slate-800 flex pb-safe z-40">
         <button onClick={() => setActiveTab('search')} className={`flex-1 flex flex-col items-center py-4 relative transition-all duration-200 ${activeTab === 'search' ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]' : 'text-slate-500 hover:text-slate-400'}`}>
           {activeTab === 'search' && <div className="absolute top-0 w-8 h-[3px] bg-cyan-400 rounded-b-full shadow-[0_0_12px_rgba(34,211,238,1)]"></div>}
@@ -766,5 +757,6 @@ const fetchTournaments = async () => {
           <span className="text-[11px] font-bold tracking-wide">Дневник</span>
         </button>
       </div>
+    </div>
   );
 }
