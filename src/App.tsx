@@ -338,7 +338,7 @@ export default function App() {
       {activeTab === 'search' && (
         <div className="p-4 space-y-4">
           
-          {/* 🎛️ Прямая панель фильтров на главном экране (вместо модалки) */}
+          {/* 🎛️ Прямая панель фильтров на главном экране */}
           <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3 space-y-3">
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -351,8 +351,15 @@ export default function App() {
               </div>
             </div>
 
-            {/* Быстрый выбор румов */}
-            <div className="overflow-x-auto no-scrollbar flex gap-1.5 pt-1">
+            {/* Быстрый выбор румов + кнопка Все/Сброс */}
+            <div className="overflow-x-auto no-scrollbar flex gap-1.5 pt-1 items-center">
+              <button 
+                onClick={() => setSelectedRooms(selectedRooms.length === Object.keys(ROOMS).length ? [] : Object.keys(ROOMS))} 
+                className="px-2.5 py-1.5 rounded-xl text-[10px] font-black border transition-all shrink-0 bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 active:scale-95"
+              >
+                {selectedRooms.length === Object.keys(ROOMS).length ? 'Сбросить' : 'Все румы'}
+              </button>
+
               {Object.entries(ROOMS).map(([id, name]) => {
                 const isSel = selectedRooms.includes(id);
                 const domain = ROOM_DOMAINS[name];
