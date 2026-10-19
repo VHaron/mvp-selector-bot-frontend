@@ -5,7 +5,7 @@ import { Search, ListTodo, Plus, Check, Trash2, BarChart2, SlidersHorizontal, X,
 interface Tournament {
   id: string; room: string; name: string; priority: string;
   buyin: string; time_start: string; roi_str: string; gtd: string;
-  afs: string; duration: string; ev_mtt: string;
+  afs: string; duration: string; ev_mtt: string; day_week: string;
 }
 
 type NoteTag = 'skip' | 'must' | 'none';
@@ -275,7 +275,7 @@ const fetchTournaments = async () => {
             </form>
           ) : (
             <form onSubmit={handleMfa} className="space-y-4">
-              <p className="text-sm text-center text-slate-400 font-bold mb-4">На ваш Telegram отправлен код 2FA.</p>
+              <p className="text-sm text-center text-slate-400 font-bold mb-4">Введите 2FA код с вашего приложения аутентификатора</p>
               <input type="text" required placeholder="Код 2FA" value={otp} onChange={e => setOtp(e.target.value)} className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-3.5 text-center text-xl tracking-widest font-mono text-cyan-400 focus:outline-none focus:border-cyan-500/50 transition-all"/>
               <button type="submit" disabled={authLoading} className="w-full bg-gradient-to-r from-emerald-600 to-emerald-400 text-white font-black py-4 rounded-xl mt-4 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-95 disabled:opacity-50">{authLoading ? '...' : 'Подтвердить'}</button>
             </form>
@@ -351,8 +351,11 @@ const fetchTournaments = async () => {
                   <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-2.5">
                       <div className={`w-2 h-2 rounded-full ${prioStyles.dot}`}></div>
-                      <span className="text-sm text-cyan-400 font-mono font-extrabold drop-shadow-[0_0_8px_rgba(34,211,238,0.3)]">{t.time_start}</span>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t.day_week}</span>
+                          <span className="text-sm text-cyan-400 font-mono font-extrabold drop-shadow-[0_0_8px_rgba(34,211,238,0.3)]">{t.time_start}</span>
                     </div>
+                  </div>
                     <div className="flex gap-2 items-center">
                       {overlay && <span className="bg-orange-500/20 text-orange-400 text-[9px] px-2 py-1 rounded-lg border border-orange-500/30 font-black uppercase flex items-center gap-1 shadow-[0_0_8px_rgba(249,115,22,0.2)]"><Flame size={10}/> Overlay</span>}
                       <span className={`text-[10px] px-2.5 py-1 rounded-lg font-black border uppercase tracking-wider ${tier.color}`}>{tier.label}</span>
@@ -452,8 +455,11 @@ const fetchTournaments = async () => {
                   <div className="flex-1 pl-1">
                     <div className="flex items-center gap-2.5">
                       <div className={`w-1.5 h-1.5 rounded-full ${prioStyles.dot}`}></div>
-                      <span className="text-xs font-mono font-bold text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.4)]">{t.time_start}</span>
-                      <span className={`text-[8px] uppercase font-bold px-1.5 py-0.5 rounded tracking-wider border ${getRoomStyle(t.room)}`}>{t.room}</span>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-[9px] font-bold text-slate-500 uppercase">{t.day_week}</span>
+                          <span className="text-xs font-mono font-bold text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.4)]">{t.time_start}</span>
+                    </div>
+                          <span className={`text-[8px] uppercase font-bold px-1.5 py-0.5 rounded tracking-wider border ml-1 ${getRoomStyle(t.room)}`}>{t.room}</span>
                     </div>
                     <div className="font-bold text-sm text-slate-100 mt-1.5 leading-snug">{t.name}</div>
                     <div className="text-sm font-black text-emerald-400 mt-1">${t.buyin} <span className="text-xs text-blue-400 font-normal ml-2">EV: {t.ev_mtt}</span></div>
