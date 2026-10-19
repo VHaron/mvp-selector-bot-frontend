@@ -683,6 +683,7 @@ const fetchTournaments = async () => {
             </button>
           </div>
         </div>
+      </div>
         );
       })()}
 
