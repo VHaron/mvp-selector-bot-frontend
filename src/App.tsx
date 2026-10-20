@@ -87,6 +87,23 @@ export default function App() {
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [sessionCashes, setSessionCashes] = useState('');
 
+  // Функция для быстрых кнопок дат (с 12:00 дня до 05:00 утра следующего дня)
+  const setPresetDate = (type: 'today' | 'tomorrow' | 'clear') => {
+    if (type === 'clear') { setDateFrom(''); setDateTo(''); return; }
+    
+    const now = new Date();
+    const formatLocal = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    
+    if (type === 'today') {
+      setDateFrom(formatLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0)));
+      setDateTo(formatLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 5, 0)));
+    } else if (type === 'tomorrow') {
+      setDateFrom(formatLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 12, 0)));
+      setDateTo(formatLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 5, 0)));
+    }
+    try { WebApp.HapticFeedback.impactOccurred('light'); } catch(e){}
+  };
+
   const apiCall = async (endpoint: string, body: any) => {
     const res = await fetch(`${API_BASE_URL}/${endpoint}`, { 
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) 
@@ -347,20 +364,31 @@ const loadAllUserData = async (token: string) => {
       {activeTab === 'search' && (
         <div className="p-4 space-y-4">
           
-          {/* 🎛️ Прямая панель фильтров на главном экране */}
+{/* 🎛️ Прямая панель фильтров на главном экране */}
           <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3 space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[9px] text-slate-400 mb-1 font-bold uppercase tracking-wider">От</label>
-                <input type="datetime-local" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200 focus:border-cyan-500/50 outline-none transition-all [color-scheme:dark]" />
+            
+            {/* Блок дат + Быстрые кнопки */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Период турниров</span>
+                <div className="flex gap-1.5">
+                  <button onClick={() => setPresetDate('today')} className="px-2 py-1 text-[9px] font-bold uppercase bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 active:scale-95 transition-all">Сегодня</button>
+                  <button onClick={() => setPresetDate('tomorrow')} className="px-2 py-1 text-[9px] font-bold uppercase bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 active:scale-95 transition-all">Завтра</button>
+                  <button onClick={() => setPresetDate('clear')} className="px-2 py-1 text-[9px] font-bold uppercase bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg hover:bg-rose-500/20 active:scale-95 transition-all"><X size={10}/></button>
+                </div>
               </div>
-              <div>
-                <label className="block text-[9px] text-slate-400 mb-1 font-bold uppercase tracking-wider">До</label>
-                <input type="datetime-local" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200 focus:border-cyan-500/50 outline-none transition-all [color-scheme:dark]" />
+              
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <input type="datetime-local" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200 focus:border-cyan-500/50 outline-none transition-all [color-scheme:dark]" />
+                </div>
+                <div>
+                  <input type="datetime-local" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200 focus:border-cyan-500/50 outline-none transition-all [color-scheme:dark]" />
+                </div>
               </div>
             </div>
 
-            {/* Быстрый выбор румов + кнопка Все/Сброс */}
+            {/* Быстрый выбор румов + кнопка Все/Сброс (остается как было) */}
             <div className="overflow-x-auto no-scrollbar flex gap-1.5 pt-1 items-center">
               <button 
                 onClick={() => setSelectedRooms(selectedRooms.length === Object.keys(ROOMS).length ? [] : Object.keys(ROOMS))} 
@@ -392,6 +420,16 @@ const loadAllUserData = async (token: string) => {
               <Flame size={18} strokeWidth={2.5} />
             </button>
           </div>
+
+          {/* СЧЕТЧИК ТУРНИРОВ */}
+          {!loading && searchResults.length > 0 && (
+            <div className="flex justify-between items-center px-2 pt-2">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Найдено турниров:</span>
+              <span className="text-xs font-black text-cyan-400 bg-cyan-950/50 px-2.5 py-1 rounded-lg border border-cyan-500/30 shadow-[0_0_10px_rgba(34,211,238,0.1)]">
+                {searchResults.length}
+              </span>
+            </div>
+          )}
 
           <div className="space-y-4 mt-2">
             {loading && (
