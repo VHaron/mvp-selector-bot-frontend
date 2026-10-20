@@ -100,6 +100,27 @@ export default function App() {
     return null;
   };
 
+  // НОВОЕ: Стейт компактного вида
+  const [isCompact, setIsCompact] = useState(false);
+
+  // НОВОЕ: Функция массового добавления
+  const bulkAdd = (type: 'top' | 'overlay') => {
+    let toAdd: Tournament[] = [];
+    if (type === 'top') {
+      toAdd = searchResults.filter(t => getTier(t).id <= 1); // Берем только S (0) и A (1) тиры
+    } else if (type === 'overlay') {
+      toAdd = searchResults.filter(t => isOverlay(t)); // Берем только оверлеи
+    }
+
+    // Отфильтровываем те, что уже есть в сетке, чтобы не было дублей
+    const newItems = toAdd.filter(t => !grid.some(g => g.id === t.id));
+    
+    if (newItems.length > 0) {
+      setGrid([...grid, ...newItems]);
+      try { WebApp.HapticFeedback.notificationOccurred('success'); } catch(e){}
+    }
+  };
+
   // Модалка фильтров закомментирована/убрана, но стейт сохранен для совместимости
   const [dateFrom, setDateFrom] = useState(''); 
   const [dateTo, setDateTo] = useState('');
@@ -465,13 +486,24 @@ const loadAllUserData = async (token: string) => {
             </button>
           </div>
 
-          {/* СЧЕТЧИК ТУРНИРОВ */}
+          {/* УПРАВЛЕНИЕ СПИСКОМ И СЧЕТЧИК */}
           {!loading && searchResults.length > 0 && (
-            <div className="flex justify-between items-center px-2 pt-2">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Найдено турниров:</span>
-              <span className="text-xs font-black text-cyan-400 bg-cyan-950/50 px-2.5 py-1 rounded-lg border border-cyan-500/30 shadow-[0_0_10px_rgba(34,211,238,0.1)]">
-                {searchResults.length}
-              </span>
+            <div className="flex flex-col gap-2.5 px-1 pt-2 pb-1">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Найдено: <span className="text-cyan-400 ml-1">{searchResults.length}</span></span>
+                <button onClick={() => setIsCompact(!isCompact)} className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 active:scale-95 transition-all border border-slate-700">
+                  {isCompact ? 'Детальный вид' : 'Компактный вид'}
+                </button>
+              </div>
+              
+              <div className="flex gap-2">
+                <button onClick={() => bulkAdd('top')} className="flex-1 py-2 text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/20 active:scale-95 transition-all shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                  + Все S и A тир
+                </button>
+                <button onClick={() => bulkAdd('overlay')} className="flex-1 py-2 text-[10px] font-black uppercase tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/30 rounded-xl hover:bg-orange-500/20 active:scale-95 transition-all shadow-[0_0_10px_rgba(249,115,22,0.1)]">
+                  + Все Оверлеи
+                </button>
+              </div>
             </div>
           )}
 
@@ -523,6 +555,34 @@ const loadAllUserData = async (token: string) => {
               
               const cardBorder = note?.tag === 'must' ? 'border-l-4 border-l-emerald-500' : `border-l-[3px] ${prioStyles.border}`;
               const cardGlow = note?.tag === 'must' ? 'shadow-[0_0_20px_rgba(16,185,129,0.1)]' : prioStyles.glow;
+  
+              // НОВОЕ: Рендер компактного вида
+              if (isCompact) {
+                if (note?.tag === 'skip') return null; // В компактном виде полностью скрываем мусор для чистоты экрана
+                
+                return (
+                  <div key={t.id} className={`bg-slate-900 rounded-xl p-3 border border-slate-800 transition-all flex items-center justify-between gap-3 border-l-[3px] ${prioStyles.border}`}>
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setActiveStats(t)}>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <span className="text-[11px] text-cyan-400 font-mono font-black">{t.time_start}</span>
+                        {overlay && <Flame size={12} className="text-orange-500 animate-pulse"/>}
+                        <span className={`text-[8px] px-1.5 py-0.5 rounded border font-bold uppercase ${tier.color}`}>{tier.label}</span>
+                        {getSmartTimer(t.time_start)}
+                      </div>
+                      <div className="font-bold text-sm text-white truncate mb-1">{t.name}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-black text-emerald-400 text-xs">${t.buyin}</span>
+                        <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">{t.room} • {t.afs} тел</span>
+                      </div>
+                    </div>
+                    
+                    <button onClick={() => toggleGrid(t)} className={`shrink-0 w-12 h-12 flex items-center justify-center rounded-xl transition-all active:scale-95 ${isAdded ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-[inset_0_0_10px_rgba(16,185,129,0.15)]' : 'bg-slate-800 text-blue-400 hover:bg-slate-700'}`}>
+                      {isAdded ? <Check size={20} strokeWidth={3}/> : <Plus size={20} strokeWidth={3}/>}
+                    </button>
+                  </div>
+                );
+              }
+              // Стандартный return большой карточки идет дальше...
               
               return (
                 <div key={t.id} className={`bg-slate-900 rounded-2xl p-4 border border-slate-800 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)] ${cardBorder} ${cardGlow}`}>
