@@ -94,18 +94,20 @@ export default function App() {
     return res.json();
   };
 
-  const loadAllUserData = async (token: string) => {
+const loadAllUserData = async (token: string) => {
     try {
-      const [presRes, setRes, notRes, histRes] = await Promise.all([
+      const [presRes, setRes, notRes, histRes, gridRes] = await Promise.all([
         apiCall('get_presets', { session_token: token }),
         apiCall('get_settings', { session_token: token }),
         apiCall('get_notes', { session_token: token }),
-        apiCall('get_sessions_history', { session_token: token })
+        apiCall('get_sessions_history', { session_token: token }),
+        apiCall('get_grid', { session_token: token }) // <--- ДОБАВЛЕНО
       ]);
       if (presRes.status === 'success') setPresets(presRes.presets);
       if (setRes.status === 'success' && setRes.selected_rooms) setSelectedRooms(setRes.selected_rooms);
       if (notRes.status === 'success' && notRes.notes) setNotes(notRes.notes);
       if (histRes.status === 'success' && histRes.history) setSessionsHistory(histRes.history.reverse());
+      if (gridRes.status === 'success' && gridRes.grid) setGrid(gridRes.grid); // <--- ДОБАВЛЕНО
     } catch (e) { console.error(e); } finally { setIsSettingsLoaded(true); }
   };
 
@@ -114,6 +116,13 @@ export default function App() {
       apiCall('save_settings', { session_token: sessionToken, selected_rooms: selectedRooms });
     }
   }, [selectedRooms, isSettingsLoaded, sessionToken]);
+
+  // Автосохранение сетки на бэкенд при изменениях
+  useEffect(() => {
+    if (isSettingsLoaded && sessionToken) {
+      apiCall('save_grid', { session_token: sessionToken, grid: grid });
+    }
+  }, [grid, isSettingsLoaded, sessionToken]);
 
   useEffect(() => {
     try { WebApp.ready(); WebApp.expand(); WebApp.setHeaderColor('#020617'); WebApp.setBackgroundColor('#020617'); } catch (e) {}
