@@ -52,7 +52,7 @@ const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle:
   );
 };
 
-const API_BASE_URL = 'https://mvp-selector-bot-joinweb3.msk1.amvera.tech/api';
+const API_BASE_URL = 'selector-backend-production.up.railway.app';
 
 const parseNum = (str: string) => parseFloat(str?.replace(/[^\d.-]/g, '')) || 0;
 
