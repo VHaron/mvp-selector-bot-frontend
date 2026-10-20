@@ -8,7 +8,7 @@ interface Tournament {
   afs: string; duration: string; ev_mtt: string; day_week: string;
 }
 
-type NoteTag = 'skip' | 'must' | 'none';
+type NoteTag = 'skip' | 'must' | 'none' | string;
 interface NoteData { tag: NoteTag; text: string; }
 interface SessionData { id: string; date: string; total_buyin: number; total_cashes: number; profit: number; tournaments_count: number; }
 
