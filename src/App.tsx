@@ -70,6 +70,36 @@ export default function App() {
   const [grid, setGrid] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // НОВОЕ: Состояние для фильтров форматов
+  const [activeFormats, setActiveFormats] = useState({ isPko: true, isFreezeout: true, isTurbo: true });
+
+  const toggleFormat = (key: 'isPko' | 'isFreezeout' | 'isTurbo') => {
+    setActiveFormats(prev => ({ ...prev, [key]: !prev[key] }));
+    try { WebApp.HapticFeedback.impactOccurred('light'); } catch(e){}
+  };
+
+  // НОВОЕ: Умный таймер (начнется через / поздняя рега)
+  const getSmartTimer = (timeStr: string) => {
+    if (!timeStr) return null;
+    const [hours, mins] = timeStr.split(':').map(Number);
+    const now = new Date();
+    const target = new Date();
+    target.setHours(hours, mins, 0, 0);
+
+    let diffMins = Math.round((target.getTime() - now.getTime()) / 60000);
+    
+    // Корректировка перехода через полночь
+    if (diffMins < -12 * 60) diffMins += 24 * 60; 
+    if (diffMins > 12 * 60) diffMins -= 24 * 60;
+
+    if (diffMins >= 0 && diffMins <= 60) {
+      return <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 animate-pulse bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30 ml-1.5 shadow-[0_0_8px_rgba(245,158,11,0.2)]">⏳ {diffMins} мин</span>;
+    } else if (diffMins < 0 && diffMins >= -120) {
+      return <span className="text-[9px] font-black uppercase tracking-wider text-rose-400 animate-pulse bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/30 ml-1.5 shadow-[0_0_8px_rgba(244,63,94,0.2)]">🔥 Late Reg</span>;
+    }
+    return null;
+  };
+
   // Модалка фильтров закомментирована/убрана, но стейт сохранен для совместимости
   const [dateFrom, setDateFrom] = useState(''); 
   const [dateTo, setDateTo] = useState('');
@@ -181,7 +211,14 @@ const loadAllUserData = async (token: string) => {
         date_from: formatApiDate(dateFrom), 
         date_to: formatApiDate(dateTo), 
         rooms: selectedRooms, 
-        structs: { isFreezeout: '1', isPko: '1', isTurbo: '1', isHyperTurbo: '1', is6MaxTurboPko: '1', isSeries: '1' }, 
+        structs: { 
+          isFreezeout: activeFormats.isFreezeout ? '1' : '0', 
+          isPko: activeFormats.isPko ? '1' : '0', 
+          isTurbo: activeFormats.isTurbo ? '1' : '0', 
+          isHyperTurbo: activeFormats.isTurbo ? '1' : '0', 
+          is6MaxTurboPko: activeFormats.isPko ? '1' : '0', 
+          isSeries: '1' 
+        },
         priorities: { priority1: '1', priority2: '1', priority3: '1' } 
       });
       if (data.detail) { logout(); return; }
@@ -412,6 +449,13 @@ const loadAllUserData = async (token: string) => {
             </div>
           </div>
 
+          {/* НОВОЕ: Быстрые форматы */}
+          <div className="flex gap-2 pt-2 border-t border-slate-800/80">
+            <button onClick={() => toggleFormat('isPko')} className={`flex-1 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${activeFormats.isPko ? 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/30 shadow-[0_0_8px_rgba(217,70,239,0.2)]' : 'bg-slate-950/60 text-slate-600 border-slate-800 hover:border-slate-700'}`}>🎯 PKO</button>
+            <button onClick={() => toggleFormat('isTurbo')} className={`flex-1 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${activeFormats.isTurbo ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.2)]' : 'bg-slate-950/60 text-slate-600 border-slate-800 hover:border-slate-700'}`}>⚡ Turbo</button>
+            <button onClick={() => toggleFormat('isFreezeout')} className={`flex-1 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${activeFormats.isFreezeout ? 'bg-blue-500/10 text-blue-400 border-blue-500/30 shadow-[0_0_8px_rgba(59,130,246,0.2)]' : 'bg-slate-950/60 text-slate-600 border-slate-800 hover:border-slate-700'}`}>🧊 Freez</button>
+          </div>
+
           <div className="flex gap-2">
             <button onClick={fetchTournaments} className="flex-1 bg-cyan-950/30 border-2 border-cyan-500/60 hover:bg-cyan-900/40 text-cyan-400 font-black py-3.5 rounded-xl active:scale-95 transition-all flex justify-center items-center gap-2 shadow-[0_0_20px_rgba(34,211,238,0.2)]">
               {loading ? <><Search className="animate-spin" size={18} /> Ищем...</> : <><Search size={18} strokeWidth={2.5} /> Найти турниры</>}
@@ -488,6 +532,7 @@ const loadAllUserData = async (token: string) => {
                       <div className="flex items-baseline gap-1.5">
                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t.day_week}</span>
                         <span className="text-sm text-cyan-400 font-mono font-extrabold drop-shadow-[0_0_8px_rgba(34,211,238,0.3)]">{t.time_start}</span>
+                        {getSmartTimer(t.time_start)}
                       </div>
                     </div>
                     <div className="flex gap-2 items-center">
@@ -591,6 +636,7 @@ const loadAllUserData = async (token: string) => {
                       <div className="flex items-baseline gap-1">
                         <span className="text-[9px] font-bold text-slate-500 uppercase">{t.day_week}</span>
                         <span className="text-xs font-mono font-bold text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.4)]">{t.time_start}</span>
+                        {getSmartTimer(t.time_start)}
                       </div>
                       <div className="ml-1 scale-90 origin-left"><RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} /></div>                    
                     </div>
