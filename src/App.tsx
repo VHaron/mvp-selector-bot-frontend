@@ -797,7 +797,7 @@ export default function App() {
           {/* НОВЫЙ ГРАФИК SHARKSCOPE */}
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 mb-6 shadow-[0_0_20px_rgba(0,0,0,0.3)]">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">График профита (SharkScope)</h2>
+              <h2 className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">График профита</h2>
               <button onClick={clearHistory} className="bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 p-2 rounded-xl transition-all active:scale-90">
                 <Trash2 size={14} />
               </button>
