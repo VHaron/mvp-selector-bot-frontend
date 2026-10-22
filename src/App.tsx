@@ -360,7 +360,32 @@ export default function App() {
     setNewPresetName(''); try { WebApp.HapticFeedback.notificationOccurred('success'); } catch(e){}
   };
   
-  const loadPreset = (items: Tournament[]) => { setGrid(items); setShowPresetsModal(false); };
+  const loadPreset = (items: Tournament[]) => { 
+    // Умная загрузка: ищем совпадения в текущем загруженном расписании
+    const matchedTournaments = items.map(presetItem => {
+      // Ищем турнир по совпадению рума, названия и времени старта
+      return tournaments.find(t => 
+        t.room === presetItem.room && 
+        t.name === presetItem.name && 
+        t.time_start === presetItem.time_start
+      );
+    }).filter(Boolean) as Tournament[]; // Отсеиваем те, которых сегодня нет
+
+    if (matchedTournaments.length === 0) {
+      alert('Ни один турнир из шаблона не найден на сегодня. Убедись, что ты нажал "Найти турниры" для нужных дат!');
+      return;
+    }
+
+    setGrid(matchedTournaments); 
+    setShowPresetsModal(false); 
+    
+    // Опционально: можно вывести уведомление, если часть турниров не нашлась
+    if (matchedTournaments.length < items.length) {
+      console.log(`Загружено ${matchedTournaments.length} из ${items.length} турниров шаблона. Остальные сегодня не идут.`);
+    }
+    
+    try { WebApp.HapticFeedback.notificationOccurred('success'); } catch(e){}
+  };
   const deletePreset = (idx: number) => {
     const newPresets = presets.filter((_, i) => i !== idx);
     setPresets(newPresets); apiCall('save_presets', { session_token: sessionToken, presets: newPresets });
