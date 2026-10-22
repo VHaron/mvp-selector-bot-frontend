@@ -809,7 +809,7 @@ export default function App() {
                   </defs>
                   <polygon points={`0,100 ${chartData.points} 100,100`} fill="url(#profitGrad)" />
                   <polyline points={chartData.points} fill="none" stroke={chartData.current >= 0 ? '#34d399' : '#fb7185'} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
-                  {chartData.pointsLen > 1 && (
+                  {Number(chartData?.pointsLen ?? 0) > 1 && (
                     <circle cx="100" cy={chartData.points.split(' ').pop()?.split(',')[1]} r="1.5" fill={chartData.current >= 0 ? '#10b981' : '#f43f5e'} className="animate-pulse" />
                   )}
                 </svg>
