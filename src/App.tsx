@@ -191,7 +191,12 @@ const loadAllUserData = async (token: string) => {
         apiCall('get_balances', { session_token: token })
       ]);
       if (presRes.status === 'success') setPresets(presRes.presets);
-      if (setRes.status === 'success' && setRes.selected_rooms) setSelectedRooms(setRes.selected_rooms);
+      if (setRes.status === 'success') {
+        if (setRes.selected_rooms) setSelectedRooms(setRes.selected_rooms);
+        if (setRes.active_formats) setActiveFormats(setRes.active_formats);
+        if (setRes.is_compact !== undefined) setIsCompact(setRes.is_compact);
+        if (setRes.sort_order) setSortOrder(setRes.sort_order);
+      }
       if (notRes.status === 'success' && notRes.notes) setNotes(notRes.notes);
       if (histRes.status === 'success' && histRes.history) setSessionsHistory(histRes.history.reverse());
       if (gridRes.status === 'success' && gridRes.grid) setGrid(gridRes.grid);
@@ -201,9 +206,15 @@ const loadAllUserData = async (token: string) => {
 
   useEffect(() => {
     if (isSettingsLoaded && sessionToken) {
-      apiCall('save_settings', { session_token: sessionToken, selected_rooms: selectedRooms });
+      apiCall('save_settings', { 
+        session_token: sessionToken, 
+        selected_rooms: selectedRooms,
+        active_formats: activeFormats,
+        is_compact: isCompact,
+        sort_order: sortOrder
+      });
     }
-  }, [selectedRooms, isSettingsLoaded, sessionToken]);
+  }, [selectedRooms, activeFormats, isCompact, sortOrder, isSettingsLoaded, sessionToken]);
 
   // Автосохранение сетки на бэкенд при изменениях
   useEffect(() => {
