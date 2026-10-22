@@ -55,6 +55,14 @@ const API_BASE_URL = 'https://selector-backend-production.up.railway.app';
 
 const parseNum = (str: string) => parseFloat(str?.replace(/[^\d.-]/g, '')) || 0;
 
+// Определяем символ валюты для каждого рума
+  const getRoomCurrency = (roomName: string) => {
+    const name = (roomName || '').toLowerCase();
+    if (name.includes('pokerdom') || name.includes('rpt')) return '₽';
+    if (name.includes('winamax') || name.includes('ipoker') || name.includes('ps(es)') || name.includes('pokerstars.es')) return '€';
+    return '$';
+  };
+
 export default function App() {
   const [authStep, setAuthStep] = useState<'login' | 'mfa' | 'app'>('login');
   const [sessionToken, setSessionToken] = useState<string | null>(localStorage.getItem('mvp_token'));
@@ -645,7 +653,7 @@ export default function App() {
 
                   <div className="grid grid-cols-3 gap-2 text-xs mb-5">
                     <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/50 flex flex-col items-center">
-                      <span className="text-slate-500 text-[9px] uppercase tracking-wider mb-1 font-bold">Бай-ин</span><span className="font-black text-emerald-400 text-sm">${t.buyin}</span>
+                      <span className="text-slate-500 text-[9px] uppercase tracking-wider mb-1 font-bold">Бай-ин</span><span className="font-black text-emerald-400 text-sm">{getRoomCurrency(t.room)}{t.buyin}</span>
                     </div>
                     <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/50 flex flex-col items-center">
                       <span className="text-slate-500 text-[9px] uppercase tracking-wider mb-1 font-bold">ROI / EV</span><span className="font-black text-blue-400 text-sm">{t.roi_str}</span>
@@ -771,13 +779,13 @@ export default function App() {
                       <RoomBadge roomName={roomName} getRoomStyle={getRoomStyle} />
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-slate-500 text-xs font-black">$</span>
+                      <span className="text-slate-500 text-xs font-black">{getRoomCurrency(roomName)}</span>
                       <input
-                        type="number"
-                        value={balances[roomName] || ''}
-                        onChange={(e) => updateBalance(roomName, e.target.value)}
-                        placeholder="0"
-                        className="w-14 bg-transparent text-right text-white font-bold text-sm focus:outline-none placeholder-slate-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      type="number"
+                      value={balances[roomName] || ''}
+                      onChange={(e) => updateBalance(roomName, e.target.value)}
+                      placeholder="0"
+                      className="w-14 bg-transparent text-right text-white font-bold text-sm focus:outline-none placeholder-slate-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
                   </div>
