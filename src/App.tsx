@@ -121,6 +121,24 @@ export default function App() {
     }
   };
 
+  // НОВОЕ: Стейт для балансов румов
+  const [balances, setBalances] = useState<Record<string, number>>({});
+  
+  // Подсчет общего банкролла
+  const totalBankroll = Object.values(balances).reduce((sum, val) => sum + (val || 0), 0);
+
+  const updateBalance = (roomName: string, value: string) => {
+    const num = parseFloat(value);
+    const newBalances = { ...balances, [roomName]: isNaN(num) ? 0 : num };
+    setBalances(newBalances);
+    
+    // Отправляем на бэкенд (нужно будет добавить этот эндпоинт в FastAPI, 
+    // либо пока закомментируй apiCall и используй localStorage)
+    if (sessionToken) {
+      apiCall('save_balances', { session_token: sessionToken, balances: newBalances });
+    }
+  };
+
   // Модалка фильтров закомментирована/убрана, но стейт сохранен для совместимости
   const [dateFrom, setDateFrom] = useState(''); 
   const [dateTo, setDateTo] = useState('');
@@ -164,18 +182,20 @@ export default function App() {
 
 const loadAllUserData = async (token: string) => {
     try {
-      const [presRes, setRes, notRes, histRes, gridRes] = await Promise.all([
+      const [presRes, setRes, notRes, histRes, gridRes, balRes] = await Promise.all([
         apiCall('get_presets', { session_token: token }),
         apiCall('get_settings', { session_token: token }),
         apiCall('get_notes', { session_token: token }),
         apiCall('get_sessions_history', { session_token: token }),
-        apiCall('get_grid', { session_token: token }) // <--- ДОБАВЛЕНО
+        apiCall('get_grid', { session_token: token }), // <-- Добавлена запятая
+        apiCall('get_balances', { session_token: token })
       ]);
       if (presRes.status === 'success') setPresets(presRes.presets);
       if (setRes.status === 'success' && setRes.selected_rooms) setSelectedRooms(setRes.selected_rooms);
       if (notRes.status === 'success' && notRes.notes) setNotes(notRes.notes);
       if (histRes.status === 'success' && histRes.history) setSessionsHistory(histRes.history.reverse());
-      if (gridRes.status === 'success' && gridRes.grid) setGrid(gridRes.grid); // <--- ДОБАВЛЕНО
+      if (gridRes.status === 'success' && gridRes.grid) setGrid(gridRes.grid);
+      if (balRes && balRes.status === 'success' && balRes.balances) setBalances(balRes.balances);
     } catch (e) { console.error(e); } finally { setIsSettingsLoaded(true); }
   };
 
@@ -357,7 +377,40 @@ const loadAllUserData = async (token: string) => {
   };
 
   const uuidv4 = () => "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c => (+c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16));
+  
+  // НОВОЕ: Логика для графика SharkScope-стайл
+  const getCumulativeData = () => {
+    if (sessionsHistory.length === 0) return { points: '', min: 0, max: 0, zeroY: 50, current: 0 };
 
+    // Считаем профит накопительно (в хронологическом порядке)
+    const reversed = [...sessionsHistory].reverse();
+    let current = 0;
+    const data = reversed.map(s => {
+      current += s.profit;
+      return current;
+    });
+    
+    // Добавляем стартовую точку 0 для начала графика
+    const plotData = [0, ...data];
+    
+    // Вычисляем масштабы
+    const max = Math.max(0, ...plotData);
+    const min = Math.min(0, ...plotData);
+    const range = (max - min) || 1;
+
+    // Маппинг точек в координаты SVG (viewBox 0 0 100 100)
+    const points = plotData.map((val, i) => {
+      const x = (i / (plotData.length - 1)) * 100;
+      const y = 100 - ((val - min) / range) * 100;
+      return `${x},${y}`;
+    }).join(' ');
+
+    const zeroY = 100 - ((0 - min) / range) * 100;
+
+    return { points, min, max, zeroY, current, pointsLen: plotData.length };
+  };
+
+  const chartData = getCumulativeData();
   const totalBuyin = grid.reduce((sum, t) => sum + parseNum(t.buyin), 0);
   const totalEV = grid.reduce((sum, t) => sum + parseNum(t.ev_mtt), 0);
   const maxProfitAbs = Math.max(...sessionsHistory.map(s => Math.abs(s.profit)), 10);
@@ -714,6 +767,42 @@ const loadAllUserData = async (token: string) => {
       {/* 📈 Контент: ДНЕВНИК */}
       {activeTab === 'diary' && (
         <div className="p-4">
+          {/* БАЛАНСЫ РУМОВ (БАНКРОЛЛ) */}
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 mb-6 shadow-[0_0_20px_rgba(0,0,0,0.3)]">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-slate-400 font-bold uppercase text-[10px] tracking-wider flex items-center gap-1.5">
+                <Wallet size={14} className="text-emerald-500" /> Мой Банкролл
+              </h2>
+              <div className="text-emerald-400 font-black text-xl drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]">
+                ${totalBankroll.toFixed(2)}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2">
+              {/* Показываем инпуты только для выбранных в фильтре румов, чтобы не захламлять экран */}
+              {selectedRooms.map(roomId => {
+                const roomName = ROOMS[roomId];
+                return (
+                  <div key={roomId} className="bg-slate-950 border border-slate-800 rounded-xl p-2 flex items-center justify-between gap-2 transition-all focus-within:border-cyan-500/50">
+                    <div className="scale-90 origin-left">
+                      <RoomBadge roomName={roomName} getRoomStyle={getRoomStyle} />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-slate-500 text-xs font-black">$</span>
+                      <input
+                        type="number"
+                        value={balances[roomName] || ''}
+                        onChange={(e) => updateBalance(roomName, e.target.value)}
+                        placeholder="0"
+                        className="w-14 bg-transparent text-right text-white font-bold text-sm focus:outline-none placeholder-slate-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 mb-6 shadow-[0_0_20px_rgba(0,0,0,0.3)]">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">График профита сессий</h2>
