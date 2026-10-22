@@ -17,7 +17,6 @@ const ROOMS: Record<string, string> = {
   '250': 'PS(ES)', '251': 'Winamax', '252': 'WPN', '261': 'Pokerdom', '262': 'RPTBet', '263': 'CoinPoker'
 };
 
-// === ЛОГОТИПЫ РУМОВ (Google Favicon API - работает всегда) ===
 const ROOM_DOMAINS: Record<string, string> = {
   'GGNetwork': 'ggpoker.com',
   'PokerStars': 'pokerstars.com',
@@ -70,15 +69,17 @@ export default function App() {
   const [grid, setGrid] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // НОВОЕ: Состояние для фильтров форматов
+  // Стейты настроек интерфейса (синхронизируются)
   const [activeFormats, setActiveFormats] = useState({ isPko: true, isFreezeout: true, isTurbo: true });
+  const [isCompact, setIsCompact] = useState(false);
+  const [sortOrder, setSortOrder] = useState<'time' | 'buyin' | 'ev' | 'tier'>('time');
+  const [selectedRooms, setSelectedRooms] = useState<string[]>(Object.keys(ROOMS));
 
   const toggleFormat = (key: 'isPko' | 'isFreezeout' | 'isTurbo') => {
     setActiveFormats(prev => ({ ...prev, [key]: !prev[key] }));
     try { WebApp.HapticFeedback.impactOccurred('light'); } catch(e){}
   };
 
-  // НОВОЕ: Умный таймер (начнется через / поздняя рега)
   const getSmartTimer = (timeStr: string) => {
     if (!timeStr) return null;
     const [hours, mins] = timeStr.split(':').map(Number);
@@ -88,7 +89,6 @@ export default function App() {
 
     let diffMins = Math.round((target.getTime() - now.getTime()) / 60000);
     
-    // Корректировка перехода через полночь
     if (diffMins < -12 * 60) diffMins += 24 * 60; 
     if (diffMins > 12 * 60) diffMins -= 24 * 60;
 
@@ -100,31 +100,23 @@ export default function App() {
     return null;
   };
 
-  // НОВОЕ: Стейт компактного вида
-  const [isCompact, setIsCompact] = useState(false);
-
-  // НОВОЕ: Функция массового добавления
   const bulkAdd = (type: 'top' | 'overlay') => {
     let toAdd: Tournament[] = [];
     if (type === 'top') {
-      toAdd = searchResults.filter(t => getTier(t).id <= 1); // Берем только S (0) и A (1) тиры
+      toAdd = searchResults.filter(t => getTier(t).id <= 1); 
     } else if (type === 'overlay') {
-      toAdd = searchResults.filter(t => isOverlay(t)); // Берем только оверлеи
+      toAdd = searchResults.filter(t => isOverlay(t)); 
     }
 
-    // Отфильтровываем те, что уже есть в сетке, чтобы не было дублей
     const newItems = toAdd.filter(t => !grid.some(g => g.id === t.id));
-    
     if (newItems.length > 0) {
       setGrid([...grid, ...newItems]);
       try { WebApp.HapticFeedback.notificationOccurred('success'); } catch(e){}
     }
   };
 
-  // НОВОЕ: Стейт для балансов румов
+  // Стейт банкролла
   const [balances, setBalances] = useState<Record<string, number>>({});
-  
-  // Подсчет общего банкролла
   const totalBankroll = Object.values(balances).reduce((sum, val) => sum + (val || 0), 0);
 
   const updateBalance = (roomName: string, value: string) => {
@@ -132,21 +124,16 @@ export default function App() {
     const newBalances = { ...balances, [roomName]: isNaN(num) ? 0 : num };
     setBalances(newBalances);
     
-    // Отправляем на бэкенд (нужно будет добавить этот эндпоинт в FastAPI, 
-    // либо пока закомментируй apiCall и используй localStorage)
     if (sessionToken) {
       apiCall('save_balances', { session_token: sessionToken, balances: newBalances });
     }
   };
 
-  // Модалка фильтров закомментирована/убрана, но стейт сохранен для совместимости
   const [dateFrom, setDateFrom] = useState(''); 
   const [dateTo, setDateTo] = useState('');
-  const [selectedRooms, setSelectedRooms] = useState<string[]>(Object.keys(ROOMS));
   const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
   const [activeStats, setActiveStats] = useState<Tournament | null>(null);
 
-  const [sortOrder, setSortOrder] = useState<'time' | 'buyin' | 'ev' | 'tier'>('time');
   const [showPresetsModal, setShowPresetsModal] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
   const [presets, setPresets] = useState<{name: string, items: Tournament[]}[]>([]);
@@ -156,7 +143,6 @@ export default function App() {
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [sessionCashes, setSessionCashes] = useState('');
 
-  // Функция для быстрых кнопок дат (с 12:00 дня до 05:00 утра следующего дня)
   const setPresetDate = (type: 'today' | 'tomorrow' | 'clear') => {
     if (type === 'clear') { setDateFrom(''); setDateTo(''); return; }
     
@@ -180,16 +166,17 @@ export default function App() {
     return res.json();
   };
 
-const loadAllUserData = async (token: string) => {
+  const loadAllUserData = async (token: string) => {
     try {
       const [presRes, setRes, notRes, histRes, gridRes, balRes] = await Promise.all([
         apiCall('get_presets', { session_token: token }),
         apiCall('get_settings', { session_token: token }),
         apiCall('get_notes', { session_token: token }),
         apiCall('get_sessions_history', { session_token: token }),
-        apiCall('get_grid', { session_token: token }), // <-- Добавлена запятая
+        apiCall('get_grid', { session_token: token }),
         apiCall('get_balances', { session_token: token })
       ]);
+      
       if (presRes.status === 'success') setPresets(presRes.presets);
       if (setRes.status === 'success') {
         if (setRes.selected_rooms) setSelectedRooms(setRes.selected_rooms);
@@ -204,6 +191,7 @@ const loadAllUserData = async (token: string) => {
     } catch (e) { console.error(e); } finally { setIsSettingsLoaded(true); }
   };
 
+  // Синхронизация настроек UI на бэкенд
   useEffect(() => {
     if (isSettingsLoaded && sessionToken) {
       apiCall('save_settings', { 
@@ -216,7 +204,7 @@ const loadAllUserData = async (token: string) => {
     }
   }, [selectedRooms, activeFormats, isCompact, sortOrder, isSettingsLoaded, sessionToken]);
 
-  // Автосохранение сетки на бэкенд при изменениях
+  // Автосохранение сетки на бэкенд
   useEffect(() => {
     if (isSettingsLoaded && sessionToken) {
       apiCall('save_grid', { session_token: sessionToken, grid: grid });
@@ -389,11 +377,10 @@ const loadAllUserData = async (token: string) => {
 
   const uuidv4 = () => "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c => (+c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16));
   
-  // НОВОЕ: Логика для графика SharkScope-стайл
+  // Логика для графика SharkScope-стайл
   const getCumulativeData = () => {
     if (sessionsHistory.length === 0) return { points: '', min: 0, max: 0, zeroY: 50, current: 0 };
 
-    // Считаем профит накопительно (в хронологическом порядке)
     const reversed = [...sessionsHistory].reverse();
     let current = 0;
     const data = reversed.map(s => {
@@ -401,15 +388,11 @@ const loadAllUserData = async (token: string) => {
       return current;
     });
     
-    // Добавляем стартовую точку 0 для начала графика
     const plotData = [0, ...data];
-    
-    // Вычисляем масштабы
     const max = Math.max(0, ...plotData);
     const min = Math.min(0, ...plotData);
     const range = (max - min) || 1;
 
-    // Маппинг точек в координаты SVG (viewBox 0 0 100 100)
     const points = plotData.map((val, i) => {
       const x = (i / (plotData.length - 1)) * 100;
       const y = 100 - ((val - min) / range) * 100;
@@ -424,7 +407,6 @@ const loadAllUserData = async (token: string) => {
   const chartData = getCumulativeData();
   const totalBuyin = grid.reduce((sum, t) => sum + parseNum(t.buyin), 0);
   const totalEV = grid.reduce((sum, t) => sum + parseNum(t.ev_mtt), 0);
-  const maxProfitAbs = Math.max(...sessionsHistory.map(s => Math.abs(s.profit)), 10);
 
   if (authStep === 'login' || authStep === 'mfa') {
     return (
@@ -485,11 +467,7 @@ const loadAllUserData = async (token: string) => {
       {/* 🔍 Контент: Поиск */}
       {activeTab === 'search' && (
         <div className="p-4 space-y-4">
-          
-{/* 🎛️ Прямая панель фильтров на главном экране */}
           <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3 space-y-3">
-            
-            {/* Блок дат + Быстрые кнопки */}
             <div>
               <div className="flex justify-between items-center mb-2">
                 <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Период турниров</span>
@@ -510,7 +488,6 @@ const loadAllUserData = async (token: string) => {
               </div>
             </div>
 
-            {/* Быстрый выбор румов + кнопка Все/Сброс (остается как было) */}
             <div className="overflow-x-auto no-scrollbar flex gap-1.5 pt-1 items-center">
               <button 
                 onClick={() => setSelectedRooms(selectedRooms.length === Object.keys(ROOMS).length ? [] : Object.keys(ROOMS))} 
@@ -534,7 +511,6 @@ const loadAllUserData = async (token: string) => {
             </div>
           </div>
 
-          {/* НОВОЕ: Быстрые форматы */}
           <div className="flex gap-2 pt-2 border-t border-slate-800/80">
             <button onClick={() => toggleFormat('isPko')} className={`flex-1 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${activeFormats.isPko ? 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/30 shadow-[0_0_8px_rgba(217,70,239,0.2)]' : 'bg-slate-950/60 text-slate-600 border-slate-800 hover:border-slate-700'}`}>🎯 PKO</button>
             <button onClick={() => toggleFormat('isTurbo')} className={`flex-1 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${activeFormats.isTurbo ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.2)]' : 'bg-slate-950/60 text-slate-600 border-slate-800 hover:border-slate-700'}`}>⚡ Turbo</button>
@@ -550,7 +526,6 @@ const loadAllUserData = async (token: string) => {
             </button>
           </div>
 
-          {/* УПРАВЛЕНИЕ СПИСКОМ И СЧЕТЧИК */}
           {!loading && searchResults.length > 0 && (
             <div className="flex flex-col gap-2.5 px-1 pt-2 pb-1">
               <div className="flex justify-between items-center">
@@ -620,9 +595,8 @@ const loadAllUserData = async (token: string) => {
               const cardBorder = note?.tag === 'must' ? 'border-l-4 border-l-emerald-500' : `border-l-[3px] ${prioStyles.border}`;
               const cardGlow = note?.tag === 'must' ? 'shadow-[0_0_20px_rgba(16,185,129,0.1)]' : prioStyles.glow;
   
-              // НОВОЕ: Рендер компактного вида
               if (isCompact) {
-                if (note?.tag === 'skip') return null; // В компактном виде полностью скрываем мусор для чистоты экрана
+                if (note?.tag === 'skip') return null; 
                 
                 return (
                   <div key={t.id} className={`bg-slate-900 rounded-xl p-3 border border-slate-800 transition-all flex items-center justify-between gap-3 border-l-[3px] ${prioStyles.border}`}>
@@ -646,7 +620,6 @@ const loadAllUserData = async (token: string) => {
                   </div>
                 );
               }
-              // Стандартный return большой карточки идет дальше...
               
               return (
                 <div key={t.id} className={`bg-slate-900 rounded-2xl p-4 border border-slate-800 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)] ${cardBorder} ${cardGlow}`}>
@@ -790,7 +763,6 @@ const loadAllUserData = async (token: string) => {
             </div>
             
             <div className="grid grid-cols-2 gap-2">
-              {/* Показываем инпуты только для выбранных в фильтре румов, чтобы не захламлять экран */}
               {selectedRooms.map(roomId => {
                 const roomName = ROOMS[roomId];
                 return (
@@ -814,42 +786,40 @@ const loadAllUserData = async (token: string) => {
             </div>
           </div>
           
+          {/* НОВЫЙ ГРАФИК SHARKSCOPE */}
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 mb-6 shadow-[0_0_20px_rgba(0,0,0,0.3)]">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">График профита сессий</h2>
+              <h2 className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">График профита (SharkScope)</h2>
               <button onClick={clearHistory} className="bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 p-2 rounded-xl transition-all active:scale-90">
                 <Trash2 size={14} />
               </button>
             </div>
             
-            <div className="flex items-center gap-1 h-32 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/80 relative">
-              <div className="absolute top-1/2 left-0 w-full h-[1px] bg-slate-700/50 z-0"></div>
+            <div className="relative h-32 w-full bg-slate-950/50 rounded-xl border border-slate-800/80 overflow-hidden">
               {sessionsHistory.length === 0 ? (
-                <div className="w-full text-center text-[10px] text-slate-500 font-bold z-10">Нет сыгранных сессий</div>
+                <div className="absolute inset-0 flex items-center justify-center text-[10px] text-slate-500 font-bold">Нет сыгранных сессий</div>
               ) : (
-                sessionsHistory.slice().reverse().map(h => {
-                  const heightPct = (Math.abs(h.profit) / maxProfitAbs) * 45;
-                  return (
-                    <div key={h.id} className="flex-1 flex flex-col items-center justify-center h-full z-10 group relative">
-                      <div className="absolute -top-6 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-20 shadow-xl transition-opacity">
-                        ${h.profit.toFixed(2)}
-                      </div>
-                      <div className="w-full h-1/2 flex flex-col justify-end">
-                        {h.profit >= 0 && <div className="w-full bg-emerald-500/80 rounded-t-[2px] transition-all group-hover:bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.3)]" style={{height: `${heightPct}%`}}></div>}
-                      </div>
-                      <div className="w-full h-1/2 flex flex-col justify-start">
-                        {h.profit < 0 && <div className="w-full bg-rose-500/80 rounded-b-[2px] transition-all group-hover:bg-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.3)]" style={{height: `${heightPct}%`}}></div>}
-                      </div>
-                    </div>
-                  )
-                })
+                <svg className="absolute inset-0 w-full h-full drop-shadow-xl" viewBox="-2 -2 104 104" preserveAspectRatio="none">
+                  <line x1="0" y1={chartData.zeroY} x2="100" y2={chartData.zeroY} stroke="#334155" strokeWidth="0.5" strokeDasharray="2 2" />
+                  <defs>
+                    <linearGradient id="profitGrad" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stopColor={chartData.current >= 0 ? '#10b981' : '#f43f5e'} stopOpacity="0.3" />
+                      <stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <polygon points={`0,100 ${chartData.points} 100,100`} fill="url(#profitGrad)" />
+                  <polyline points={chartData.points} fill="none" stroke={chartData.current >= 0 ? '#34d399' : '#fb7185'} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+                  {chartData.pointsLen > 1 && (
+                    <circle cx="100" cy={chartData.points.split(' ').pop()?.split(',')[1]} r="1.5" fill={chartData.current >= 0 ? '#10b981' : '#f43f5e'} className="animate-pulse" />
+                  )}
+                </svg>
               )}
             </div>
 
             <div className="mt-4 pt-4 border-t border-slate-800/50 flex justify-between items-end">
               <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Итог (App)</span>
-              <div className={`text-2xl font-black ${sessionsHistory.reduce((s, h) => s + h.profit, 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                ${sessionsHistory.reduce((s, h) => s + h.profit, 0).toFixed(2)}
+              <div className={`text-2xl font-black ${chartData.current >= 0 ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]' : 'text-rose-400 drop-shadow-[0_0_8px_rgba(244,63,94,0.3)]'}`}>
+                ${chartData.current.toFixed(2)}
               </div>
             </div>
           </div>
