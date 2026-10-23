@@ -108,8 +108,14 @@ export default function App() {
 
   const bulkAdd = (type: 'top' | 'overlay') => {
     let toAdd: Tournament[] = [];
+    
     if (type === 'top') {
-      toAdd = searchResults.filter(t => getTier(t).id <= 1); 
+      // Добавляет все турниры, у которых ROI >= 15% (те самые "зеленые")
+      toAdd = searchResults.filter(t => {
+        const ev = parseNum(t.ev_mtt);
+        const buyin = parseNum(t.buyin);
+        return buyin > 0 && (ev / buyin) >= 0.15; 
+      }); 
     } else if (type === 'overlay') {
       toAdd = searchResults.filter(t => isOverlay(t)); 
     }
@@ -590,7 +596,7 @@ export default function App() {
               
               <div className="flex gap-2">
                 <button onClick={() => bulkAdd('top')} className="flex-1 py-2 text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/20 active:scale-95 transition-all shadow-[0_0_10px_rgba(16,185,129,0.1)]">
-                  + Все S и A тир
+                  + Все зеленые
                 </button>
                 <button onClick={() => bulkAdd('overlay')} className="flex-1 py-2 text-[10px] font-black uppercase tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/30 rounded-xl hover:bg-orange-500/20 active:scale-95 transition-all shadow-[0_0_10px_rgba(249,115,22,0.1)]">
                   + Все Оверлеи
@@ -657,7 +663,6 @@ export default function App() {
                       <div className="flex items-center gap-1.5 mb-1.5">
                         <span className="text-[11px] text-cyan-400 font-mono font-black">{t.time_start}</span>
                         {overlay && <Flame size={12} className="text-orange-500 animate-pulse"/>}
-                        <span className={`text-[8px] px-1.5 py-0.5 rounded border font-bold uppercase ${tier.color}`}>{tier.label}</span>
                         {getSmartTimer(t.time_start)}
                       </div>
                       <div className="font-bold text-sm text-white truncate mb-1">{t.name}</div>
@@ -687,7 +692,6 @@ export default function App() {
                     </div>
                     <div className="flex gap-2 items-center">
                       {overlay && <span className="bg-orange-500/20 text-orange-400 text-[9px] px-2 py-1 rounded-lg border border-orange-500/30 font-black uppercase flex items-center gap-1 shadow-[0_0_8px_rgba(249,115,22,0.2)]"><Flame size={10} className="animate-pulse text-orange-500"/> Overlay</span>}
-                      <span className={`text-[10px] px-2.5 py-1 rounded-lg font-black border uppercase tracking-wider ${tier.color}`}>{tier.label}</span>
                     </div>
                   </div>
 
