@@ -32,6 +32,13 @@ const ROOM_DOMAINS: Record<string, string> = {
   'RPTBet': 'rptbet.com'
 };
 
+const getRoomCurrency = (roomName: string) => {
+  const name = (roomName || '').toLowerCase();
+  if (name.includes('pokerdom') || name.includes('rpt')) return '₽';
+  if (name.includes('winamax') || name.includes('ipoker') || name.includes('ps(es)') || name.includes('pokerstars.es')) return '€';
+  return '$';
+};
+
 const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle: (n: string) => string }) => {
   const domainKey = Object.keys(ROOM_DOMAINS).find(k => k.toLowerCase() === (roomName || '').toLowerCase());
   const domain = domainKey ? ROOM_DOMAINS[domainKey] : null;
@@ -55,14 +62,6 @@ const API_BASE_URL = 'https://selector-backend-production.up.railway.app';
 
 const parseNum = (str: string) => parseFloat(str?.replace(/[^\d.-]/g, '')) || 0;
 
-// Определяем символ валюты для каждого рума
-  const getRoomCurrency = (roomName: string) => {
-    const name = (roomName || '').toLowerCase();
-    if (name.includes('pokerdom') || name.includes('rpt')) return '₽';
-    if (name.includes('winamax') || name.includes('ipoker') || name.includes('ps(es)') || name.includes('pokerstars.es')) return '€';
-    return '$';
-  };
-
 export default function App() {
   const [authStep, setAuthStep] = useState<'login' | 'mfa' | 'app'>('login');
   const [sessionToken, setSessionToken] = useState<string | null>(localStorage.getItem('mvp_token'));
@@ -77,7 +76,6 @@ export default function App() {
   const [grid, setGrid] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Стейты настроек интерфейса (синхронизируются)
   const [activeFormats, setActiveFormats] = useState({ isPko: true, isFreezeout: true, isTurbo: true });
   const [isCompact, setIsCompact] = useState(false);
   const [sortOrder, setSortOrder] = useState<'time' | 'buyin' | 'ev' | 'tier'>('time');
@@ -123,7 +121,6 @@ export default function App() {
     }
   };
 
-  // Стейт банкролла
   const [balances, setBalances] = useState<Record<string, number>>({});
   const totalBankroll = Object.values(balances).reduce((sum, val) => sum + (val || 0), 0);
 
@@ -144,7 +141,7 @@ export default function App() {
 
   const [showPresetsModal, setShowPresetsModal] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
-  const [presets, setPresets] = useState<{name: string, items: Tournament[]}[]>([]);
+  const [presets, setPresets] = useState<{name: string, items: any[]}[]>([]);
   
   const [notes, setNotes] = useState<Record<string, NoteData>>({});
   const [sessionsHistory, setSessionsHistory] = useState<SessionData[]>([]);
@@ -199,7 +196,6 @@ export default function App() {
     } catch (e) { console.error(e); } finally { setIsSettingsLoaded(true); }
   };
 
-  // Синхронизация настроек UI на бэкенд
   useEffect(() => {
     if (isSettingsLoaded && sessionToken) {
       apiCall('save_settings', { 
@@ -212,7 +208,6 @@ export default function App() {
     }
   }, [selectedRooms, activeFormats, isCompact, sortOrder, isSettingsLoaded, sessionToken]);
 
-  // Автосохранение сетки на бэкенд
   useEffect(() => {
     if (isSettingsLoaded && sessionToken) {
       apiCall('save_grid', { session_token: sessionToken, grid: grid });
@@ -353,7 +348,6 @@ export default function App() {
     setNotes(newNotes); apiCall('save_notes', { session_token: sessionToken, notes: newNotes });
   };
 
-// Вспомогательная функция: достает только время (часы:минуты) из полной даты
   const extractTime = (dateStr: string) => {
     return dateStr && dateStr.includes('T') ? dateStr.split('T')[1] : '';
   };
@@ -361,9 +355,8 @@ export default function App() {
   const savePreset = () => {
     if (!newPresetName.trim() || !sessionToken) return;
 
-    // Сохраняем в шаблон текущие настройки поиска (время, румы, форматы)
     const filterData = {
-      isFilterPreset: true, // Флаг умного шаблона
+      isFilterPreset: true,
       timeFrom: extractTime(dateFrom),
       timeTo: extractTime(dateTo),
       rooms: selectedRooms,
@@ -377,10 +370,10 @@ export default function App() {
     try { WebApp.HapticFeedback.notificationOccurred('success'); } catch(e){}
   };
   
-    const loadPreset = (presetItems: any[]) => {
+  const loadPreset = (presetItems: any[]) => {
+    if (!presetItems || presetItems.length === 0) return;
     const data = presetItems[0];
 
-    // Если это наш новый шаблон с фильтрами
     if (data && data.isFilterPreset) {
       const now = new Date();
       
@@ -391,7 +384,6 @@ export default function App() {
 
       const todayStr = getLocalYYYYMMDD(now);
       
-      // Если время 'До' меньше времени 'От' (например, до 02:00 ночи), это уже следующий день
       let tomorrowStr = todayStr;
       if (data.timeFrom && data.timeTo && data.timeTo < data.timeFrom) {
           const tomorrow = new Date(now);
@@ -399,19 +391,16 @@ export default function App() {
           tomorrowStr = getLocalYYYYMMDD(tomorrow);
       }
 
-      // Подставляем сегодняшнюю дату к сохраненным часам
       if (data.timeFrom) setDateFrom(`${todayStr}T${data.timeFrom}`);
       if (data.timeTo) setDateTo(`${tomorrowStr}T${data.timeTo}`);
       
-      // Восстанавливаем румы и форматы
       if (data.rooms) setSelectedRooms(data.rooms);
       if (data.formats) setActiveFormats(data.formats);
 
       setShowPresetsModal(false);
-      setActiveTab('search'); // Перекидываем на вкладку поиска
+      setActiveTab('search'); 
       try { WebApp.HapticFeedback.notificationOccurred('success'); } catch(e){}
     } else {
-      // Поддержка старых шаблонов (если они у тебя уже были)
       setGrid(presetItems);
       setShowPresetsModal(false);
     }
@@ -441,9 +430,8 @@ export default function App() {
 
   const uuidv4 = () => "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c => (+c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16));
   
-  // Логика для графика SharkScope-стайл
   const getCumulativeData = () => {
-    if (sessionsHistory.length === 0) return { points: '', min: 0, max: 0, zeroY: 50, current: 0 };
+    if (sessionsHistory.length === 0) return { points: '', min: 0, max: 0, zeroY: 50, current: 0, pointsLen: 0 };
 
     const reversed = [...sessionsHistory].reverse();
     let current = 0;
@@ -536,7 +524,6 @@ export default function App() {
               <div className="flex justify-between items-center mb-2">
                 <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Период турниров</span>
                 <div className="flex gap-1.5">
-                  <div className="flex gap-1.5">
                   <button onClick={() => setPresetDate('today')} className="px-2 py-1 text-[9px] font-bold uppercase bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 active:scale-95 transition-all">Сегодня</button>
                   <button onClick={() => setPresetDate('tomorrow')} className="px-2 py-1 text-[9px] font-bold uppercase bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 active:scale-95 transition-all">Завтра</button>
                   <button onClick={() => setPresetDate('clear')} className="px-2 py-1 text-[9px] font-bold uppercase bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg hover:bg-rose-500/20 active:scale-95 transition-all"><X size={10}/></button>
@@ -675,8 +662,8 @@ export default function App() {
                       </div>
                       <div className="font-bold text-sm text-white truncate mb-1">{t.name}</div>
                       <div className="flex items-center gap-2">
-                        <span className="font-black text-emerald-400 text-xs">${t.buyin}</span>
-                        <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">{t.room} • {t.afs} тел</span>
+                        <span className="font-black text-emerald-400 text-xs">{getRoomCurrency(t.room)}{t.buyin}</span>
+                        <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider ml-1">{t.room} • {t.afs} тел</span>
                       </div>
                     </div>
                     
@@ -711,7 +698,8 @@ export default function App() {
 
                   <div className="grid grid-cols-3 gap-2 text-xs mb-5">
                     <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/50 flex flex-col items-center">
-                      <span className="text-slate-500 text-[9px] uppercase tracking-wider mb-1 font-bold">Бай-ин</span><span className="font-black text-emerald-400 text-sm">{getRoomCurrency(t.room)}{t.buyin}</span>
+                      <span className="text-slate-500 text-[9px] uppercase tracking-wider mb-1 font-bold">Бай-ин</span>
+                      <span className="font-black text-emerald-400 text-sm">{getRoomCurrency(t.room)}{t.buyin}</span>
                     </div>
                     <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/50 flex flex-col items-center">
                       <span className="text-slate-500 text-[9px] uppercase tracking-wider mb-1 font-bold">ROI / EV</span><span className="font-black text-blue-400 text-sm">{t.roi_str}</span>
@@ -770,9 +758,6 @@ export default function App() {
               <button onClick={() => setSortOrder(prev => prev === 'time' ? 'buyin' : prev === 'buyin' ? 'ev' : 'time')} className="flex-1 bg-slate-900 border border-slate-800 rounded-xl py-2.5 flex items-center justify-center gap-1.5 text-[10px] uppercase font-black tracking-wider text-blue-400 hover:bg-blue-500/10 transition active:scale-95">
                 <ArrowUpDown size={14} /> {sortOrder === 'time' ? 'Время' : sortOrder === 'buyin' ? 'Бай-ин' : 'EV'}
               </button>
-              <button onClick={() => setShowPresetsModal(true)} className="flex-1 bg-slate-900 border border-slate-800 rounded-xl py-2.5 flex items-center justify-center text-slate-400 hover:text-white transition active:scale-95">
-                <Save size={16} />
-              </button>
               <button onClick={clearGrid} className="flex-1 bg-rose-500/10 border border-rose-500/20 rounded-xl py-2.5 flex items-center justify-center text-rose-400 hover:bg-rose-500/20 transition active:scale-95">
                 <Trash2 size={16} />
               </button>
@@ -785,7 +770,6 @@ export default function App() {
               <h3 className="text-slate-200 font-bold text-lg">Сетка пуста</h3>
               <div className="flex flex-col gap-3 max-w-[200px] mx-auto mt-6">
                 <button onClick={() => setActiveTab('search')} className="inline-flex items-center justify-center gap-2 bg-cyan-950/30 border-2 border-cyan-500/50 hover:bg-cyan-900/40 text-cyan-400 font-bold text-sm py-3 rounded-xl transition-all shadow-[0_0_15px_rgba(34,211,238,0.2)] active:scale-95"><Search size={16} /> Искать турниры</button>
-                <button onClick={() => setShowPresetsModal(true)} className="inline-flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-sm py-3 rounded-xl transition-all active:scale-95"><Save size={16} /> Шаблоны</button>
               </div>
             </div>
           ) : (
@@ -804,7 +788,7 @@ export default function App() {
                       <div className="ml-1 scale-90 origin-left"><RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} /></div>                    
                     </div>
                     <div className="font-bold text-sm text-slate-100 mt-1.5 leading-snug">{t.name}</div>
-                    <div className="text-sm font-black text-emerald-400 mt-1">${t.buyin} <span className="text-xs text-blue-400 font-normal ml-2">EV: {t.ev_mtt}</span></div>
+                    <div className="text-sm font-black text-emerald-400 mt-1">{getRoomCurrency(t.room)}{t.buyin} <span className="text-xs text-blue-400 font-normal ml-2">EV: {t.ev_mtt}</span></div>
                   </div>
                   <button onClick={() => toggleGrid(t)} className="p-3.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 rounded-xl border border-rose-500/20 transition active:scale-90"><Trash2 size={20} /></button>
                 </div>
@@ -817,7 +801,6 @@ export default function App() {
       {/* 📈 Контент: ДНЕВНИК */}
       {activeTab === 'diary' && (
         <div className="p-4">
-          {/* БАЛАНСЫ РУМОВ (БАНКРОЛЛ) */}
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 mb-6 shadow-[0_0_20px_rgba(0,0,0,0.3)]">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-slate-400 font-bold uppercase text-[10px] tracking-wider flex items-center gap-1.5">
@@ -839,11 +822,11 @@ export default function App() {
                     <div className="flex items-center gap-1">
                       <span className="text-slate-500 text-xs font-black">{getRoomCurrency(roomName)}</span>
                       <input
-                      type="number"
-                      value={balances[roomName] || ''}
-                      onChange={(e) => updateBalance(roomName, e.target.value)}
-                      placeholder="0"
-                      className="w-14 bg-transparent text-right text-white font-bold text-sm focus:outline-none placeholder-slate-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        type="number"
+                        value={balances[roomName] || ''}
+                        onChange={(e) => updateBalance(roomName, e.target.value)}
+                        placeholder="0"
+                        className="w-14 bg-transparent text-right text-white font-bold text-sm focus:outline-none placeholder-slate-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
                   </div>
@@ -852,10 +835,9 @@ export default function App() {
             </div>
           </div>
           
-          {/* НОВЫЙ ГРАФИК SHARKSCOPE */}
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 mb-6 shadow-[0_0_20px_rgba(0,0,0,0.3)]">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">График профита</h2>
+              <h2 className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">График профита (SharkScope)</h2>
               <button onClick={clearHistory} className="bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 p-2 rounded-xl transition-all active:scale-90">
                 <Trash2 size={14} />
               </button>
@@ -932,7 +914,7 @@ export default function App() {
               <div className="inline-block mt-1"><RoomBadge roomName={activeStats.room} getRoomStyle={getRoomStyle} /></div>            
               <div className="grid grid-cols-2 gap-2 mt-5 mb-5">
                 <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col"><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">GTD</span><div className="font-black text-white text-lg">${activeStats.gtd}</div></div>
-                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col"><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Бай-ин</span><div className="font-black text-emerald-400 text-lg">${activeStats.buyin}</div></div>
+                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col"><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Бай-ин</span><div className="font-black text-emerald-400 text-lg">{getRoomCurrency(activeStats.room)}{activeStats.buyin}</div></div>
                 <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col"><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">AFS</span><div className="font-black text-purple-400 text-lg">{activeStats.afs}</div></div>
                 <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col"><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">ROI</span><div className="font-black text-blue-400 text-lg">{activeStats.roi_str}</div></div>
               </div>
@@ -998,7 +980,8 @@ export default function App() {
               ) : 
                 presets.map((p, idx) => (
                   <div key={idx} className="flex justify-between items-center bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl p-3.5 transition-all">
-                      <div><div className="font-bold text-white text-sm">{p.name}</div><div className="text-[10px] font-bold text-cyan-500 uppercase tracking-wide mt-0.5">Авто-фильтр</div></div>                    <div className="flex gap-2">
+                    <div><div className="font-bold text-white text-sm">{p.name}</div><div className="text-[10px] font-bold text-cyan-500 uppercase tracking-wide mt-0.5">Авто-фильтр</div></div>
+                    <div className="flex gap-2">
                       <button onClick={() => loadPreset(p.items)} className="p-2.5 bg-cyan-500/10 text-cyan-400 rounded-lg border border-cyan-500/20 hover:bg-cyan-500/20 transition active:scale-90"><Check size={18} strokeWidth={2.5} /></button>
                       <button onClick={() => deletePreset(idx)} className="p-2.5 bg-rose-500/10 text-rose-400 rounded-lg border border-rose-500/20 hover:bg-rose-500/20 transition active:scale-90"><Trash2 size={18} /></button>
                     </div>
