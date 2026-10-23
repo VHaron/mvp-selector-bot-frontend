@@ -647,7 +647,6 @@ export default function App() {
               );
 
               const isAdded = grid.some(item => item.id === t.id);
-              const tier = getTier(t);
               const overlay = isOverlay(t);
               const prioStyles = getPriorityStyles(t.priority);
               
