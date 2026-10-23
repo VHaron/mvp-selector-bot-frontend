@@ -353,39 +353,70 @@ export default function App() {
     setNotes(newNotes); apiCall('save_notes', { session_token: sessionToken, notes: newNotes });
   };
 
-  const savePreset = () => {
-    if (!newPresetName.trim() || grid.length === 0 || !sessionToken) return;
-    const newPresets = [...presets, { name: newPresetName, items: grid }];
-    setPresets(newPresets); apiCall('save_presets', { session_token: sessionToken, presets: newPresets });
-    setNewPresetName(''); try { WebApp.HapticFeedback.notificationOccurred('success'); } catch(e){}
+// Вспомогательная функция: достает только время (часы:минуты) из полной даты
+  const extractTime = (dateStr: string) => {
+    return dateStr && dateStr.includes('T') ? dateStr.split('T')[1] : '';
   };
-  
-  const loadPreset = (items: Tournament[]) => { 
-    // Умная загрузка: ищем совпадения в текущем загруженном расписании
-    const matchedTournaments = items.map(presetItem => {
-      // Ищем турнир по совпадению рума, названия и времени старта
-      return tournaments.find(t => 
-        t.room === presetItem.room && 
-        t.name === presetItem.name && 
-        t.time_start === presetItem.time_start
-      );
-    }).filter(Boolean) as Tournament[]; // Отсеиваем те, которых сегодня нет
 
-    if (matchedTournaments.length === 0) {
-      alert('Ни один турнир из шаблона не найден на сегодня. Убедись, что ты нажал "Найти турниры" для нужных дат!');
-      return;
-    }
+  const savePreset = () => {
+    if (!newPresetName.trim() || !sessionToken) return;
 
-    setGrid(matchedTournaments); 
-    setShowPresetsModal(false); 
-    
-    // Опционально: можно вывести уведомление, если часть турниров не нашлась
-    if (matchedTournaments.length < items.length) {
-      console.log(`Загружено ${matchedTournaments.length} из ${items.length} турниров шаблона. Остальные сегодня не идут.`);
-    }
-    
+    // Сохраняем в шаблон текущие настройки поиска (время, румы, форматы)
+    const filterData = {
+      isFilterPreset: true, // Флаг умного шаблона
+      timeFrom: extractTime(dateFrom),
+      timeTo: extractTime(dateTo),
+      rooms: selectedRooms,
+      formats: activeFormats
+    };
+
+    const newPresets = [...presets, { name: newPresetName, items: [filterData as any] }];
+    setPresets(newPresets); 
+    apiCall('save_presets', { session_token: sessionToken, presets: newPresets });
+    setNewPresetName(''); 
     try { WebApp.HapticFeedback.notificationOccurred('success'); } catch(e){}
   };
+  
+    const loadPreset = (presetItems: any[]) => {
+    const data = presetItems[0];
+
+    // Если это наш новый шаблон с фильтрами
+    if (data && data.isFilterPreset) {
+      const now = new Date();
+      
+      const getLocalYYYYMMDD = (d: Date) => {
+        const offset = d.getTimezoneOffset() * 60000;
+        return new Date(d.getTime() - offset).toISOString().split('T')[0];
+      };
+
+      const todayStr = getLocalYYYYMMDD(now);
+      
+      // Если время 'До' меньше времени 'От' (например, до 02:00 ночи), это уже следующий день
+      let tomorrowStr = todayStr;
+      if (data.timeFrom && data.timeTo && data.timeTo < data.timeFrom) {
+          const tomorrow = new Date(now);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          tomorrowStr = getLocalYYYYMMDD(tomorrow);
+      }
+
+      // Подставляем сегодняшнюю дату к сохраненным часам
+      if (data.timeFrom) setDateFrom(`${todayStr}T${data.timeFrom}`);
+      if (data.timeTo) setDateTo(`${tomorrowStr}T${data.timeTo}`);
+      
+      // Восстанавливаем румы и форматы
+      if (data.rooms) setSelectedRooms(data.rooms);
+      if (data.formats) setActiveFormats(data.formats);
+
+      setShowPresetsModal(false);
+      setActiveTab('search'); // Перекидываем на вкладку поиска
+      try { WebApp.HapticFeedback.notificationOccurred('success'); } catch(e){}
+    } else {
+      // Поддержка старых шаблонов (если они у тебя уже были)
+      setGrid(presetItems);
+      setShowPresetsModal(false);
+    }
+  };
+
   const deletePreset = (idx: number) => {
     const newPresets = presets.filter((_, i) => i !== idx);
     setPresets(newPresets); apiCall('save_presets', { session_token: sessionToken, presets: newPresets });
@@ -505,9 +536,11 @@ export default function App() {
               <div className="flex justify-between items-center mb-2">
                 <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Период турниров</span>
                 <div className="flex gap-1.5">
+                  <div className="flex gap-1.5">
                   <button onClick={() => setPresetDate('today')} className="px-2 py-1 text-[9px] font-bold uppercase bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 active:scale-95 transition-all">Сегодня</button>
                   <button onClick={() => setPresetDate('tomorrow')} className="px-2 py-1 text-[9px] font-bold uppercase bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 active:scale-95 transition-all">Завтра</button>
                   <button onClick={() => setPresetDate('clear')} className="px-2 py-1 text-[9px] font-bold uppercase bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg hover:bg-rose-500/20 active:scale-95 transition-all"><X size={10}/></button>
+                  <button onClick={() => setShowPresetsModal(true)} className="px-2 py-1 text-[9px] font-bold uppercase bg-cyan-950/40 text-cyan-400 border border-cyan-500/40 rounded-lg hover:bg-cyan-900/60 active:scale-95 transition-all ml-2 shadow-[0_0_8px_rgba(34,211,238,0.2)]">Шаблоны</button>
                 </div>
               </div>
               
@@ -953,7 +986,7 @@ export default function App() {
             
             <div className="flex gap-2 mb-6">
               <input value={newPresetName} onChange={e => setNewPresetName(e.target.value)} placeholder="Название (Утро, Вс...)" className="flex-1 bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-3.5 text-sm text-white focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all" />
-              <button onClick={savePreset} disabled={!newPresetName.trim() || grid.length === 0} className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 hover:bg-emerald-500/30 font-black px-4 rounded-xl disabled:opacity-30 transition-all active:scale-95"><Save size={20} /></button>
+              <button onClick={savePreset} disabled={!newPresetName.trim()} className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 hover:bg-emerald-500/30 font-black px-4 rounded-xl disabled:opacity-30 transition-all active:scale-95"><Save size={20} /></button>
             </div>
             
             <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-1">
@@ -965,8 +998,7 @@ export default function App() {
               ) : 
                 presets.map((p, idx) => (
                   <div key={idx} className="flex justify-between items-center bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl p-3.5 transition-all">
-                    <div><div className="font-bold text-white text-sm">{p.name}</div><div className="text-[10px] font-bold text-slate-500 uppercase tracking-wide mt-0.5">{p.items.length} турниров</div></div>
-                    <div className="flex gap-2">
+                      <div><div className="font-bold text-white text-sm">{p.name}</div><div className="text-[10px] font-bold text-cyan-500 uppercase tracking-wide mt-0.5">Авто-фильтр</div></div>                    <div className="flex gap-2">
                       <button onClick={() => loadPreset(p.items)} className="p-2.5 bg-cyan-500/10 text-cyan-400 rounded-lg border border-cyan-500/20 hover:bg-cyan-500/20 transition active:scale-90"><Check size={18} strokeWidth={2.5} /></button>
                       <button onClick={() => deletePreset(idx)} className="p-2.5 bg-rose-500/10 text-rose-400 rounded-lg border border-rose-500/20 hover:bg-rose-500/20 transition active:scale-90"><Trash2 size={18} /></button>
                     </div>
