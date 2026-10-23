@@ -110,12 +110,7 @@ export default function App() {
     let toAdd: Tournament[] = [];
     
     if (type === 'top') {
-      // Добавляет все турниры, у которых ROI >= 15% (те самые "зеленые")
-      toAdd = searchResults.filter(t => {
-        const ev = parseNum(t.ev_mtt);
-        const buyin = parseNum(t.buyin);
-        return buyin > 0 && (ev / buyin) >= 0.15; 
-      }); 
+      toAdd = searchResults.filter(t => t.priority === '1'); 
     } else if (type === 'overlay') {
       toAdd = searchResults.filter(t => isOverlay(t)); 
     }
