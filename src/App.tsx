@@ -324,6 +324,39 @@ export default function App() {
     return `${String(Math.floor(maxEndTimeMins / 60) % 24).padStart(2, '0')}:${String(Math.round(maxEndTimeMins % 60)).padStart(2, '0')}`;
   };
 
+  const getPeakTables = (items: Tournament[]) => {
+    if (!items || items.length === 0) return 0;
+    
+    let events: { time: number, type: number }[] = [];
+    
+    items.forEach(t => {
+      if (!t.time_start || !t.duration) return;
+      const [hours, mins] = t.time_start.split(':').map(Number);
+      let startMins = hours * 60 + (mins || 0);
+      
+      // Если турнир начинается после полуночи (до 10 утра), считаем это как следующий день для правильной математики
+      if (hours < 10) startMins += 24 * 60;
+      
+      const durationHours = parseFloat(t.duration.replace(',', '.'));
+      const endMins = startMins + (durationHours * 60);
+      
+      events.push({ time: startMins, type: 1 });  // Открыли стол
+      events.push({ time: endMins, type: -1 });   // Закрыли стол
+    });
+    
+    // Сортируем события по времени. Если время совпадает, сначала закрываем столы, потом открываем новые
+    events.sort((a, b) => a.time === b.time ? a.type - b.type : a.time - b.time);
+    
+    let current = 0;
+    let max = 0;
+    events.forEach(e => {
+      current += e.type;
+      if (current > max) max = current;
+    });
+    
+    return max;
+  };
+
   const sortedGrid = useMemo(() => [...grid].sort((a, b) => {
     if (sortOrder === 'time') return a.time_start.localeCompare(b.time_start);
     if (sortOrder === 'buyin') return parseNum(b.buyin) - parseNum(a.buyin);
@@ -744,6 +777,23 @@ export default function App() {
               <div className="flex justify-between items-center px-1">
                 <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Оценка Дисперсии:</span>
                 <span className={`text-[11px] font-black uppercase tracking-wide px-2 py-0.5 rounded border border-current ${getVariance().color}`}>{getVariance().label}</span>
+              </div>
+              <div className="flex justify-between items-center px-1 mt-2 pt-2 border-t border-slate-800/50">
+                  <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Пик столов (нахлест):</span>
+                  {(() => {
+                    const peak = getPeakTables(grid);
+                    // Настраиваем цвета: > 12 столов = красная тревога, > 8 = желтый, иначе зеленый комфорт
+                    const color = peak > 12 
+                    ? 'text-rose-400 bg-rose-500/10 border-rose-500/30 shadow-[0_0_8px_rgba(244,63,94,0.4)]' 
+                    : peak > 8 
+                    ? 'text-amber-400 bg-amber-500/10 border-amber-500/30' 
+                    : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
+                    return (
+                    <span className={`text-[11px] font-black px-2 py-0.5 rounded border ${color}`}>
+                    {peak} {peak === 1 ? 'стол' : peak > 1 && peak < 5 ? 'стола' : 'столов'}
+                  </span>
+                );
+              })()}
               </div>
             </div>
           )}
