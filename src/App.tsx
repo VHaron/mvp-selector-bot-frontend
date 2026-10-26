@@ -419,7 +419,7 @@ export default function App() {
   
   const displayGrid = useMemo(() => {
     return sortedGrid
-      .map(t => ({ ...t, played: isPlayed(t.time_start) }))
+      .map(t => ({ ...t, played: isPlayed(t.time_start, t.day_week) })) // <--- передаем t.day_week сюда
       .filter(t => (hidePlayed ? !t.played : true))
       .sort((a, b) => {
         if (a.played && !b.played) return 1;
