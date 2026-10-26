@@ -385,10 +385,9 @@ export default function App() {
 
     const now = new Date();
   
-    // Получаем день недели сегодня (0 - ВС, 1 - ПН, 2 - ВТ и т.д.)
+    // Текущий день недели (0 - ВС, 1 - ПН, 2 - ВТ и т.д.)
     const todayDayIndex = now.getDay();
   
-    // Маппинг дней недели из строки бэкенда (например "Вт.", "Ср.")
     const daysMap: Record<string, number> = {
       'вс': 0, 'пн': 1, 'вт': 2, 'ср': 3, 'чт': 4, 'пт': 5, 'сб': 6,
       'воскресенье': 0, 'понедельник': 1, 'вторник': 2, 'среда': 3, 'четверг': 4, 'пятница': 5, 'суббота': 6
@@ -398,15 +397,17 @@ export default function App() {
       const cleanDay = dayWeekStr.toLowerCase().replace('.', '').trim();
       const tourneyDayIndex = daysMap[cleanDay];
     
-    if (tourneyDayIndex !== undefined) {
-      // Если день турнира строго в будущем относительно сегодняшнего дня — он точно НЕ отыгран!
-      if (tourneyDayIndex > todayDayIndex) return false;
-      // Если день турнира был в прошлом на этой неделе — он отыгран
-      if (tourneyDayIndex < todayDayIndex) return true;
+      if (tourneyDayIndex !== undefined) {
+        // Жесткое правило: если турнир в другой день недели
+        if (tourneyDayIndex !== todayDayIndex) {
+        // Если день турнира "меньше" сегодняшнего (например, сегодня Ср, а турнир Пн) — он в прошлом (отыгран)
+        // Если день турнира "больше" (сегодня Пн, а турнир Вт) — он в будущем! Точно НЕ отыгран.
+        return tourneyDayIndex < todayDayIndex;
+        }
       }
     }
 
-    // Если день тот же самый (или день недели не передался) — проверяем по 2-часовому порогу времени
+    // Если день сегодняшний — проверяем по 2-часовому порогу
     const currentTotalMins = now.getHours() * 60 + now.getMinutes();
     const tourneyTotalMins = hours * 60 + minutes;
     let diffMins = currentTotalMins - tourneyTotalMins;
