@@ -76,9 +76,10 @@ export default function App() {
   const [grid, setGrid] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(false);
   
-  // Новые стейты для сетки
+  // Улучшенные стейты сетки
   const [hidePlayed, setHidePlayed] = useState(false); 
   const [groupByRoom, setGroupByRoom] = useState(false);
+  const [gridActiveRoom, setGridActiveRoom] = useState<string | null>(null);
 
   const [activeFormats, setActiveFormats] = useState({ isPko: true, isFreezeout: true, isTurbo: true });
   const [isCompact, setIsCompact] = useState(false);
@@ -403,15 +404,19 @@ export default function App() {
       });
   }, [sortedGrid, hidePlayed]);
 
-  // Вычисляем данные для группировки по румам
-  const groupedByRoomGrid = useMemo(() => {
-    if (!groupByRoom) return {};
-    return displayGrid.reduce((acc, t) => {
-      if (!acc[t.room]) acc[t.room] = [];
-      acc[t.room].push(t);
-      return acc;
-    }, {} as Record<string, typeof displayGrid>);
-  }, [displayGrid, groupByRoom]);
+  // Уникальные румы для табов
+  const activeGridRooms = useMemo(() => {
+    return Array.from(new Set(displayGrid.map(t => t.room)));
+  }, [displayGrid]);
+
+  // Фильтрация турниров по выбранному чипсу рума
+  const filteredGridBySelectedRoom = useMemo(() => {
+    if (!groupByRoom) return displayGrid;
+    if (!gridActiveRoom) {
+      return activeGridRooms.length > 0 ? displayGrid.filter(t => t.room === activeGridRooms[0]) : [];
+    }
+    return displayGrid.filter(t => t.room === gridActiveRoom);
+  }, [displayGrid, groupByRoom, gridActiveRoom, activeGridRooms]);
 
   const searchResults = useMemo(() => [...tournaments].sort((a, b) => {
     if (sortOrder === 'tier') return getTier(a).id - getTier(b).id;
@@ -533,7 +538,6 @@ export default function App() {
   const totalBuyin = grid.reduce((sum, t) => sum + parseNum(t.buyin), 0);
   const totalEV = grid.reduce((sum, t) => sum + parseNum(t.ev_mtt), 0);
 
-  // Мини-функция для рендера карточки в сетке (чтобы не дублировать код для группировки)
   const renderGridCard = (t: any) => {
     const prioStyles = getPriorityStyles(t.priority);
     return (
@@ -850,18 +854,12 @@ export default function App() {
                   {(() => {
                     const peakData = getPeakTablesData(grid);
                     const peak = peakData.max;
-                    
-                    const color = peak > 12 
-                    ? 'text-rose-400 bg-rose-500/10 border-rose-500/30 shadow-[0_0_8px_rgba(244,63,94,0.4)]' 
-                    : peak > 8 
-                    ? 'text-amber-400 bg-amber-500/10 border-amber-500/30' 
-                    : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
-                    
+                    const color = peak > 12 ? 'text-rose-400 bg-rose-500/10 border-rose-500/30' : peak > 8 ? 'text-amber-400 bg-amber-500/10 border-amber-500/30' : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
                     return (
                     <div className="flex items-center gap-2">
                       {peak > 0 && <span className="text-[11px] font-mono text-cyan-400/80 font-bold">~{peakData.timeStr}</span>}
                       <span className={`text-[11px] font-black px-2 py-0.5 rounded border ${color}`}>
-                        {peak} {peak === 1 ? 'стол' : peak > 1 && peak < 5 ? 'стола' : 'столов'}
+                        {peak} столов
                       </span>
                     </div>
                   );
@@ -871,7 +869,7 @@ export default function App() {
           )}
 
           {grid.length > 0 && (
-            <div className="flex gap-2 mb-4">
+            <div className="flex gap-2 mb-2">
               <button onClick={() => setShowSessionModal(true)} className="flex-[2] bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/30 rounded-xl py-2.5 flex items-center justify-center gap-2 text-[11px] uppercase font-black tracking-wider transition active:scale-95">
                 <Wallet size={16} /> Завершить
               </button>
@@ -885,7 +883,7 @@ export default function App() {
           )}
 
           {grid.length > 0 && (
-            <div className="flex items-center justify-between mb-4 px-3 bg-slate-900/40 p-2.5 rounded-xl border border-slate-800/50">
+            <div className="flex items-center justify-between mb-4 px-3 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800/80">
               <label className="flex items-center cursor-pointer gap-2">
                 <input 
                   type="checkbox" 
@@ -923,22 +921,39 @@ export default function App() {
               </div>
             </div>
           ) : groupByRoom ? (
-            // Рендер с группировкой по румам
-            <div className="space-y-4">
-              {Object.entries(groupedByRoomGrid).map(([room, tourneys]) => (
-                <div key={room} className="bg-slate-900/30 rounded-2xl border border-slate-800/50 p-2">
-                  <div className="flex items-center justify-between px-2 pt-1 pb-2">
-                    <RoomBadge roomName={room} getRoomStyle={getRoomStyle} />
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{tourneys.length} столов</span>
-                  </div>
-                  <div className="space-y-2">
-                    {tourneys.map(t => renderGridCard(t))}
-                  </div>
-                </div>
-              ))}
+            <div className="space-y-3">
+              <div className="overflow-x-auto no-scrollbar flex gap-1.5 py-1">
+                {activeGridRooms.map(room => {
+                  const isSelected = gridActiveRoom === room || (!gridActiveRoom && activeGridRooms[0] === room);
+                  const count = displayGrid.filter(t => t.room === room).length;
+                  return (
+                    <button 
+                      key={room} 
+                      onClick={() => setGridActiveRoom(room)}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-bold border transition-all shrink-0 ${
+                        isSelected 
+                          ? 'bg-cyan-950/60 border-cyan-500/80 text-cyan-300 shadow-[0_0_10px_rgba(34,211,238,0.25)]' 
+                          : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      <span>{room}</span>
+                      <span className={`px-1.5 py-0.2 rounded-full text-[9px] ${isSelected ? 'bg-cyan-500/20 text-cyan-300' : 'bg-slate-800 text-slate-500'}`}>
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="space-y-2 pt-1">
+                {filteredGridBySelectedRoom.length === 0 ? (
+                  <div className="text-center py-10 text-slate-500 text-xs">Нет турниров в этом руме</div>
+                ) : (
+                  filteredGridBySelectedRoom.map(t => renderGridCard(t))
+                )}
+              </div>
             </div>
           ) : (
-            // Обычный таймлайн рендер
             <div className="space-y-2">
               {displayGrid.map(t => renderGridCard(t))}
             </div>
