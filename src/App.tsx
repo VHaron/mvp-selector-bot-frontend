@@ -379,22 +379,23 @@ export default function App() {
 const isPlayed = (timeString: string, dayWeekStr?: string) => {
   if (!timeString) return false;
   
-  if (dayWeekStr) {
-    const cleanDay = dayWeekStr.toLowerCase();
-    const days = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
-    const todayIndex = new Date().getDay(); // 0-ВС, 1-ПН, 2-ВТ...
-    
-    const tourneyDayIndex = days.findIndex(d => cleanDay.includes(d));
-    
-    if (tourneyDayIndex !== -1) {
-      // Если день турнира в будущем на этой неделе — точно не отыгран
-      if (tourneyDayIndex > todayIndex) return false;
-      // Если день турнира в прошлом на этой неделе — отыгран
-      if (tourneyDayIndex < todayIndex) return true;
+  // Нормализуем день недели из бэкенда (например "Вт." -> "вт")
+  const tourneyDay = (dayWeekStr || '').toLowerCase().replace(/[^а-я]/g, '').trim();
+  
+  if (tourneyDay) {
+    const daysMap: Record<string, number> = { 'вс': 0, 'пн': 1, 'вт': 2, 'ср': 3, 'чт': 4, 'пт': 5, 'сб': 6 };
+    const todayIndex = new Date().getDay(); // 0 - ВС, 1 - ПН, 2 - ВТ...
+    const tourneyIndex = daysMap[tourneyDay];
+
+    if (tourneyIndex !== undefined) {
+      // Если день турнира строго в будущем относительно сегодняшнего дня — он точно НЕ отыгран!
+      if (tourneyIndex > todayIndex) return false;
+      // Если день турнира был в прошлом на этой неделе — он отыгран
+      if (tourneyIndex < todayIndex) return true;
     }
   }
 
-  // Если это сегодняшний день — проверяем прошло ли 2 часа от старта
+  // Если это сегодняшний день — проверяем, прошло ли уже 2 часа с момента старта
   const cleanTime = timeString.trim().slice(0, 5);
   const [hours, minutes] = cleanTime.split(':').map(Number);
   if (isNaN(hours) || isNaN(minutes)) return false;
