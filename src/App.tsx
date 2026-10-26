@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Plus, Check, Trash2, BarChart2, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen } from 'lucide-react';
+import { Search, ListTodo, Plus, Check, Trash2, X, Lock, ArrowUpDown, Flame, Wallet, TrendingUp, NotebookPen } from 'lucide-react';
 
 interface Tournament {
   id: string; room: string; name: string; priority: string;
@@ -278,14 +278,6 @@ export default function App() {
     return { id: 3, label: 'C', color: 'text-slate-500 bg-slate-800' };
   };
 
-  const getVariance = () => {
-    if (grid.length === 0) return { label: 'Низкая', color: 'text-slate-500' };
-    const avgAfs = grid.reduce((acc, t) => acc + parseNum(t.afs), 0) / grid.length;
-    if (avgAfs < 300) return { label: 'Низкая', color: 'text-emerald-400' };
-    if (avgAfs < 1000) return { label: 'Средняя', color: 'text-amber-400' };
-    return { label: 'Высокая', color: 'text-rose-400' };
-  };
-
   const getSessionEndTime = (items: Tournament[]) => {
     if (!items || items.length === 0) return "--:--";
     let maxEndTimeMins = 0;
@@ -488,7 +480,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen pb-24 bg-slate-950 text-slate-200 font-sans antialiased">
-      {/* 🔹 Верхняя панель */}
       <div className="sticky top-0 bg-slate-950/90 backdrop-blur-xl z-30 px-4 py-3 border-b border-slate-900 flex justify-between items-center shadow-md">
         <div className="flex items-center gap-2 cursor-pointer" onClick={logout}>
           <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]"></div>
@@ -500,7 +491,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* 🔍 Вкладка ПОИСК */}
       {activeTab === 'search' && (
         <div className="p-3.5 space-y-3">
           <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-3 space-y-2.5">
@@ -594,7 +584,6 @@ export default function App() {
         </div>
       )}
 
-      {/* 📋 Вкладка СЕТКА */}
       {activeTab === 'grid' && (
         <div className="p-3.5 space-y-3">
           {grid.length > 0 && (
@@ -731,7 +720,6 @@ export default function App() {
         </div>
       )}
 
-      {/* 📈 Вкладка ДНЕВНИК */}
       {activeTab === 'diary' && (
         <div className="p-3.5 space-y-3.5">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
@@ -768,7 +756,6 @@ export default function App() {
         </div>
       )}
 
-      {/* 📊 Модалка статистики и заметок турнира */}
       {activeStats && (() => {
         const key = getNoteKey(activeStats);
         const note = notes[key] || { tag: 'none', text: '' };
@@ -808,7 +795,6 @@ export default function App() {
         );
       })()}
 
-      {/* 📂 Модалка шаблонов */}
       {showPresetsModal && (
         <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 w-full max-w-sm shadow-2xl relative">
@@ -832,7 +818,6 @@ export default function App() {
         </div>
       )}
 
-      {/* 🏁 Модалка завершения сессии */}
       {showSessionModal && (
         <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 w-full max-w-sm shadow-2xl relative">
@@ -845,7 +830,6 @@ export default function App() {
         </div>
       )}
 
-      {/* 📱 Нижняя навигация */}
       <div className="fixed bottom-0 w-full bg-slate-950/95 backdrop-blur-xl border-t border-slate-900 flex pb-safe z-40">
         <button onClick={() => setActiveTab('search')} className={`flex-1 flex flex-col items-center py-3 ${activeTab === 'search' ? 'text-cyan-400' : 'text-slate-500'}`}>
           <Search size={20} /><span className="text-[10px] font-bold mt-0.5">Поиск</span>
