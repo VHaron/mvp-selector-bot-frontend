@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Plus, Check, Trash2, X, Lock, ArrowUpDown, Flame, TrendingUp, BarChart2, NotebookPen } from 'lucide-react';
+import { Search, ListTodo, Plus, Check, Trash2, X, Lock, ArrowUpDown, Flame, TrendingUp, NotebookPen } from 'lucide-react';
 
 interface Tournament {
   id: string; room: string; name: string; priority: string;
@@ -630,7 +630,6 @@ export default function App() {
         )}
       </div>
 
-      {/* 📊 Модалка подробных статов и заметок турнира */}
       {activeStats && (() => {
         const key = getNoteKey(activeStats);
         const note = notes[key] || { tag: 'none', text: '' };
