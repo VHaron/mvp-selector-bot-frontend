@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Plus, Check, Trash2, X, Lock, ArrowUpDown, Flame, Wallet, TrendingUp } from 'lucide-react';
+import { Search, ListTodo, Plus, Check, Trash2, X, Lock, ArrowUpDown, Flame, TrendingUp } from 'lucide-react';
 
 interface Tournament {
   id: string; room: string; name: string; priority: string;
@@ -113,7 +113,6 @@ export default function App() {
 
   const [dateFrom, setDateFrom] = useState(''); const [dateTo, setDateTo] = useState('');
   const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
-
   const [sessionsHistory, setSessionsHistory] = useState<SessionData[]>([]);
 
   const setPresetDate = (type: 'today' | 'tomorrow' | 'clear') => {
@@ -359,7 +358,7 @@ export default function App() {
 
     return (
       <div key={t.id} className={`bg-slate-900 rounded-xl p-3 border border-slate-800 flex items-center justify-between gap-3 border-l-[3px] ${prio.border} ${t.played ? 'opacity-40 grayscale' : ''} hover:border-slate-700 transition`}>
-        <div className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer" onClick={() => isSearch && setActiveStats(t)}>
+        <div className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer">
           <div className="flex flex-col items-center shrink-0 w-12">
             <span className="text-[10px] font-mono font-black text-cyan-400">{t.time_start}</span>
             {overlay && <Flame size={12} className="text-orange-500 animate-pulse"/>}
