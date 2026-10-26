@@ -94,7 +94,7 @@ export default function App() {
   const getSmartTimer = (timeStr: string, dayWeekStr?: string) => {
     if (!timeStr) return null;
     
-    // Если день турнира не сегодняшний — никаких таймеров и лейт-рег быть не может!
+    // Если день турнира не сегодняшний — никаких таймеров быть не может!
     if (dayWeekStr) {
       const cleanDay = dayWeekStr.toLowerCase().replace(/[^а-я]/g, '');
       const days = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
@@ -106,22 +106,19 @@ export default function App() {
 
     const [hours, mins] = timeStr.split(':').map(Number);
     const now = new Date();
+    
     const currentTotalMins = now.getHours() * 60 + now.getMinutes();
     const tourneyTotalMins = hours * 60 + mins;
     
-    // Разница в минутах: сколько прошло с момента старта турнира
-    let diffMins = currentTotalMins - tourneyTotalMins;
+    // Разница: сколько минут осталось до старта (или прошло после)
+    const diffMins = tourneyTotalMins - currentTotalMins;
 
-    // Учитываем переход через полночь для сегодняшних ночных турниров
-    if (diffMins < -720) diffMins += 1440; 
-    if (diffMins > 720) diffMins -= 1440;
-
-    // Если до старта от 0 до 60 минут — скоро начнется
-    if (diffMins >= -60 && diffMins < 0) {
-      return <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 animate-pulse bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30 ml-1.5 shadow-[0_0_8px_rgba(245,158,11,0.2)]">⏳ {Math.abs(diffMins)} мин</span>;
+    // 1. Если до старта от 1 до 60 минут — скоро начнется
+    if (diffMins > 0 && diffMins <= 60) {
+      return <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 animate-pulse bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30 ml-1.5 shadow-[0_0_8px_rgba(245,158,11,0.2)]">⏳ {diffMins} мин</span>;
     } 
-    // Если турнир уже идет (прошло от 0 до 120 минут с начала) — это реальная лейт-рега
-    else if (diffMins >= 0 && diffMins <= 120) {
+    // 2. Если турнир уже идет (начался от 0 до 120 минут назад) — реальная лейт-рега
+    else if (diffMins <= 0 && diffMins >= -120) {
       return <span className="text-[9px] font-black uppercase tracking-wider text-rose-400 animate-pulse bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/30 ml-1.5 shadow-[0_0_8px_rgba(244,63,94,0.2)]">🔥 Late Reg</span>;
     }
     
