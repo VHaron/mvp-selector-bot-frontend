@@ -378,24 +378,29 @@ export default function App() {
 
   const isPlayed = (timeString: string) => {
     if (!timeString) return false;
-    const [hours, minutes] = timeString.split(':').map(Number);
   
+    // Очищаем строку от лишних символов, если там прилетело что-то вроде "12:30 [12:30]"
+    const cleanTime = timeString.trim().slice(0, 5);
+    const [hours, minutes] = cleanTime.split(':').map(Number);
+  
+    if (isNaN(hours) || isNaN(minutes)) return false;
+
     const now = new Date();
     const currentTotalMins = now.getHours() * 60 + now.getMinutes();
     const tourneyTotalMins = hours * 60 + minutes;
-  
-    // Разница в минутах между текущим временем и стартом турнира
+
+    // Разница между текущим временем и стартом турнира
     let diffMins = currentTotalMins - tourneyTotalMins;
 
-    // Если турнир был вчера ночью (например, сейчас 01:00 ночи, а турнир был в 23:00)
+    // Если турнир был вчера поздно ночью (например, сейчас 01:00, а турнир в 23:30)
     if (diffMins < -720) diffMins += 1440; 
-    // Если турнир завтра (например, сейчас 23:00, а турнир в 02:00 ночи)
+    // Если турнир завтра (например, сейчас 23:00, а турнир в 01:00 ночи)
     if (diffMins > 720) diffMins -= 1440;
 
-    // Турнир считается "прошлым", если с момента старта прошло больше 2 часов (120 минут)
+    // Считаем турнир отыгранным, если с момента старта прошло больше 2 часов (120 минут)
     return diffMins > 120;
   };
-
+  
   const displayGrid = useMemo(() => {
     return sortedGrid
       .map(t => ({ ...t, played: isPlayed(t.time_start) }))
