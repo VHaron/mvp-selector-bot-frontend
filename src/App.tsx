@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Plus, Check, Trash2, BarChart2, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen } from 'lucide-react';
+import { Search, ListTodo, Plus, Check, Trash2, X, Lock, ArrowUpDown, Flame, Wallet, TrendingUp } from 'lucide-react';
 
 interface Tournament {
   id: string; room: string; name: string; priority: string;
@@ -8,8 +8,6 @@ interface Tournament {
   afs: string; duration: string; ev_mtt: string; day_week: string;
 }
 
-type NoteTag = 'skip' | 'must' | 'none' | string;
-interface NoteData { tag: NoteTag; text: string; }
 interface SessionData { id: string; date: string; total_buyin: number; total_cashes: number; profit: number; tournaments_count: number; }
 
 const ROOMS: Record<string, string> = {
@@ -115,16 +113,8 @@ export default function App() {
 
   const [dateFrom, setDateFrom] = useState(''); const [dateTo, setDateTo] = useState('');
   const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
-  const [activeStats, setActiveStats] = useState<Tournament | null>(null);
 
-  const [showPresetsModal, setShowPresetsModal] = useState(false);
-  const [newPresetName, setNewPresetName] = useState('');
-  const [presets, setPresets] = useState<{name: string, items: any[]}[]>([]);
-  
-  const [notes, setNotes] = useState<Record<string, NoteData>>({});
   const [sessionsHistory, setSessionsHistory] = useState<SessionData[]>([]);
-  const [showSessionModal, setShowSessionModal] = useState(false);
-  const [sessionCashes, setSessionCashes] = useState('');
 
   const setPresetDate = (type: 'today' | 'tomorrow' | 'clear') => {
     if (type === 'clear') { setDateFrom(''); setDateTo(''); return; }
@@ -147,18 +137,17 @@ export default function App() {
 
   const loadAllUserData = async (token: string) => {
     try {
-      const [presRes, setRes, notRes, histRes, gridRes, balRes] = await Promise.all([
-        apiCall('get_presets', { session_token: token }), apiCall('get_settings', { session_token: token }),
-        apiCall('get_notes', { session_token: token }), apiCall('get_sessions_history', { session_token: token }),
-        apiCall('get_grid', { session_token: token }), apiCall('get_balances', { session_token: token })
+      const [setRes, histRes, gridRes, balRes] = await Promise.all([
+        apiCall('get_settings', { session_token: token }),
+        apiCall('get_sessions_history', { session_token: token }),
+        apiCall('get_grid', { session_token: token }),
+        apiCall('get_balances', { session_token: token })
       ]);
-      if (presRes.status === 'success') setPresets(presRes.presets);
       if (setRes.status === 'success') {
         if (setRes.selected_rooms) setSelectedRooms(setRes.selected_rooms);
         if (setRes.active_formats) setActiveFormats(setRes.active_formats);
         if (setRes.sort_order) setSortOrder(setRes.sort_order);
       }
-      if (notRes.status === 'success' && notRes.notes) setNotes(notRes.notes);
       if (histRes.status === 'success' && histRes.history) setSessionsHistory(histRes.history.reverse());
       if (gridRes.status === 'success' && gridRes.grid) setGrid(gridRes.grid);
       if (balRes && balRes.status === 'success' && balRes.balances) setBalances(balRes.balances);
@@ -201,7 +190,7 @@ export default function App() {
     } catch (err: any) { setAuthError(err.message); } finally { setAuthLoading(false); }
   };
 
-  const logout = () => { localStorage.removeItem('mvp_token'); setSessionToken(null); setGrid([]); setPresets([]); setAuthStep('login'); };
+  const logout = () => { localStorage.removeItem('mvp_token'); setSessionToken(null); setGrid([]); setAuthStep('login'); };
   const toggleRoom = (roomId: string) => setSelectedRooms(prev => prev.includes(roomId) ? prev.filter(id => id !== roomId) : [...prev, roomId]);
 
   const fetchTournaments = async () => {
@@ -346,15 +335,6 @@ export default function App() {
 
   const clearGrid = () => { setGrid([]); try { WebApp.HapticFeedback.impactOccurred('heavy'); } catch(e){} };
 
-  const finishSession = async () => {
-    const cashes = parseFloat(sessionCashes) || 0;
-    const s: SessionData = { id: crypto.randomUUID(), date: new Date().toLocaleDateString('ru-RU'), total_buyin: totalBuyin, total_cashes: cashes, profit: cashes - totalBuyin, tournaments_count: grid.length };
-    setSessionsHistory([s, ...sessionsHistory]);
-    await apiCall('save_session_history', { session_token: sessionToken, session_data: s });
-    setGrid([]); setShowSessionModal(false); setSessionCashes(''); setActiveTab('diary');
-    try { WebApp.HapticFeedback.notificationOccurred('success'); } catch(e){}
-  };
-
   const clearHistory = async () => {
     if (confirm('Очистить историю?')) { setSessionsHistory([]); await apiCall('clear_sessions_history', { session_token: sessionToken }); }
   };
@@ -372,7 +352,6 @@ export default function App() {
   const totalBuyin = grid.reduce((sum, t) => sum + parseNum(t.buyin), 0);
   const totalEV = grid.reduce((sum, t) => sum + parseNum(t.ev_mtt), 0);
 
-  // 🧱 Адаптивная карточка (в строку на ПК, компактная на мобилках)
   const renderCard = (t: any, isSearch: boolean = false) => {
     const isAdded = grid.some(item => item.id === t.id);
     const overlay = isOverlay(t);
@@ -413,7 +392,7 @@ export default function App() {
     );
   };
 
-  if (authStep === 'login' || authStep === 'mfa') {
+  if (authStep === 'login') {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-slate-200">
         <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl">
@@ -422,19 +401,25 @@ export default function App() {
             <h1 className="text-xl font-black text-white">Вход в МВП Селектор</h1>
           </div>
           {authError && <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-bold p-2.5 rounded-xl mb-4 text-center">{authError}</div>}
-          {authStep === 'login' ? (
-            <form onSubmit={handleLogin} className="space-y-3">
-              <input type="text" required placeholder="Логин" value={username} onChange={e => setUsername(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-xs text-white outline-none focus:border-cyan-500"/>
-              <input type="password" required placeholder="Пароль" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-xs text-white outline-none focus:border-cyan-500"/>
-              <button type="submit" disabled={authLoading} className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider transition active:scale-95">Войти</button>
-            </form>
-          ) : (
-            <form onSubmit={handleMfa} className="space-y-3">
-              <p className="text-xs text-center text-slate-400 mb-2">Введите 2FA код</p>
-              <input type="text" required placeholder="Код" value={otp} onChange={e => setOtp(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-center text-lg font-mono text-cyan-400 outline-none focus:border-cyan-500"/>
-              <button type="submit" disabled={authLoading} className="w-full bg-emerald-600 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider">Подтвердить</button>
-            </form>
-          )}
+          <form onSubmit={handleLogin} className="space-y-3">
+            <input type="text" required placeholder="Логин" value={username} onChange={e => setUsername(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-xs text-white outline-none focus:border-cyan-500"/>
+            <input type="password" required placeholder="Пароль" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-xs text-white outline-none focus:border-cyan-500"/>
+            <button type="submit" disabled={authLoading} className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider transition active:scale-95">Войти</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  if (authStep === 'mfa') {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-slate-200">
+        <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl">
+          <form onSubmit={handleMfa} className="space-y-3">
+            <p className="text-xs text-center text-slate-400 mb-2">Введите 2FA код</p>
+            <input type="text" required placeholder="Код" value={otp} onChange={e => setOtp(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-center text-lg font-mono text-cyan-400 outline-none focus:border-cyan-500"/>
+            <button type="submit" disabled={authLoading} className="w-full bg-emerald-600 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider">Подтвердить</button>
+          </form>
         </div>
       </div>
     );
@@ -442,14 +427,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen pb-24 md:pb-12 bg-slate-950 text-slate-200 font-sans antialiased">
-      {/* 🖥️ Адаптивная шапка (в строку на ПК, компактная на мобилках) */}
       <div className="sticky top-0 bg-slate-950/90 backdrop-blur-xl z-30 px-4 py-3 border-b border-slate-900 flex justify-between items-center max-w-5xl mx-auto">
         <div className="flex items-center gap-2 cursor-pointer" onClick={logout}>
           <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]"></div>
           <span className="text-xs uppercase tracking-widest text-cyan-400 font-black">МВП Селектор</span>
         </div>
         
-        {/* Десктопная навигация прямо в шапке */}
         <div className="hidden md:flex gap-2">
           <button onClick={() => setActiveTab('search')} className={`px-4 py-1.5 rounded-xl text-xs font-bold transition ${activeTab === 'search' ? 'bg-cyan-950 text-cyan-400 border border-cyan-500/40' : 'text-slate-400 hover:text-white'}`}>Поиск</button>
           <button onClick={() => setActiveTab('grid')} className={`px-4 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'grid' ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40' : 'text-slate-400 hover:text-white'}`}>
@@ -465,7 +448,6 @@ export default function App() {
       </div>
 
       <div className="max-w-5xl mx-auto px-3 md:px-6 pt-4">
-        {/* 🔍 Поиск */}
         {activeTab === 'search' && (
           <div className="space-y-3">
             <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-3 space-y-2.5">
@@ -475,7 +457,6 @@ export default function App() {
                   <button onClick={() => setPresetDate('today')} className="px-2.5 py-1 text-[10px] font-bold bg-slate-800 text-slate-300 rounded-lg">Сегодня</button>
                   <button onClick={() => setPresetDate('tomorrow')} className="px-2.5 py-1 text-[10px] font-bold bg-slate-800 text-slate-300 rounded-lg">Завтра</button>
                   <button onClick={() => setPresetDate('clear')} className="px-2 py-1 text-[10px] bg-rose-500/10 text-rose-400 rounded-lg"><X size={12}/></button>
-                  <button onClick={() => setShowPresetsModal(true)} className="px-2.5 py-1 text-[10px] font-bold bg-cyan-950/50 text-cyan-400 rounded-lg border border-cyan-500/30">Шаблоны</button>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -524,7 +505,6 @@ export default function App() {
           </div>
         )}
 
-        {/* 📋 Сетка */}
         {activeTab === 'grid' && (
           <div className="space-y-3">
             {grid.length > 0 && (
@@ -550,9 +530,6 @@ export default function App() {
 
             {grid.length > 0 && (
               <div className="flex gap-2">
-                <button onClick={() => setShowSessionModal(true)} className="flex-2 bg-emerald-600/20 border border-emerald-500/40 text-emerald-400 rounded-xl py-2 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5">
-                  <Wallet size={14} /> Завершить сессию
-                </button>
                 <button onClick={() => setSortOrder(p => p === 'time' ? 'buyin' : p === 'buyin' ? 'ev' : 'time')} className="flex-1 bg-slate-900 border border-slate-800 rounded-xl py-2 text-xs font-black text-blue-400 uppercase flex items-center justify-center gap-1.5">
                   <ArrowUpDown size={14} /> {sortOrder}
                 </button>
@@ -605,7 +582,6 @@ export default function App() {
           </div>
         )}
 
-        {/* 📈 Дневник */}
         {activeTab === 'diary' && (
           <div className="space-y-4">
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
@@ -643,9 +619,6 @@ export default function App() {
         )}
       </div>
 
-      {/* Модалки оставляем без изменений */}
-
-      {/* 📱 Мобильная навигация (скрыта на ПК, видна на телефонах) */}
       <div className="fixed bottom-0 w-full bg-slate-950/95 backdrop-blur-xl border-t border-slate-900 flex md:hidden pb-safe z-40">
         <button onClick={() => setActiveTab('search')} className={`flex-1 flex flex-col items-center py-3 ${activeTab === 'search' ? 'text-cyan-400' : 'text-slate-500'}`}>
           <Search size={20} /><span className="text-[10px] font-bold mt-0.5">Поиск</span>
