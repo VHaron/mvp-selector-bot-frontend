@@ -379,18 +379,21 @@ export default function App() {
   const isPlayed = (timeString: string) => {
     if (!timeString) return false;
     const [hours, minutes] = timeString.split(':').map(Number);
+  
     const now = new Date();
-    const tourneyTime = new Date();
-    tourneyTime.setHours(hours, minutes, 0, 0);
-    
-    if (hours < 10 && now.getHours() >= 12) {
-      tourneyTime.setDate(tourneyTime.getDate() + 1);
-    } else if (hours > 20 && now.getHours() < 10) {
-      tourneyTime.setDate(tourneyTime.getDate() - 1);
-    }
-    
-    const playedThreshold = new Date(tourneyTime.getTime() + 2 * 60 * 60 * 1000);
-    return now > playedThreshold;
+    const currentTotalMins = now.getHours() * 60 + now.getMinutes();
+    const tourneyTotalMins = hours * 60 + minutes;
+  
+    // Разница в минутах между текущим временем и стартом турнира
+    let diffMins = currentTotalMins - tourneyTotalMins;
+
+    // Если турнир был вчера ночью (например, сейчас 01:00 ночи, а турнир был в 23:00)
+    if (diffMins < -720) diffMins += 1440; 
+    // Если турнир завтра (например, сейчас 23:00, а турнир в 02:00 ночи)
+    if (diffMins > 720) diffMins -= 1440;
+
+    // Турнир считается "прошлым", если с момента старта прошло больше 2 часов (120 минут)
+    return diffMins > 120;
   };
 
   const displayGrid = useMemo(() => {
