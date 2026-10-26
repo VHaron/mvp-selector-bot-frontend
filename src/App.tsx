@@ -75,6 +75,7 @@ export default function App() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [grid, setGrid] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(false);
+  const [hidePlayed, setHidePlayed] = useState(false); // Стейт для тоггла скрытия отыгранного
 
   const [activeFormats, setActiveFormats] = useState({ isPko: true, isFreezeout: true, isTurbo: true });
   const [isCompact, setIsCompact] = useState(false);
@@ -353,11 +354,10 @@ export default function App() {
       current += e.type;
       if (current > max) {
         max = current;
-        peakStartMins = e.time; // Запоминаем время, когда был пробит новый максимум
+        peakStartMins = e.time;
       }
     });
     
-    // Переводим минуты обратно в красивые часы:минуты (HH:MM)
     const peakHours = Math.floor(peakStartMins / 60) % 24;
     const peakMins = Math.round(peakStartMins % 60);
     const timeStr = `${String(peakHours).padStart(2, '0')}:${String(peakMins).padStart(2, '0')}`;
@@ -371,6 +371,37 @@ export default function App() {
     if (sortOrder === 'ev') return parseNum(b.ev_mtt) - parseNum(a.ev_mtt);
     return getTier(a).id - getTier(b).id;
   }), [grid, sortOrder]);
+
+  // Функция проверки: начался ли турнир 2 часа назад
+  const isPlayed = (timeString: string) => {
+    if (!timeString) return false;
+    const [hours, minutes] = timeString.split(':').map(Number);
+    const now = new Date();
+    const tourneyTime = new Date();
+    tourneyTime.setHours(hours, minutes, 0, 0);
+    
+    // Фикс для перевала через полночь (например турнир в 01:00, а сейчас 23:00)
+    if (hours < 10 && now.getHours() >= 12) {
+      tourneyTime.setDate(tourneyTime.getDate() + 1);
+    } else if (hours > 20 && now.getHours() < 10) {
+      tourneyTime.setDate(tourneyTime.getDate() - 1);
+    }
+    
+    const playedThreshold = new Date(tourneyTime.getTime() + 2 * 60 * 60 * 1000);
+    return now > playedThreshold;
+  };
+
+  // Мемоизированный массив с расчетом отыгранных
+  const displayGrid = useMemo(() => {
+    return sortedGrid
+      .map(t => ({ ...t, played: isPlayed(t.time_start) }))
+      .filter(t => (hidePlayed ? !t.played : true))
+      .sort((a, b) => {
+        if (a.played && !b.played) return 1;
+        if (!a.played && b.played) return -1;
+        return 0; // Сохраняем основную сортировку, если статус played одинаковый
+      });
+  }, [sortedGrid, hidePlayed]);
 
   const searchResults = useMemo(() => [...tournaments].sort((a, b) => {
     if (sortOrder === 'tier') return getTier(a).id - getTier(b).id;
@@ -825,6 +856,24 @@ export default function App() {
             </div>
           )}
 
+          {grid.length > 0 && (
+            <div className="flex items-center justify-between mb-4 px-2">
+              <span className="text-sm text-slate-400 font-medium">Активная загрузка</span>
+              <label className="flex items-center cursor-pointer gap-2">
+                <span className="text-xs text-slate-500 uppercase font-bold">Скрыть отыгранное</span>
+                <input 
+                  type="checkbox" 
+                  className="hidden" 
+                  checked={hidePlayed}
+                  onChange={() => setHidePlayed(!hidePlayed)}
+                />
+                <div className={`w-8 h-4 rounded-full transition-colors ${hidePlayed ? 'bg-cyan-500' : 'bg-slate-700'} relative`}>
+                  <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${hidePlayed ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                </div>
+              </label>
+            </div>
+          )}
+
           {grid.length === 0 ? (
             <div className="text-center py-20 px-6 bg-slate-900/50 rounded-2xl border border-slate-800/50">
               <div className="text-5xl mb-5 opacity-30">📋</div>
@@ -834,10 +883,15 @@ export default function App() {
               </div>
             </div>
           ) : (
-            sortedGrid.map((t) => {
+            displayGrid.map((t) => {
               const prioStyles = getPriorityStyles(t.priority);
               return (
-                <div key={t.id} className={`bg-slate-900 rounded-xl p-3.5 shadow-lg border border-slate-800 flex justify-between items-center gap-3 border-l-[3px] ${prioStyles.border}`}>
+                <div key={t.id} className={`relative bg-slate-900 rounded-xl p-3.5 shadow-lg border border-slate-800 flex justify-between items-center gap-3 border-l-[3px] ${prioStyles.border} transition-all duration-300 ${t.played ? 'opacity-40 grayscale bg-slate-900/50 border-slate-800/50' : ''}`}>
+                  {t.played && (
+                    <div className="absolute -top-2.5 right-4 text-[9px] text-slate-400 bg-slate-800 font-bold uppercase tracking-wider border border-slate-700 px-2 py-0.5 rounded-md shadow-sm">
+                      Лейт-рега закрыта
+                    </div>
+                  )}
                   <div className="flex-1 pl-1">
                     <div className="flex items-center gap-2.5">
                       <div className={`w-1.5 h-1.5 rounded-full ${prioStyles.dot}`}></div>
