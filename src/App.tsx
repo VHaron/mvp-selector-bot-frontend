@@ -376,28 +376,44 @@ export default function App() {
     return getTier(a).id - getTier(b).id;
   }), [grid, sortOrder]);
 
-  const isPlayed = (timeString: string) => {
+  const isPlayed = (timeString: string, dayWeekStr?: string) => {
     if (!timeString) return false;
   
-    // Очищаем строку от лишних символов, если там прилетело что-то вроде "12:30 [12:30]"
     const cleanTime = timeString.trim().slice(0, 5);
     const [hours, minutes] = cleanTime.split(':').map(Number);
-  
     if (isNaN(hours) || isNaN(minutes)) return false;
 
     const now = new Date();
+  
+    // Получаем день недели сегодня (0 - ВС, 1 - ПН, 2 - ВТ и т.д.)
+    const todayDayIndex = now.getDay();
+  
+    // Маппинг дней недели из строки бэкенда (например "Вт.", "Ср.")
+    const daysMap: Record<string, number> = {
+      'вс': 0, 'пн': 1, 'вт': 2, 'ср': 3, 'чт': 4, 'пт': 5, 'сб': 6,
+      'воскресенье': 0, 'понедельник': 1, 'вторник': 2, 'среда': 3, 'четверг': 4, 'пятница': 5, 'суббота': 6
+    };
+
+    if (dayWeekStr) {
+      const cleanDay = dayWeekStr.toLowerCase().replace('.', '').trim();
+      const tourneyDayIndex = daysMap[cleanDay];
+    
+    if (tourneyDayIndex !== undefined) {
+      // Если день турнира строго в будущем относительно сегодняшнего дня — он точно НЕ отыгран!
+      if (tourneyDayIndex > todayDayIndex) return false;
+      // Если день турнира был в прошлом на этой неделе — он отыгран
+      if (tourneyDayIndex < todayDayIndex) return true;
+      }
+    }
+
+    // Если день тот же самый (или день недели не передался) — проверяем по 2-часовому порогу времени
     const currentTotalMins = now.getHours() * 60 + now.getMinutes();
     const tourneyTotalMins = hours * 60 + minutes;
-
-    // Разница между текущим временем и стартом турнира
     let diffMins = currentTotalMins - tourneyTotalMins;
 
-    // Если турнир был вчера поздно ночью (например, сейчас 01:00, а турнир в 23:30)
     if (diffMins < -720) diffMins += 1440; 
-    // Если турнир завтра (например, сейчас 23:00, а турнир в 01:00 ночи)
     if (diffMins > 720) diffMins -= 1440;
 
-    // Считаем турнир отыгранным, если с момента старта прошло больше 2 часов (120 минут)
     return diffMins > 120;
   };
   
