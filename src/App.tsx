@@ -75,7 +75,10 @@ export default function App() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [grid, setGrid] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(false);
-  const [hidePlayed, setHidePlayed] = useState(false); // Стейт для тоггла скрытия отыгранного
+  
+  // Новые стейты для сетки
+  const [hidePlayed, setHidePlayed] = useState(false); 
+  const [groupByRoom, setGroupByRoom] = useState(false);
 
   const [activeFormats, setActiveFormats] = useState({ isPko: true, isFreezeout: true, isTurbo: true });
   const [isCompact, setIsCompact] = useState(false);
@@ -372,7 +375,6 @@ export default function App() {
     return getTier(a).id - getTier(b).id;
   }), [grid, sortOrder]);
 
-  // Функция проверки: начался ли турнир 2 часа назад
   const isPlayed = (timeString: string) => {
     if (!timeString) return false;
     const [hours, minutes] = timeString.split(':').map(Number);
@@ -380,7 +382,6 @@ export default function App() {
     const tourneyTime = new Date();
     tourneyTime.setHours(hours, minutes, 0, 0);
     
-    // Фикс для перевала через полночь (например турнир в 01:00, а сейчас 23:00)
     if (hours < 10 && now.getHours() >= 12) {
       tourneyTime.setDate(tourneyTime.getDate() + 1);
     } else if (hours > 20 && now.getHours() < 10) {
@@ -391,7 +392,6 @@ export default function App() {
     return now > playedThreshold;
   };
 
-  // Мемоизированный массив с расчетом отыгранных
   const displayGrid = useMemo(() => {
     return sortedGrid
       .map(t => ({ ...t, played: isPlayed(t.time_start) }))
@@ -399,9 +399,19 @@ export default function App() {
       .sort((a, b) => {
         if (a.played && !b.played) return 1;
         if (!a.played && b.played) return -1;
-        return 0; // Сохраняем основную сортировку, если статус played одинаковый
+        return 0; 
       });
   }, [sortedGrid, hidePlayed]);
+
+  // Вычисляем данные для группировки по румам
+  const groupedByRoomGrid = useMemo(() => {
+    if (!groupByRoom) return {};
+    return displayGrid.reduce((acc, t) => {
+      if (!acc[t.room]) acc[t.room] = [];
+      acc[t.room].push(t);
+      return acc;
+    }, {} as Record<string, typeof displayGrid>);
+  }, [displayGrid, groupByRoom]);
 
   const searchResults = useMemo(() => [...tournaments].sort((a, b) => {
     if (sortOrder === 'tier') return getTier(a).id - getTier(b).id;
@@ -449,24 +459,19 @@ export default function App() {
 
     if (data && data.isFilterPreset) {
       const now = new Date();
-      
       const getLocalYYYYMMDD = (d: Date) => {
         const offset = d.getTimezoneOffset() * 60000;
         return new Date(d.getTime() - offset).toISOString().split('T')[0];
       };
-
       const todayStr = getLocalYYYYMMDD(now);
-      
       let tomorrowStr = todayStr;
       if (data.timeFrom && data.timeTo && data.timeTo < data.timeFrom) {
           const tomorrow = new Date(now);
           tomorrow.setDate(tomorrow.getDate() + 1);
           tomorrowStr = getLocalYYYYMMDD(tomorrow);
       }
-
       if (data.timeFrom) setDateFrom(`${todayStr}T${data.timeFrom}`);
       if (data.timeTo) setDateTo(`${tomorrowStr}T${data.timeTo}`);
-      
       if (data.rooms) setSelectedRooms(data.rooms);
       if (data.formats) setActiveFormats(data.formats);
 
@@ -505,33 +510,58 @@ export default function App() {
   
   const getCumulativeData = () => {
     if (sessionsHistory.length === 0) return { points: '', min: 0, max: 0, zeroY: 50, current: 0, pointsLen: 0 };
-
     const reversed = [...sessionsHistory].reverse();
     let current = 0;
     const data = reversed.map(s => {
       current += s.profit;
       return current;
     });
-    
     const plotData = [0, ...data];
     const max = Math.max(0, ...plotData);
     const min = Math.min(0, ...plotData);
     const range = (max - min) || 1;
-
     const points = plotData.map((val, i) => {
       const x = (i / (plotData.length - 1)) * 100;
       const y = 100 - ((val - min) / range) * 100;
       return `${x},${y}`;
     }).join(' ');
-
     const zeroY = 100 - ((0 - min) / range) * 100;
-
     return { points, min, max, zeroY, current, pointsLen: plotData.length };
   };
 
   const chartData = getCumulativeData();
   const totalBuyin = grid.reduce((sum, t) => sum + parseNum(t.buyin), 0);
   const totalEV = grid.reduce((sum, t) => sum + parseNum(t.ev_mtt), 0);
+
+  // Мини-функция для рендера карточки в сетке (чтобы не дублировать код для группировки)
+  const renderGridCard = (t: any) => {
+    const prioStyles = getPriorityStyles(t.priority);
+    return (
+      <div key={t.id} className={`relative bg-slate-900 rounded-xl p-3.5 shadow-lg border border-slate-800 flex justify-between items-center gap-3 border-l-[3px] ${prioStyles.border} transition-all duration-300 ${t.played ? 'opacity-40 grayscale bg-slate-900/50 border-slate-800/50' : ''}`}>
+        {t.played && (
+          <div className="absolute -top-2.5 right-4 text-[9px] text-slate-400 bg-slate-800 font-bold uppercase tracking-wider border border-slate-700 px-2 py-0.5 rounded-md shadow-sm">
+            Лейт-рега закрыта
+          </div>
+        )}
+        <div className="flex-1 pl-1">
+          <div className="flex items-center gap-2.5">
+            <div className={`w-1.5 h-1.5 rounded-full ${prioStyles.dot}`}></div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[9px] font-bold text-slate-500 uppercase">{t.day_week}</span>
+              <span className="text-xs font-mono font-bold text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.4)]">{t.time_start}</span>
+              {getSmartTimer(t.time_start)}
+            </div>
+            {!groupByRoom && (
+              <div className="ml-1 scale-90 origin-left"><RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} /></div>
+            )}
+          </div>
+          <div className="font-bold text-sm text-slate-100 mt-1.5 leading-snug">{t.name}</div>
+          <div className="text-sm font-black text-emerald-400 mt-1">{getRoomCurrency(t.room)}{t.buyin} <span className="text-xs text-blue-400 font-normal ml-2">EV: {t.ev_mtt}</span></div>
+        </div>
+        <button onClick={() => toggleGrid(t)} className="p-3.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 rounded-xl border border-rose-500/20 transition active:scale-90"><Trash2 size={20} /></button>
+      </div>
+    );
+  };
 
   if (authStep === 'login' || authStep === 'mfa') {
     return (
@@ -544,9 +574,7 @@ export default function App() {
             </div>
             <h1 className="text-2xl font-black text-white">Вход в систему</h1>
           </div>
-
           {authError && <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm font-bold p-3 rounded-xl mb-6 text-center">{authError}</div>}
-
           {authStep === 'login' ? (
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="relative group">
@@ -857,16 +885,16 @@ export default function App() {
           )}
 
           {grid.length > 0 && (
-            <div className="flex items-center justify-between mb-4 px-2">
-              <span className="text-sm text-slate-400 font-medium">Активная загрузка</span>
+            <div className="flex items-center justify-between mb-4 px-3 bg-slate-900/40 p-2.5 rounded-xl border border-slate-800/50">
               <label className="flex items-center cursor-pointer gap-2">
-                <span className="text-xs text-slate-500 uppercase font-bold">Скрыть отыгранное</span>
-                <input 
-                  type="checkbox" 
-                  className="hidden" 
-                  checked={hidePlayed}
-                  onChange={() => setHidePlayed(!hidePlayed)}
-                />
+                <div className={`w-8 h-4 rounded-full transition-colors ${groupByRoom ? 'bg-cyan-500' : 'bg-slate-700'} relative`}>
+                  <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${groupByRoom ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                </div>
+                <span className="text-[10px] text-slate-300 uppercase font-black tracking-wider">По румам</span>
+              </label>
+
+              <label className="flex items-center cursor-pointer gap-2">
+                <span className="text-[10px] text-slate-300 uppercase font-black tracking-wider">Скрыть старые</span>
                 <div className={`w-8 h-4 rounded-full transition-colors ${hidePlayed ? 'bg-cyan-500' : 'bg-slate-700'} relative`}>
                   <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${hidePlayed ? 'translate-x-4' : 'translate-x-0'}`}></div>
                 </div>
@@ -882,33 +910,26 @@ export default function App() {
                 <button onClick={() => setActiveTab('search')} className="inline-flex items-center justify-center gap-2 bg-cyan-950/30 border-2 border-cyan-500/50 hover:bg-cyan-900/40 text-cyan-400 font-bold text-sm py-3 rounded-xl transition-all shadow-[0_0_15px_rgba(34,211,238,0.2)] active:scale-95"><Search size={16} /> Искать турниры</button>
               </div>
             </div>
-          ) : (
-            displayGrid.map((t) => {
-              const prioStyles = getPriorityStyles(t.priority);
-              return (
-                <div key={t.id} className={`relative bg-slate-900 rounded-xl p-3.5 shadow-lg border border-slate-800 flex justify-between items-center gap-3 border-l-[3px] ${prioStyles.border} transition-all duration-300 ${t.played ? 'opacity-40 grayscale bg-slate-900/50 border-slate-800/50' : ''}`}>
-                  {t.played && (
-                    <div className="absolute -top-2.5 right-4 text-[9px] text-slate-400 bg-slate-800 font-bold uppercase tracking-wider border border-slate-700 px-2 py-0.5 rounded-md shadow-sm">
-                      Лейт-рега закрыта
-                    </div>
-                  )}
-                  <div className="flex-1 pl-1">
-                    <div className="flex items-center gap-2.5">
-                      <div className={`w-1.5 h-1.5 rounded-full ${prioStyles.dot}`}></div>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-[9px] font-bold text-slate-500 uppercase">{t.day_week}</span>
-                        <span className="text-xs font-mono font-bold text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.4)]">{t.time_start}</span>
-                        {getSmartTimer(t.time_start)}
-                      </div>
-                      <div className="ml-1 scale-90 origin-left"><RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} /></div>                    
-                    </div>
-                    <div className="font-bold text-sm text-slate-100 mt-1.5 leading-snug">{t.name}</div>
-                    <div className="text-sm font-black text-emerald-400 mt-1">{getRoomCurrency(t.room)}{t.buyin} <span className="text-xs text-blue-400 font-normal ml-2">EV: {t.ev_mtt}</span></div>
+          ) : groupByRoom ? (
+            // Рендер с группировкой по румам
+            <div className="space-y-4">
+              {Object.entries(groupedByRoomGrid).map(([room, tourneys]) => (
+                <div key={room} className="bg-slate-900/30 rounded-2xl border border-slate-800/50 p-2">
+                  <div className="flex items-center justify-between px-2 pt-1 pb-2">
+                    <RoomBadge roomName={room} getRoomStyle={getRoomStyle} />
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{tourneys.length} столов</span>
                   </div>
-                  <button onClick={() => toggleGrid(t)} className="p-3.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 rounded-xl border border-rose-500/20 transition active:scale-90"><Trash2 size={20} /></button>
+                  <div className="space-y-2">
+                    {tourneys.map(t => renderGridCard(t))}
+                  </div>
                 </div>
-              );
-            })
+              ))}
+            </div>
+          ) : (
+            // Обычный таймлайн рендер
+            <div className="space-y-2">
+              {displayGrid.map(t => renderGridCard(t))}
+            </div>
           )}
         </div>
       )}
