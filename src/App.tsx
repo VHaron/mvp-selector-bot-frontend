@@ -94,32 +94,37 @@ export default function App() {
   const getSmartTimer = (timeStr: string, dayWeekStr?: string) => {
     if (!timeStr) return null;
     
-    // Если передан день недели — проверяем, сегодняшний ли это день
+    // Если день турнира не сегодняшний — никаких таймеров и лейт-рег быть не может!
     if (dayWeekStr) {
       const cleanDay = dayWeekStr.toLowerCase().replace(/[^а-я]/g, '');
       const days = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
       const todayIndex = new Date().getDay();
       const tourneyIndex = days.findIndex(d => cleanDay.includes(d));
       
-      // Если день турнира не сегодня — таймер не показываем вообще
       if (tourneyIndex !== -1 && tourneyIndex !== todayIndex) return null;
     }
 
     const [hours, mins] = timeStr.split(':').map(Number);
     const now = new Date();
-    const target = new Date();
-    target.setHours(hours, mins, 0, 0);
-
-    let diffMins = Math.round((target.getTime() - now.getTime()) / 60000);
+    const currentTotalMins = now.getHours() * 60 + now.getMinutes();
+    const tourneyTotalMins = hours * 60 + mins;
     
-    if (diffMins < -12 * 60) diffMins += 24 * 60; 
-    if (diffMins > 12 * 60) diffMins -= 24 * 60;
+    // Разница в минутах: сколько прошло с момента старта турнира
+    let diffMins = currentTotalMins - tourneyTotalMins;
 
-    if (diffMins >= 0 && diffMins <= 60) {
-      return <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 animate-pulse bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30 ml-1.5 shadow-[0_0_8px_rgba(245,158,11,0.2)]">⏳ {diffMins} мин</span>;
-    } else if (diffMins < 0 && diffMins >= -120) {
+    // Учитываем переход через полночь для сегодняшних ночных турниров
+    if (diffMins < -720) diffMins += 1440; 
+    if (diffMins > 720) diffMins -= 1440;
+
+    // Если до старта от 0 до 60 минут — скоро начнется
+    if (diffMins >= -60 && diffMins < 0) {
+      return <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 animate-pulse bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30 ml-1.5 shadow-[0_0_8px_rgba(245,158,11,0.2)]">⏳ {Math.abs(diffMins)} мин</span>;
+    } 
+    // Если турнир уже идет (прошло от 0 до 120 минут с начала) — это реальная лейт-рега
+    else if (diffMins >= 0 && diffMins <= 120) {
       return <span className="text-[9px] font-black uppercase tracking-wider text-rose-400 animate-pulse bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/30 ml-1.5 shadow-[0_0_8px_rgba(244,63,94,0.2)]">🔥 Late Reg</span>;
     }
+    
     return null;
   };
 
