@@ -376,47 +376,43 @@ export default function App() {
     return getTier(a).id - getTier(b).id;
   }), [grid, sortOrder]);
 
-  const isPlayed = (timeString: string, dayWeekStr?: string) => {
-    if (!timeString) return false;
+const isPlayed = (timeString: string, dayWeekStr?: string) => {
+  if (!timeString) return false;
   
-    const cleanTime = timeString.trim().slice(0, 5);
-    const [hours, minutes] = cleanTime.split(':').map(Number);
-    if (isNaN(hours) || isNaN(minutes)) return false;
-
-    const now = new Date();
-  
-    // Текущий день недели (0 - ВС, 1 - ПН, 2 - ВТ и т.д.)
-    const todayDayIndex = now.getDay();
-  
-    const daysMap: Record<string, number> = {
-      'вс': 0, 'пн': 1, 'вт': 2, 'ср': 3, 'чт': 4, 'пт': 5, 'сб': 6,
-      'воскресенье': 0, 'понедельник': 1, 'вторник': 2, 'среда': 3, 'четверг': 4, 'пятница': 5, 'суббота': 6
-    };
-
-    if (dayWeekStr) {
-      const cleanDay = dayWeekStr.toLowerCase().replace('.', '').trim();
-      const tourneyDayIndex = daysMap[cleanDay];
+  // Если передан день недели (например, "Вт." или "Пн")
+  if (dayWeekStr) {
+    const cleanDay = dayWeekStr.toLowerCase().replace(/[^а-я]/g, '').trim(); // оставляем только буквы
+    const daysOrder = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
     
-      if (tourneyDayIndex !== undefined) {
-        // Жесткое правило: если турнир в другой день недели
-        if (tourneyDayIndex !== todayDayIndex) {
-        // Если день турнира "меньше" сегодняшнего (например, сегодня Ср, а турнир Пн) — он в прошлом (отыгран)
-        // Если день турнира "больше" (сегодня Пн, а турнир Вт) — он в будущем! Точно НЕ отыгран.
-        return tourneyDayIndex < todayDayIndex;
-        }
-      }
+    // Ищем индекс дня турнира в неделе
+    const tourneyDayIdx = daysOrder.findIndex(d => cleanDay.startsWith(d));
+    
+    if (tourneyDayIdx !== -1) {
+      const now = new Date();
+      const todayDayIdx = now.getDay(); // 0 - ВС, 1 - ПН ... 6 - СБ
+      
+      // Если день недели турнира строго больше сегодняшнего — это будущий день, он точно НЕ отыгран!
+      if (tourneyDayIdx > todayDayIdx) return false;
+      // Если день недели турнира строго меньше сегодняшнего — он уже прошел
+      if (tourneyDayIdx < todayDayIdx) return true;
     }
+  }
 
-    // Если день сегодняшний — проверяем по 2-часовому порогу
-    const currentTotalMins = now.getHours() * 60 + now.getMinutes();
-    const tourneyTotalMins = hours * 60 + minutes;
-    let diffMins = currentTotalMins - tourneyTotalMins;
+  // Если день сегодняшний (или день не распознался) — сверяем часы и минуты
+  const cleanTime = timeString.trim().slice(0, 5);
+  const [hours, minutes] = cleanTime.split(':').map(Number);
+  if (isNaN(hours) || isNaN(minutes)) return false;
 
-    if (diffMins < -720) diffMins += 1440; 
-    if (diffMins > 720) diffMins -= 1440;
+  const now = new Date();
+  const currentTotalMins = now.getHours() * 60 + now.getMinutes();
+  const tourneyTotalMins = hours * 60 + minutes;
+  let diffMins = currentTotalMins - tourneyTotalMins;
 
-    return diffMins > 120;
-  };
+  if (diffMins < -720) diffMins += 1440; 
+  if (diffMins > 720) diffMins -= 1440;
+
+  return diffMins > 120;
+};
   
   const displayGrid = useMemo(() => {
     return sortedGrid
