@@ -428,9 +428,14 @@ export default function App() {
       });
   }, [sortedGrid, hidePlayed]);
 
-  // Уникальные румы для табов
+  // Получаем уникальные румы из сетки и сортируем их строго в порядке ключей ROOMS (как в поиске)
   const activeGridRooms = useMemo(() => {
-    return Array.from(new Set(displayGrid.map(t => t.room)));
+    const presentRooms = Array.from(new Set(displayGrid.map(t => t.room)));
+    const roomKeysOrder = Object.values(ROOMS); // ['888Poker', 'Chico', 'GGNetwork', ...]
+    
+    return presentRooms.sort((a, b) => {
+      return roomKeysOrder.indexOf(a) - roomKeysOrder.indexOf(b);
+    });
   }, [displayGrid]);
 
   // Фильтрация турниров по выбранному чипсу рума
