@@ -91,8 +91,20 @@ export default function App() {
     try { WebApp.HapticFeedback.impactOccurred('light'); } catch(e){}
   };
 
-  const getSmartTimer = (timeStr: string) => {
+  const getSmartTimer = (timeStr: string, dayWeekStr?: string) => {
     if (!timeStr) return null;
+    
+    // Если передан день недели — проверяем, сегодняшний ли это день
+    if (dayWeekStr) {
+      const cleanDay = dayWeekStr.toLowerCase().replace(/[^а-я]/g, '');
+      const days = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+      const todayIndex = new Date().getDay();
+      const tourneyIndex = days.findIndex(d => cleanDay.includes(d));
+      
+      // Если день турнира не сегодня — таймер не показываем вообще
+      if (tourneyIndex !== -1 && tourneyIndex !== todayIndex) return null;
+    }
+
     const [hours, mins] = timeStr.split(':').map(Number);
     const now = new Date();
     const target = new Date();
@@ -369,37 +381,54 @@ export default function App() {
     return { max, timeStr };
   };
 
-  const sortedGrid = useMemo(() => [...grid].sort((a, b) => {
-    if (sortOrder === 'time') return a.time_start.localeCompare(b.time_start);
-    if (sortOrder === 'buyin') return parseNum(b.buyin) - parseNum(a.buyin);
-    if (sortOrder === 'ev') return parseNum(b.ev_mtt) - parseNum(a.ev_mtt);
-    return getTier(a).id - getTier(b).id;
-  }), [grid, sortOrder]);
+  // Правильная хронологическая сортировка: сначала по дням недели, потом по времени
+  const sortedGrid = useMemo(() => {
+    const daysOrder: Record<string, number> = { 'пн': 1, 'вт': 2, 'ср': 3, 'чт': 4, 'пт': 5, 'сб': 6, 'вс': 7 };
 
-const isPlayed = (timeString: string) => {
-  if (!timeString) return false;
+    return [...grid].sort((a, b) => {
+      if (sortOrder === 'buyin') return parseNum(b.buyin) - parseNum(a.buyin);
+      if (sortOrder === 'ev') return parseNum(b.ev_mtt) - parseNum(a.ev_mtt);
+      if (sortOrder === 'tier') return getTier(a).id - getTier(b).id;
+
+      // По умолчанию сортируем по дням недели + время
+      const dayA = (a.day_week || '').toLowerCase().replace(/[^а-я]/g, '');
+      const dayB = (b.day_week || '').toLowerCase().replace(/[^а-я]/g, '');
+      
+      const indexA = daysOrder[dayA] || 0;
+      const indexB = daysOrder[dayB] || 0;
+
+      if (indexA !== indexB) {
+        return indexA - indexB; // Сначала более ранние дни недели (Ср -> Чт)
+      }
+
+      return a.time_start.localeCompare(b.time_start); // Внутри одного дня — по времени
+    });
+  }, [grid, sortOrder]);
+
+  const isPlayed = (timeString: string) => {
+    if (!timeString) return false;
   
-  const cleanTime = timeString.trim().slice(0, 5);
-  const [hours, minutes] = cleanTime.split(':').map(Number);
-  if (isNaN(hours) || isNaN(minutes)) return false;
+    const cleanTime = timeString.trim().slice(0, 5);
+    const [hours, minutes] = cleanTime.split(':').map(Number);
+    if (isNaN(hours) || isNaN(minutes)) return false;
 
-  const now = new Date();
+    const now = new Date();
   
-  // Создаем объект даты для старта турнира СЕГОДНЯ
-  const tourneyTime = new Date();
-  tourneyTime.setHours(hours, minutes, 0, 0);
+    // Создаем объект даты для старта турнира СЕГОДНЯ
+    const tourneyTime = new Date();
+    tourneyTime.setHours(hours, minutes, 0, 0);
 
-  // Если турнир по часам раньше текущего времени более чем на 2 часа — считаем прошедшим
-  const diffMs = now.getTime() - tourneyTime.getTime();
-  const diffMins = diffMs / (1000 * 60);
+    // Если турнир по часам раньше текущего времени более чем на 2 часа — считаем прошедшим
+    const diffMs = now.getTime() - tourneyTime.getTime();
+    const diffMins = diffMs / (1000 * 60);
 
-  // Если разница от 0 до 120 минут — турнир идет или лейт-рега закрывается
-  // Если разница больше 120 минут (прошло больше 2 часов после старта) — отыгран
-  // Если разница отрицательная (турнир в будущем) — точно НЕ отыгран!
-  return diffMins > 120;
-};
+    // Если разница от 0 до 120 минут — турнир идет или лейт-рега закрывается
+    // Если разница больше 120 минут (прошло больше 2 часов после старта) — отыгран
+    // Если разница отрицательная (турнир в будущем) — точно НЕ отыгран!
+    return diffMins > 120;
+  };
   
-const displayGrid = useMemo(() => {
+  const displayGrid = useMemo(() => {
     return sortedGrid
       .map(t => ({ ...t, played: isPlayed(t.time_start) }))
       .filter(t => (hidePlayed ? !t.played : true))
@@ -564,7 +593,7 @@ const displayGrid = useMemo(() => {
             <div className="flex items-baseline gap-1">
               <span className="text-[9px] font-bold text-slate-500 uppercase">{t.day_week}</span>
               <span className="text-xs font-mono font-bold text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.4)]">{t.time_start}</span>
-              {getSmartTimer(t.time_start)}
+              {getSmartTimer(t.time_start, t.day_week)}
             </div>
             {!groupByRoom && (
               <div className="ml-1 scale-90 origin-left"><RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} /></div>
