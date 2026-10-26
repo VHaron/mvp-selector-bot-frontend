@@ -887,6 +887,12 @@ export default function App() {
           {grid.length > 0 && (
             <div className="flex items-center justify-between mb-4 px-3 bg-slate-900/40 p-2.5 rounded-xl border border-slate-800/50">
               <label className="flex items-center cursor-pointer gap-2">
+                <input 
+                  type="checkbox" 
+                  className="hidden" 
+                  checked={groupByRoom}
+                  onChange={() => setGroupByRoom(!groupByRoom)}
+                />
                 <div className={`w-8 h-4 rounded-full transition-colors ${groupByRoom ? 'bg-cyan-500' : 'bg-slate-700'} relative`}>
                   <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${groupByRoom ? 'translate-x-4' : 'translate-x-0'}`}></div>
                 </div>
@@ -895,6 +901,12 @@ export default function App() {
 
               <label className="flex items-center cursor-pointer gap-2">
                 <span className="text-[10px] text-slate-300 uppercase font-black tracking-wider">Скрыть старые</span>
+                <input 
+                  type="checkbox" 
+                  className="hidden" 
+                  checked={hidePlayed}
+                  onChange={() => setHidePlayed(!hidePlayed)}
+                />
                 <div className={`w-8 h-4 rounded-full transition-colors ${hidePlayed ? 'bg-cyan-500' : 'bg-slate-700'} relative`}>
                   <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${hidePlayed ? 'translate-x-4' : 'translate-x-0'}`}></div>
                 </div>
