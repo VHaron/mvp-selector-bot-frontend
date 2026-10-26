@@ -376,44 +376,32 @@ export default function App() {
     return getTier(a).id - getTier(b).id;
   }), [grid, sortOrder]);
 
-const isPlayed = (timeString: string, dayWeekStr?: string) => {
+const isPlayed = (timeString: string) => {
   if (!timeString) return false;
   
-  // Нормализуем день недели из бэкенда (например "Вт." -> "вт")
-  const tourneyDay = (dayWeekStr || '').toLowerCase().replace(/[^а-я]/g, '').trim();
-  
-  if (tourneyDay) {
-    const daysMap: Record<string, number> = { 'вс': 0, 'пн': 1, 'вт': 2, 'ср': 3, 'чт': 4, 'пт': 5, 'сб': 6 };
-    const todayIndex = new Date().getDay(); // 0 - ВС, 1 - ПН, 2 - ВТ...
-    const tourneyIndex = daysMap[tourneyDay];
-
-    if (tourneyIndex !== undefined) {
-      // Если день турнира строго в будущем относительно сегодняшнего дня — он точно НЕ отыгран!
-      if (tourneyIndex > todayIndex) return false;
-      // Если день турнира был в прошлом на этой неделе — он отыгран
-      if (tourneyIndex < todayIndex) return true;
-    }
-  }
-
-  // Если это сегодняшний день — проверяем, прошло ли уже 2 часа с момента старта
   const cleanTime = timeString.trim().slice(0, 5);
   const [hours, minutes] = cleanTime.split(':').map(Number);
   if (isNaN(hours) || isNaN(minutes)) return false;
 
   const now = new Date();
-  const currentTotalMins = now.getHours() * 60 + now.getMinutes();
-  const tourneyTotalMins = hours * 60 + minutes;
-  let diffMins = currentTotalMins - tourneyTotalMins;
+  
+  // Создаем объект даты для старта турнира СЕГОДНЯ
+  const tourneyTime = new Date();
+  tourneyTime.setHours(hours, minutes, 0, 0);
 
-  if (diffMins < -720) diffMins += 1440; 
-  if (diffMins > 720) diffMins -= 1440;
+  // Если турнир по часам раньше текущего времени более чем на 2 часа — считаем прошедшим
+  const diffMs = now.getTime() - tourneyTime.getTime();
+  const diffMins = diffMs / (1000 * 60);
 
+  // Если разница от 0 до 120 минут — турнир идет или лейт-рега закрывается
+  // Если разница больше 120 минут (прошло больше 2 часов после старта) — отыгран
+  // Если разница отрицательная (турнир в будущем) — точно НЕ отыгран!
   return diffMins > 120;
 };
   
-  const displayGrid = useMemo(() => {
+const displayGrid = useMemo(() => {
     return sortedGrid
-      .map(t => ({ ...t, played: isPlayed(t.time_start, t.day_week) })) // <--- передаем t.day_week сюда
+      .map(t => ({ ...t, played: isPlayed(t.time_start) }))
       .filter(t => (hidePlayed ? !t.played : true))
       .sort((a, b) => {
         if (a.played && !b.played) return 1;
