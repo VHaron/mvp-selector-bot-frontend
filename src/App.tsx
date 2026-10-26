@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Plus, Check, Trash2, X, Lock, ArrowUpDown, Flame, TrendingUp } from 'lucide-react';
+import { Search, ListTodo, Plus, Check, Trash2, X, Lock, ArrowUpDown, Flame, TrendingUp, BarChart2, NotebookPen } from 'lucide-react';
 
 interface Tournament {
   id: string; room: string; name: string; priority: string;
@@ -8,6 +8,8 @@ interface Tournament {
   afs: string; duration: string; ev_mtt: string; day_week: string;
 }
 
+type NoteTag = 'skip' | 'must' | 'none' | string;
+interface NoteData { tag: NoteTag; text: string; }
 interface SessionData { id: string; date: string; total_buyin: number; total_cashes: number; profit: number; tournaments_count: number; }
 
 const ROOMS: Record<string, string> = {
@@ -34,11 +36,11 @@ const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle:
   const domain = domainKey ? ROOM_DOMAINS[domainKey] : null;
 
   return (
-    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded border ${getRoomStyle(roomName)}`}>
+    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border ${getRoomStyle(roomName)}`}>
       {domain && (
-        <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={roomName} className="w-3 h-3 rounded-full object-cover bg-white/90 p-[1px]" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+        <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={roomName} className="w-3.5 h-3.5 rounded-full object-cover bg-white/90 p-[1px]" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
       )}
-      <span className="text-[9px] font-black uppercase tracking-wider">{roomName}</span>
+      <span className="text-[10px] font-black uppercase tracking-wider">{roomName}</span>
     </div>
   );
 };
@@ -85,9 +87,9 @@ export default function App() {
     const diffMins = (hours * 60 + mins) - (now.getHours() * 60 + now.getMinutes());
 
     if (diffMins > 0 && diffMins <= 60) {
-      return <span className="text-[9px] font-black uppercase text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30">⏳ {diffMins}м</span>;
+      return <span className="text-[10px] font-black uppercase text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30">⏳ {diffMins}м</span>;
     } else if (diffMins <= 0 && diffMins >= -120) {
-      return <span className="text-[9px] font-black uppercase text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/30 animate-pulse">🔥 Late</span>;
+      return <span className="text-[10px] font-black uppercase text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/30 animate-pulse">🔥 Late</span>;
     }
     return null;
   };
@@ -113,6 +115,8 @@ export default function App() {
 
   const [dateFrom, setDateFrom] = useState(''); const [dateTo, setDateTo] = useState('');
   const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
+  const [activeStats, setActiveStats] = useState<Tournament | null>(null);
+  const [notes, setNotes] = useState<Record<string, NoteData>>({});
   const [sessionsHistory, setSessionsHistory] = useState<SessionData[]>([]);
 
   const setPresetDate = (type: 'today' | 'tomorrow' | 'clear') => {
@@ -136,8 +140,9 @@ export default function App() {
 
   const loadAllUserData = async (token: string) => {
     try {
-      const [setRes, histRes, gridRes, balRes] = await Promise.all([
+      const [setRes, notRes, histRes, gridRes, balRes] = await Promise.all([
         apiCall('get_settings', { session_token: token }),
+        apiCall('get_notes', { session_token: token }),
         apiCall('get_sessions_history', { session_token: token }),
         apiCall('get_grid', { session_token: token }),
         apiCall('get_balances', { session_token: token })
@@ -147,6 +152,7 @@ export default function App() {
         if (setRes.active_formats) setActiveFormats(setRes.active_formats);
         if (setRes.sort_order) setSortOrder(setRes.sort_order);
       }
+      if (notRes.status === 'success' && notRes.notes) setNotes(notRes.notes);
       if (histRes.status === 'success' && histRes.history) setSessionsHistory(histRes.history.reverse());
       if (gridRes.status === 'success' && gridRes.grid) setGrid(gridRes.grid);
       if (balRes && balRes.status === 'success' && balRes.balances) setBalances(balRes.balances);
@@ -338,6 +344,12 @@ export default function App() {
     if (confirm('Очистить историю?')) { setSessionsHistory([]); await apiCall('clear_sessions_history', { session_token: sessionToken }); }
   };
 
+  const getNoteKey = (t: Tournament) => `${t.room}_${t.name}`;
+  const saveNote = (t: Tournament, tag: NoteTag, text: string) => {
+    const key = getNoteKey(t); const newNotes = { ...notes, [key]: { tag, text } };
+    setNotes(newNotes); apiCall('save_notes', { session_token: sessionToken, notes: newNotes });
+  };
+
   const getCumulativeData = () => {
     if (sessionsHistory.length === 0) return { points: '', current: 0 };
     const data = [...sessionsHistory].reverse().reduce((acc, s, i) => [...acc, (acc[i - 1] || 0) + s.profit], [] as number[]);
@@ -357,34 +369,34 @@ export default function App() {
     const prio = getPriorityStyles(t.priority);
 
     return (
-      <div key={t.id} className={`bg-slate-900 rounded-xl p-3 border border-slate-800 flex items-center justify-between gap-3 border-l-[3px] ${prio.border} ${t.played ? 'opacity-40 grayscale' : ''} hover:border-slate-700 transition`}>
-        <div className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer">
-          <div className="flex flex-col items-center shrink-0 w-12">
-            <span className="text-[10px] font-mono font-black text-cyan-400">{t.time_start}</span>
-            {overlay && <Flame size={12} className="text-orange-500 animate-pulse"/>}
+      <div key={t.id} className={`bg-slate-900 rounded-2xl p-4 border border-slate-800 flex items-center justify-between gap-4 border-l-[4px] ${prio.border} ${t.played ? 'opacity-40 grayscale' : ''} hover:border-slate-700 transition shadow-md`}>
+        <div className="flex items-center gap-4 min-w-0 flex-1 cursor-pointer" onClick={() => setActiveStats(t)}>
+          <div className="flex flex-col items-center shrink-0 w-14">
+            <span className="text-xs font-mono font-black text-cyan-400">{t.time_start}</span>
+            {overlay && <Flame size={14} className="text-orange-500 animate-pulse mt-0.5"/>}
             {!isSearch && getSmartTimer(t.time_start, t.day_week)}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-0.5">
-              <span className="text-[9px] text-slate-500 uppercase font-black">{t.day_week}</span>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] text-slate-400 uppercase font-black">{t.day_week}</span>
               <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
-              {isSearch && overlay && <span className="bg-orange-500/20 text-orange-400 text-[8px] px-1.5 py-0.2 rounded font-black uppercase">Overlay</span>}
+              {isSearch && overlay && <span className="bg-orange-500/20 text-orange-400 text-[9px] px-2 py-0.5 rounded font-black uppercase border border-orange-500/30">Overlay</span>}
             </div>
-            <div className="font-bold text-xs md:text-sm text-white truncate">{t.name}</div>
+            <div className="font-bold text-sm text-white truncate">{t.name}</div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-4 shrink-0">
           <div className="text-right">
-            <div className="text-xs md:text-sm font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</div>
-            <div className="text-[10px] text-blue-400 font-mono">EV: {t.ev_mtt}</div>
+            <div className="text-sm md:text-base font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</div>
+            <div className="text-xs text-blue-400 font-mono">EV: {t.ev_mtt}</div>
           </div>
           {isSearch ? (
-            <button onClick={() => toggleGrid(t)} className={`p-2.5 rounded-xl border transition active:scale-95 ${isAdded ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'bg-slate-800 text-blue-400 border-slate-700 hover:bg-slate-700'}`}>
-              {isAdded ? <Check size={16} strokeWidth={3}/> : <Plus size={16} strokeWidth={3}/>}
+            <button onClick={() => toggleGrid(t)} className={`p-3 rounded-xl border transition active:scale-95 ${isAdded ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'bg-slate-800 text-blue-400 border-slate-700 hover:bg-slate-700'}`}>
+              {isAdded ? <Check size={18} strokeWidth={3}/> : <Plus size={18} strokeWidth={3}/>}
             </button>
           ) : (
-            <button onClick={() => toggleGrid(t)} className="p-2.5 bg-rose-500/10 text-rose-400 rounded-xl border border-rose-500/20 hover:bg-rose-500/20 active:scale-95"><Trash2 size={16} /></button>
+            <button onClick={() => toggleGrid(t)} className="p-3 bg-rose-500/10 text-rose-400 rounded-xl border border-rose-500/20 hover:bg-rose-500/20 active:scale-95"><Trash2 size={18} /></button>
           )}
         </div>
       </div>
@@ -426,18 +438,18 @@ export default function App() {
 
   return (
     <div className="min-h-screen pb-24 md:pb-12 bg-slate-950 text-slate-200 font-sans antialiased">
-      <div className="sticky top-0 bg-slate-950/90 backdrop-blur-xl z-30 px-4 py-3 border-b border-slate-900 flex justify-between items-center max-w-5xl mx-auto">
+      <div className="sticky top-0 bg-slate-950/90 backdrop-blur-xl z-30 px-4 py-3.5 border-b border-slate-900 flex justify-between items-center max-w-5xl mx-auto">
         <div className="flex items-center gap-2 cursor-pointer" onClick={logout}>
-          <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]"></div>
+          <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]"></div>
           <span className="text-xs uppercase tracking-widest text-cyan-400 font-black">МВП Селектор</span>
         </div>
         
         <div className="hidden md:flex gap-2">
-          <button onClick={() => setActiveTab('search')} className={`px-4 py-1.5 rounded-xl text-xs font-bold transition ${activeTab === 'search' ? 'bg-cyan-950 text-cyan-400 border border-cyan-500/40' : 'text-slate-400 hover:text-white'}`}>Поиск</button>
-          <button onClick={() => setActiveTab('grid')} className={`px-4 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'grid' ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40' : 'text-slate-400 hover:text-white'}`}>
-            Сетка {grid.length > 0 && <span className="bg-emerald-500 text-slate-950 px-1.5 py-0.2 rounded-full text-[10px] font-black">{grid.length}</span>}
+          <button onClick={() => setActiveTab('search')} className={`px-4 py-2 rounded-xl text-xs font-bold transition ${activeTab === 'search' ? 'bg-cyan-950 text-cyan-400 border border-cyan-500/40' : 'text-slate-400 hover:text-white'}`}>Поиск</button>
+          <button onClick={() => setActiveTab('grid')} className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'grid' ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40' : 'text-slate-400 hover:text-white'}`}>
+            Сетка {grid.length > 0 && <span className="bg-emerald-500 text-slate-950 px-2 py-0.5 rounded-full text-[10px] font-black">{grid.length}</span>}
           </button>
-          <button onClick={() => setActiveTab('diary')} className={`px-4 py-1.5 rounded-xl text-xs font-bold transition ${activeTab === 'diary' ? 'bg-fuchsia-950 text-fuchsia-400 border border-fuchsia-500/40' : 'text-slate-400 hover:text-white'}`}>Дневник</button>
+          <button onClick={() => setActiveTab('diary')} className={`px-4 py-2 rounded-xl text-xs font-bold transition ${activeTab === 'diary' ? 'bg-fuchsia-950 text-fuchsia-400 border border-fuchsia-500/40' : 'text-slate-400 hover:text-white'}`}>Дневник</button>
         </div>
 
         <div className="flex items-center gap-4 text-xs font-bold">
@@ -446,28 +458,28 @@ export default function App() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-3 md:px-6 pt-4">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 pt-4">
         {activeTab === 'search' && (
-          <div className="space-y-3">
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-3 space-y-2.5">
+          <div className="space-y-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
               <div className="flex justify-between items-center">
-                <span className="text-[10px] text-slate-400 font-bold uppercase">Период турниров</span>
-                <div className="flex gap-1.5">
-                  <button onClick={() => setPresetDate('today')} className="px-2.5 py-1 text-[10px] font-bold bg-slate-800 text-slate-300 rounded-lg">Сегодня</button>
-                  <button onClick={() => setPresetDate('tomorrow')} className="px-2.5 py-1 text-[10px] font-bold bg-slate-800 text-slate-300 rounded-lg">Завтра</button>
-                  <button onClick={() => setPresetDate('clear')} className="px-2 py-1 text-[10px] bg-rose-500/10 text-rose-400 rounded-lg"><X size={12}/></button>
+                <span className="text-xs text-slate-400 font-bold uppercase">Период турниров</span>
+                <div className="flex gap-2">
+                  <button onClick={() => setPresetDate('today')} className="px-3 py-1.5 text-xs font-bold bg-slate-800 text-slate-300 rounded-xl">Сегодня</button>
+                  <button onClick={() => setPresetDate('tomorrow')} className="px-3 py-1.5 text-xs font-bold bg-slate-800 text-slate-300 rounded-xl">Завтра</button>
+                  <button onClick={() => setPresetDate('clear')} className="px-2.5 py-1.5 text-xs bg-rose-500/10 text-rose-400 rounded-xl"><X size={14}/></button>
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <input type="datetime-local" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none [color-scheme:dark]" />
-                <input type="datetime-local" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none [color-scheme:dark]" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                <input type="datetime-local" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 outline-none [color-scheme:dark]" />
+                <input type="datetime-local" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 outline-none [color-scheme:dark]" />
               </div>
-              <div className="flex flex-wrap gap-1 pt-1">
-                <button onClick={() => setSelectedRooms(selectedRooms.length === Object.keys(ROOMS).length ? [] : Object.keys(ROOMS))} className="px-2.5 py-1 rounded-xl text-[10px] font-black bg-slate-800 text-slate-300">Все румы</button>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                <button onClick={() => setSelectedRooms(selectedRooms.length === Object.keys(ROOMS).length ? [] : Object.keys(ROOMS))} className="px-3 py-1.5 rounded-xl text-xs font-black bg-slate-800 text-slate-300">Все румы</button>
                 {Object.entries(ROOMS).map(([id, name]) => {
                   const isSel = selectedRooms.includes(id);
                   return (
-                    <button key={id} onClick={() => toggleRoom(id)} className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition ${isSel ? 'bg-cyan-950/50 border-cyan-500/50 text-cyan-300' : 'bg-slate-950 border-slate-900 text-slate-600'}`}>
+                    <button key={id} onClick={() => toggleRoom(id)} className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition ${isSel ? 'bg-cyan-950/50 border-cyan-500/50 text-cyan-300' : 'bg-slate-950 border-slate-900 text-slate-600'}`}>
                       {name}
                     </button>
                   );
@@ -475,106 +487,106 @@ export default function App() {
               </div>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-2">
-              <div className="flex gap-1.5 flex-1">
-                <button onClick={() => toggleFormat('isPko')} className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase border ${activeFormats.isPko ? 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/30' : 'bg-slate-950 text-slate-600 border-slate-900'}`}>PKO</button>
-                <button onClick={() => toggleFormat('isTurbo')} className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase border ${activeFormats.isTurbo ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-slate-950 text-slate-600 border-slate-900'}`}>Turbo</button>
-                <button onClick={() => toggleFormat('isFreezeout')} className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase border ${activeFormats.isFreezeout ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' : 'bg-slate-950 text-slate-600 border-slate-900'}`}>Freezeout</button>
+            <div className="flex flex-col md:flex-row gap-3">
+              <div className="flex gap-2 flex-1">
+                <button onClick={() => toggleFormat('isPko')} className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase border ${activeFormats.isPko ? 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/30' : 'bg-slate-950 text-slate-600 border-slate-900'}`}>PKO</button>
+                <button onClick={() => toggleFormat('isTurbo')} className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase border ${activeFormats.isTurbo ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-slate-950 text-slate-600 border-slate-900'}`}>Turbo</button>
+                <button onClick={() => toggleFormat('isFreezeout')} className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase border ${activeFormats.isFreezeout ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' : 'bg-slate-950 text-slate-600 border-slate-900'}`}>Freezeout</button>
               </div>
               <div className="flex gap-2">
-                <button onClick={fetchTournaments} className="flex-1 md:w-48 bg-cyan-600 hover:bg-cyan-500 text-white font-black py-2.5 rounded-xl text-xs uppercase tracking-wider flex justify-center items-center gap-2 shadow-lg active:scale-95">
-                  {loading ? <Search className="animate-spin" size={16} /> : <Search size={16} strokeWidth={2.5} />} Найти
+                <button onClick={fetchTournaments} className="flex-1 md:w-52 bg-cyan-600 hover:bg-cyan-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider flex justify-center items-center gap-2 shadow-lg active:scale-95">
+                  {loading ? <Search className="animate-spin" size={16} /> : <Search size={16} strokeWidth={2.5} />} Найти турниры
                 </button>
                 <button onClick={() => setSortOrder(p => p === 'time' ? 'tier' : 'time')} className={`px-4 rounded-xl border flex items-center justify-center ${sortOrder === 'tier' ? 'bg-fuchsia-950/40 border-fuchsia-500/60 text-fuchsia-400' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>
-                  <Flame size={16} />
+                  <Flame size={18} />
                 </button>
               </div>
             </div>
 
             {!loading && searchResults.length > 0 && (
               <div className="flex gap-2">
-                <button onClick={() => bulkAdd('top')} className="flex-1 py-2 text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-xl">+ Все зеленые</button>
-                <button onClick={() => bulkAdd('overlay')} className="flex-1 py-2 text-[10px] font-black uppercase bg-orange-500/10 text-orange-400 border border-orange-500/30 rounded-xl">+ Все оверлеи</button>
+                <button onClick={() => bulkAdd('top')} className="flex-1 py-2.5 text-xs font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-xl">+ Все зеленые</button>
+                <button onClick={() => bulkAdd('overlay')} className="flex-1 py-2.5 text-xs font-black uppercase bg-orange-500/10 text-orange-400 border border-orange-500/30 rounded-xl">+ Все оверлеи</button>
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {searchResults.map(t => renderCard(t, true))}
             </div>
           </div>
         )}
 
         {activeTab === 'grid' && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {grid.length > 0 && (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-center shadow-md">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-center shadow-md">
                 <div className="flex flex-col justify-center border-r border-slate-800">
-                  <span className="text-[9px] uppercase text-slate-500 font-bold">Турниров</span>
-                  <span className="text-base font-black text-white">{grid.length}</span>
+                  <span className="text-[10px] uppercase text-slate-400 font-bold mb-1">Турниров</span>
+                  <span className="text-xl font-black text-white">{grid.length}</span>
                 </div>
                 <div className="flex flex-col justify-center md:border-r border-slate-800">
-                  <span className="text-[9px] uppercase text-slate-500 font-bold">Ожидание (EV)</span>
-                  <span className={`text-base font-black ${totalEV >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{totalEV > 0 ? '+' : ''}${totalEV.toFixed(1)}</span>
+                  <span className="text-[10px] uppercase text-slate-400 font-bold mb-1">Ожидание (EV)</span>
+                  <span className={`text-xl font-black ${totalEV >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{totalEV > 0 ? '+' : ''}${totalEV.toFixed(1)}</span>
                 </div>
                 <div className="flex flex-col justify-center border-r border-slate-800">
-                  <span className="text-[9px] uppercase text-slate-500 font-bold">Конец сессии</span>
-                  <span className="text-base font-black text-cyan-400">~{getSessionEndTime(grid)}</span>
+                  <span className="text-[10px] uppercase text-slate-400 font-bold mb-1">Конец сессии</span>
+                  <span className="text-xl font-black text-cyan-400">~{getSessionEndTime(grid)}</span>
                 </div>
                 <div className="flex flex-col justify-center">
-                  <span className="text-[9px] uppercase text-slate-500 font-bold">Пик столов</span>
-                  <span className="text-base font-black text-amber-400">~{getPeakTablesData(grid).max} шт</span>
+                  <span className="text-[10px] uppercase text-slate-400 font-bold mb-1">Пик столов</span>
+                  <span className="text-xl font-black text-amber-400">~{getPeakTablesData(grid).max} шт</span>
                 </div>
               </div>
             )}
 
             {grid.length > 0 && (
-              <div className="flex gap-2">
-                <button onClick={() => setSortOrder(p => p === 'time' ? 'buyin' : p === 'buyin' ? 'ev' : 'time')} className="flex-1 bg-slate-900 border border-slate-800 rounded-xl py-2 text-xs font-black text-blue-400 uppercase flex items-center justify-center gap-1.5">
-                  <ArrowUpDown size={14} /> {sortOrder}
+              <div className="flex gap-3">
+                <button onClick={() => setSortOrder(p => p === 'time' ? 'buyin' : p === 'buyin' ? 'ev' : 'time')} className="flex-1 bg-slate-900 border border-slate-800 rounded-xl py-2.5 text-xs font-black text-blue-400 uppercase flex items-center justify-center gap-2">
+                  <ArrowUpDown size={16} /> Сортировка: {sortOrder}
                 </button>
-                <button onClick={clearGrid} className="px-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl"><Trash2 size={16} /></button>
+                <button onClick={clearGrid} className="px-5 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl"><Trash2 size={18} /></button>
               </div>
             )}
 
             {grid.length > 0 && (
-              <div className="flex items-center justify-between px-3 py-2 bg-slate-900/60 rounded-xl border border-slate-800 text-xs font-bold">
-                <label className="flex items-center cursor-pointer gap-2">
+              <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900 rounded-xl border border-slate-800 text-xs font-bold">
+                <label className="flex items-center cursor-pointer gap-2.5">
                   <input type="checkbox" className="hidden" checked={groupByRoom} onChange={() => setGroupByRoom(!groupByRoom)} />
-                  <div className={`w-8 h-4 rounded-full transition-colors ${groupByRoom ? 'bg-cyan-500' : 'bg-slate-700'} relative`}><div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${groupByRoom ? 'translate-x-4' : 'translate-x-0'}`}></div></div>
-                  <span className="uppercase text-slate-300 font-black">По румам</span>
+                  <div className={`w-9 h-5 rounded-full transition-colors ${groupByRoom ? 'bg-cyan-500' : 'bg-slate-700'} relative`}><div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${groupByRoom ? 'translate-x-4' : 'translate-x-0'}`}></div></div>
+                  <span className="uppercase text-slate-300 font-black">Группировать по румам</span>
                 </label>
-                <label className="flex items-center cursor-pointer gap-2">
+                <label className="flex items-center cursor-pointer gap-2.5">
                   <span className="uppercase text-slate-300 font-black">Скрыть отыгранные</span>
                   <input type="checkbox" className="hidden" checked={hidePlayed} onChange={() => setHidePlayed(!hidePlayed)} />
-                  <div className={`w-8 h-4 rounded-full transition-colors ${hidePlayed ? 'bg-cyan-500' : 'bg-slate-700'} relative`}><div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${hidePlayed ? 'translate-x-4' : 'translate-x-0'}`}></div></div>
+                  <div className={`w-9 h-5 rounded-full transition-colors ${hidePlayed ? 'bg-cyan-500' : 'bg-slate-700'} relative`}><div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${hidePlayed ? 'translate-x-4' : 'translate-x-0'}`}></div></div>
                 </label>
               </div>
             )}
 
             {grid.length === 0 ? (
-              <div className="text-center py-20 bg-slate-900/40 rounded-2xl border border-slate-800">
-                <div className="text-4xl mb-2 opacity-30">📋</div>
-                <p className="text-slate-400 text-sm font-bold">Сетка пуста</p>
+              <div className="text-center py-24 bg-slate-900/40 rounded-3xl border border-slate-800">
+                <div className="text-5xl mb-3 opacity-30">📋</div>
+                <p className="text-slate-400 text-base font-bold">Сетка пуста</p>
               </div>
             ) : groupByRoom ? (
-              <div className="space-y-3">
-                <div className="overflow-x-auto no-scrollbar flex gap-1.5 py-1">
+              <div className="space-y-4">
+                <div className="overflow-x-auto no-scrollbar flex gap-2 py-1">
                   {activeGridRooms.map(room => {
                     const isSelected = currentActiveRoom === room;
                     const count = displayGrid.filter(t => t.room === room).length;
                     return (
-                      <button key={room} onClick={() => setGridActiveRoom(room)} className={`px-3 py-2 rounded-xl text-xs font-bold border shrink-0 ${isSelected ? 'bg-cyan-950 border-cyan-500/80 text-cyan-300' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>
+                      <button key={room} onClick={() => setGridActiveRoom(room)} className={`px-4 py-2 rounded-xl text-xs font-bold border shrink-0 ${isSelected ? 'bg-cyan-950 border-cyan-500/80 text-cyan-300' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>
                         {room} ({count})
                       </button>
                     );
                   })}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {filteredGridBySelectedRoom.map(t => renderCard(t, false))}
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {displayGrid.map(t => renderCard(t, false))}
               </div>
             )}
@@ -583,16 +595,16 @@ export default function App() {
 
         {activeTab === 'diary' && (
           <div className="space-y-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-              <div className="flex justify-between items-center mb-3">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5">
+              <div className="flex justify-between items-center mb-4">
                 <span className="text-xs font-bold text-slate-400 uppercase">Банкролл по румам</span>
-                <span className="text-emerald-400 font-black text-xl">${totalBankroll.toFixed(0)}</span>
+                <span className="text-emerald-400 font-black text-2xl">${totalBankroll.toFixed(0)}</span>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
                 {selectedRooms.map(roomId => {
                   const roomName = ROOMS[roomId];
                   return (
-                    <div key={roomId} className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 flex items-center justify-between">
+                    <div key={roomId} className="bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 flex items-center justify-between">
                       <span className="text-xs font-bold text-slate-400">{roomName}</span>
                       <input type="number" value={balances[roomName] || ''} onChange={(e) => updateBalance(roomName, e.target.value)} placeholder="0" className="w-16 bg-transparent text-right text-white font-bold text-sm outline-none [appearance:textfield]" />
                     </div>
@@ -601,12 +613,12 @@ export default function App() {
               </div>
             </div>
 
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-              <div className="flex justify-between items-center mb-3">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5">
+              <div className="flex justify-between items-center mb-4">
                 <span className="text-xs font-bold text-slate-400 uppercase">График профита</span>
-                <button onClick={clearHistory} className="text-rose-400 p-1"><Trash2 size={14} /></button>
+                <button onClick={clearHistory} className="text-rose-400 p-1.5 bg-rose-500/10 rounded-xl"><Trash2 size={16} /></button>
               </div>
-              <div className="relative h-36 w-full bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">
+              <div className="relative h-44 w-full bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden">
                 {sessionsHistory.length > 0 && (
                   <svg className="absolute inset-0 w-full h-full" viewBox="-2 -2 104 104" preserveAspectRatio="none">
                     <polyline points={chartData.points} fill="none" stroke={chartData.current >= 0 ? '#34d399' : '#fb7185'} strokeWidth="2" strokeLinejoin="round" />
@@ -617,6 +629,48 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {/* 📊 Модалка подробных статов и заметок турнира */}
+      {activeStats && (() => {
+        const key = getNoteKey(activeStats);
+        const note = notes[key] || { tag: 'none', text: '' };
+        const prio = getPriorityStyles(activeStats.priority);
+        const isAdded = grid.some(item => item.id === activeStats.id);
+
+        return (
+          <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className={`bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl relative border-l-[6px] ${prio.border}`}>
+              <button onClick={() => setActiveStats(null)} className="absolute top-4 right-4 p-2.5 bg-slate-800 hover:bg-slate-700 rounded-full text-slate-400 transition"><X size={20}/></button>
+              
+              <div className="flex items-center gap-2 mb-2 pr-8">
+                <h3 className="font-black text-xl text-white leading-tight">{activeStats.name}</h3>
+              </div>
+              <div className="inline-block mb-5"><RoomBadge roomName={activeStats.room} getRoomStyle={getRoomStyle} /></div>            
+              
+              <div className="grid grid-cols-2 gap-2.5 mb-5">
+                <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 flex flex-col"><span className="text-[10px] text-slate-500 font-bold uppercase mb-1">GTD</span><div className="font-black text-white text-lg">${activeStats.gtd}</div></div>
+                <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 flex flex-col"><span className="text-[10px] text-slate-500 font-bold uppercase mb-1">Бай-ин</span><div className="font-black text-emerald-400 text-lg">{getRoomCurrency(activeStats.room)}{activeStats.buyin}</div></div>
+                <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 flex flex-col"><span className="text-[10px] text-slate-500 font-bold uppercase mb-1">AFS</span><div className="font-black text-purple-400 text-lg">{activeStats.afs}</div></div>
+                <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 flex flex-col"><span className="text-[10px] text-slate-500 font-bold uppercase mb-1">ROI / EV</span><div className="font-black text-blue-400 text-lg">{activeStats.roi_str}</div></div>
+              </div>
+
+              <div className="bg-slate-950 rounded-2xl p-4 border border-slate-800 mb-5">
+                <div className="flex items-center gap-2 mb-3 text-slate-400 text-xs font-bold uppercase"><NotebookPen size={14}/> Заметка и статус</div>
+                <div className="flex gap-2 mb-3">
+                  <button onClick={() => saveNote(activeStats, 'none', note.text)} className={`flex-1 py-2 text-xs font-bold rounded-xl border ${note.tag==='none' ? 'bg-slate-800 text-white border-slate-600' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>Сброс</button>
+                  <button onClick={() => saveNote(activeStats, 'skip', note.text)} className={`flex-1 py-2 text-xs font-bold rounded-xl border ${note.tag==='skip' ? 'bg-rose-500/20 text-rose-400 border-rose-500/50' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🚫 Скип</button>
+                  <button onClick={() => saveNote(activeStats, 'must', note.text)} className={`flex-1 py-2 text-xs font-bold rounded-xl border ${note.tag==='must' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🔥 Топ</button>
+                </div>
+                <input value={note.text} onChange={e => saveNote(activeStats, note.tag, e.target.value)} placeholder="Заметка (например: много фишей)..." className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white outline-none focus:border-cyan-500" />
+              </div>
+
+              <button onClick={() => { toggleGrid(activeStats); setActiveStats(null); }} className={`w-full py-3.5 rounded-xl font-black text-sm uppercase tracking-wider transition active:scale-95 ${isAdded ? 'bg-rose-500/10 border-2 border-rose-500/40 text-rose-400' : 'bg-cyan-600 text-white'}`}>
+                {isAdded ? 'Убрать из сетки' : 'Добавить в сетку'}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="fixed bottom-0 w-full bg-slate-950/95 backdrop-blur-xl border-t border-slate-900 flex md:hidden pb-safe z-40">
         <button onClick={() => setActiveTab('search')} className={`flex-1 flex flex-col items-center py-3 ${activeTab === 'search' ? 'text-cyan-400' : 'text-slate-500'}`}>
