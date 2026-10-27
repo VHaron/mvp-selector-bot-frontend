@@ -34,7 +34,6 @@ const ROOM_DOMAINS: Record<string, string> = {
 
 const getRoomCurrency = (roomName: string) => {
   const name = (roomName || '').toLowerCase();
-  if (name.includes('pokerdom') || name.includes('rpt') || name.includes('pd')) return '₽';
   if (name.includes('ps(es)') || name.includes('es') || name.includes('winamax') || name.includes('ipoker') || name.includes('wmx')) return '€';
   return '$';
 };
