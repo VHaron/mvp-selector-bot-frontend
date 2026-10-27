@@ -460,13 +460,13 @@ export default function App() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
-            <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">BT. {t.time_start}</span>
-            {/* Возвращаем t.day_week скрытым в DOM для полной сохранности логики фильтров и дней, но без визуального отображения */}
-            <span className="hidden">{t.day_week}</span>
+            <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">
+              {t.day_week ? `${t.day_week} ` : ''}BT. {t.time_start}
+            </span>
             {isOverlay(t) && <Flame size={12} className="text-orange-500 animate-pulse"/>}
             {getSmartTimer(t.time_start, t.day_week)}
           </div>
-          <div className="font-bold text-sm text-white truncate mb-1.5">{t.name}</div>
+          <div className="font-bold text-sm text-white truncate mb-1.5">{t.name.replace(/\s*\[\d{2}:\d{2}\]/g, '')}</div>
           <div className="flex items-center gap-4 text-xs">
             <span className="font-black text-emerald-400 text-sm">{getRoomCurrency(t.room)}{t.buyin}</span>
             <span className="text-slate-400 font-bold">{t.afs} тел</span>
@@ -723,13 +723,13 @@ export default function App() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2.5 mb-2">
                           <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
-                          <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">BT. {t.time_start}</span>
-                          {/* Скрываем день недели визуально, но оставляем для логики */}
-                          <span className="hidden">{t.day_week}</span>
+                          <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">
+                            {t.day_week ? `${t.day_week} ` : ''}BT. {t.time_start}
+                          </span>
                           {isOverlay(t) && <Flame size={14} className="text-orange-500 animate-pulse"/>}
                           {getSmartTimer(t.time_start, t.day_week)}
                         </div>
-                        <div className="font-bold text-sm text-white truncate mb-1.5">{t.name}</div>
+                        <div className="font-bold text-sm text-white truncate mb-1.5">{t.name.replace(/\s*\[\d{2}:\d{2}\]/g, '')}</div>
                         <div className="flex items-center gap-4 text-xs">
                           <span className="font-black text-emerald-400 text-sm">{getRoomCurrency(t.room)}{t.buyin}</span>
                           <span className="text-slate-400 font-bold">{t.afs} тел</span>
@@ -943,7 +943,7 @@ export default function App() {
             <h2 className="text-base font-black text-white mb-4">Шаблоны фильтров</h2>
             <div className="flex gap-2 mb-4">
               <input value={newPresetName} onChange={e => setNewPresetName(e.target.value)} placeholder="Название..." className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none" />
-              <button onClick={savePreset} disabled={!newPresetName.trim()} className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-3.5 rounded-xl disabled:opacity-30"><Save size={18} /></button>
+              <button onClick={savePreset} disabled={!newPresetName.trim()} className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-3.5 rounded-xl disabled:opacity-30"><Save size5={18} /></button>
             </div>
             <div className="space-y-2 max-h-56 overflow-y-auto">
               {presets.length === 0 ? <div className="text-center py-6 text-slate-500 text-xs">Нет сохраненных шаблонов</div> : 
