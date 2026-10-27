@@ -643,37 +643,37 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3">
-<div className="flex gap-2">
+<div className="flex flex-col sm:flex-row gap-3 items-center">
+  {/* Компактные чипсы форматов */}
+  <div className="flex gap-2 w-full sm:flex-1">
+    <button 
+      onClick={() => toggleFormat('isPko')} 
+      className={`flex-1 py-3 px-3 rounded-xl text-xs font-black uppercase border transition flex items-center justify-center gap-1.5 ${activeFormats.isPko ? 'bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/50 shadow-sm' : 'bg-slate-950/40 text-slate-500 border-slate-800/80 hover:text-slate-400'}`}
+    >
+      <span>🎯</span> <span>PKO</span>
+    </button>
+    <button 
+      onClick={() => toggleFormat('isTurbo')} 
+      className={`flex-1 py-3 px-3 rounded-xl text-xs font-black uppercase border transition flex items-center justify-center gap-1.5 ${activeFormats.isTurbo ? 'bg-amber-500/15 text-amber-400 border-amber-500/50 shadow-sm' : 'bg-slate-950/40 text-slate-500 border-slate-800/80 hover:text-slate-400'}`}
+    >
+      <span>⚡</span> <span>Turbo</span>
+    </button>
+    <button 
+      onClick={() => toggleFormat('isFreezeout')} 
+      className={`flex-1 py-3 px-3 rounded-xl text-xs font-black uppercase border transition flex items-center justify-center gap-1.5 ${activeFormats.isFreezeout ? 'bg-blue-500/15 text-blue-400 border-blue-500/50 shadow-sm' : 'bg-slate-950/40 text-slate-500 border-slate-800/80 hover:text-slate-400'}`}
+    >
+      <span>🧊</span> <span>Freeze</span>
+    </button>
+  </div>
+
+  {/* Кнопка поиска на всю оставшуюся ширину */}
   <button 
-    onClick={() => toggleFormat('isPko')} 
-    className={`flex-1 py-2 px-3 rounded-xl text-xs font-black uppercase border transition flex items-center justify-center gap-1.5 ${activeFormats.isPko ? 'bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/50 shadow-sm' : 'bg-slate-900/50 text-slate-500 border-slate-800/80 hover:text-slate-400'}`}
+    onClick={fetchTournaments} 
+    className="w-full sm:w-auto px-8 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider flex justify-center items-center gap-2 transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] active:scale-95 shrink-0"
   >
-    <span>🎯</span> <span>PKO</span>
-  </button>
-  <button 
-    onClick={() => toggleFormat('isTurbo')} 
-    className={`flex-1 py-2 px-3 rounded-xl text-xs font-black uppercase border transition flex items-center justify-center gap-1.5 ${activeFormats.isTurbo ? 'bg-amber-500/15 text-amber-400 border-amber-500/50 shadow-sm' : 'bg-slate-900/50 text-slate-500 border-slate-800/80 hover:text-slate-400'}`}
-  >
-    <span>⚡</span> <span>Turbo</span>
-  </button>
-  <button 
-    onClick={() => toggleFormat('isFreezeout')} 
-    className={`flex-1 py-2 px-3 rounded-xl text-xs font-black uppercase border transition flex items-center justify-center gap-1.5 ${activeFormats.isFreezeout ? 'bg-blue-500/15 text-blue-400 border-blue-500/50 shadow-sm' : 'bg-slate-900/50 text-slate-500 border-slate-800/80 hover:text-slate-400'}`}
-  >
-    <span>🧊</span> <span>Freeze</span>
+    {loading ? <><Search className="animate-spin" size={16} /> Ищем...</> : <><Search size={16} strokeWidth={3} /> Найти турниры</>}
   </button>
 </div>
-
-                <div className="flex gap-2">
-                  <button 
-                    onClick={fetchTournaments} 
-                    className="w-full sm:w-auto px-10 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-3.5 rounded-xl text-xs uppercase tracking-wider flex justify-center items-center gap-2 transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] active:scale-95"
-                  >
-                    {loading ? <><Search className="animate-spin" size={16} /> Ищем...</> : <><Search size={16} strokeWidth={3} /> Найти турниры</>}
-                  </button>
-                </div>
-              </div>
 
               {!loading && searchResults.length > 0 && (
                 <div className="flex gap-3">
