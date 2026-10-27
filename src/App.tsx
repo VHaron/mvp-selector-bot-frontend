@@ -480,14 +480,13 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans antialiased pb-20 md:pb-8">
       
-      {/* 🖥️ Полноценный сайт-шапка (адаптирован для ПК и мобилок) */}
+      {/* Шапка */}
       <header className="sticky top-0 bg-slate-950/90 backdrop-blur-md z-30 border-b border-slate-800 px-4 md:px-8 py-3 flex justify-between items-center shadow-lg">
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)] cursor-pointer" onClick={logout} title="Выйти"></div>
           <h1 className="text-base md:text-lg font-black tracking-wider text-white uppercase">МВП Селектор</h1>
         </div>
 
-        {/* Навигация для ПК прямо в шапке */}
         <nav className="hidden md:flex gap-2">
           <button onClick={() => setActiveTab('search')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition ${activeTab === 'search' ? 'bg-cyan-950/60 border border-cyan-500/60 text-cyan-400' : 'text-slate-400 hover:text-white'}`}>Поиск турниров</button>
           <button onClick={() => setActiveTab('grid')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center gap-2 ${activeTab === 'grid' ? 'bg-emerald-950/60 border border-emerald-500/60 text-emerald-400' : 'text-slate-400 hover:text-white'}`}>
@@ -502,10 +501,9 @@ export default function App() {
         </div>
       </header>
 
-      {/* Основной контент: на ПК шире, на мобилках компактно */}
       <main className="max-w-6xl mx-auto px-4 md:px-8 py-6">
         
-        {/* 🔍 Поиск */}
+        {/* Поиск */}
         {activeTab === 'search' && (
           <div className="space-y-4">
             <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4 shadow-xl space-y-3">
@@ -524,7 +522,6 @@ export default function App() {
                 <input type="datetime-local" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 outline-none focus:border-cyan-500 [color-scheme:dark]" />
               </div>
 
-              {/* Румы (на ПК сетка или скролл) */}
               <div className="flex flex-wrap gap-1.5 pt-2">
                 <button onClick={() => setSelectedRooms(selectedRooms.length === Object.keys(ROOMS).length ? [] : Object.keys(ROOMS))} className="px-3 py-1.5 rounded-xl text-xs font-black border bg-slate-800 text-slate-300 border-slate-700">
                   {selectedRooms.length === Object.keys(ROOMS).length ? 'Сбросить' : 'Все румы'}
@@ -542,15 +539,21 @@ export default function App() {
               </div>
             </div>
 
+            {/* Блок фильтров форматов и яркой кнопки поиска */}
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex gap-2 flex-1">
-                <button onClick={() => toggleFormat('isPko')} className={`flex-1 py-2 rounded-xl text-xs font-black uppercase border transition ${activeFormats.isPko ? 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/40' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🎯 PKO</button>
-                <button onClick={() => toggleFormat('isTurbo')} className={`flex-1 py-2 rounded-xl text-xs font-black uppercase border transition ${activeFormats.isTurbo ? 'bg-amber-500/10 text-amber-400 border-amber-500/40' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>⚡ Turbo</button>
-                <button onClick={() => toggleFormat('isFreezeout')} className={`flex-1 py-2 rounded-xl text-xs font-black uppercase border transition ${activeFormats.isFreezeout ? 'bg-blue-500/10 text-blue-400 border-blue-500/40' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🧊 Freez</button>
+                <button onClick={() => toggleFormat('isPko')} className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase border transition ${activeFormats.isPko ? 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/40' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🎯 PKO</button>
+                <button onClick={() => toggleFormat('isTurbo')} className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase border transition ${activeFormats.isTurbo ? 'bg-amber-500/10 text-amber-400 border-amber-500/40' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>⚡ Turbo</button>
+                <button onClick={() => toggleFormat('isFreezeout')} className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase border transition ${activeFormats.isFreezeout ? 'bg-blue-500/10 text-blue-400 border-blue-500/40' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🧊 Freez</button>
               </div>
+
+              {/* ЯРКАЯ КНОПКА ПОИСКА */}
               <div className="flex gap-2">
-                <button onClick={fetchTournaments} className="flex-1 sm:flex-none px-6 bg-cyan-950/40 border-2 border-cyan-500/60 hover:bg-cyan-900/50 text-cyan-400 font-black py-2.5 rounded-xl text-xs flex justify-center items-center gap-2 transition shadow-lg">
-                  {loading ? <><Search className="animate-spin" size={16} /> Ищем...</> : <><Search size={16} strokeWidth={2.5} /> Найти турниры</>}
+                <button 
+                  onClick={fetchTournaments} 
+                  className="flex-1 sm:flex-none px-8 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider flex justify-center items-center gap-2 transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] active:scale-95"
+                >
+                  {loading ? <><Search className="animate-spin" size={16} /> Ищем...</> : <><Search size={16} strokeWidth={3} /> Найти турниры</>}
                 </button>
                 <button onClick={() => setSortOrder(p => p === 'time' ? 'tier' : 'time')} className={`border px-4 rounded-xl flex items-center justify-center transition ${sortOrder === 'tier' ? 'bg-fuchsia-950/40 border-fuchsia-500/60 text-fuchsia-400' : 'bg-slate-900 border-slate-800 text-slate-400'}`} title="Сортировка по Тьер"><Flame size={18} strokeWidth={2.5} /></button>
               </div>
@@ -563,7 +566,6 @@ export default function App() {
               </div>
             )}
 
-            {/* На ПК результаты удобно выводить в сетку из 2 колонок */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
               {loading && [1, 2, 3, 4].map(i => <div key={i} className="h-20 bg-slate-900/40 rounded-xl border border-slate-800/40 animate-pulse"></div>)}
               
@@ -613,7 +615,7 @@ export default function App() {
           </div>
         )}
 
-        {/* 📋 Сетка */}
+        {/* Сетка */}
         {activeTab === 'grid' && (
           <div className="space-y-4">
             {grid.length > 0 && (
@@ -683,7 +685,7 @@ export default function App() {
           </div>
         )}
 
-        {/* 📈 Дневник */}
+        {/* Дневник */}
         {activeTab === 'diary' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-1 space-y-4">
@@ -752,7 +754,7 @@ export default function App() {
         )}
       </main>
 
-      {/* Модалки (Турнир, Сессия, Шаблоны) */}
+      {/* Модалки */}
       {activeStats && (() => {
         const key = getNoteKey(activeStats);
         const note = notes[key] || { tag: 'none', text: '' };
@@ -823,7 +825,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 📱 Нижняя навигация только для мобильных устройств */}
+      {/* Мобильная навигация */}
       <div className="md:hidden fixed bottom-0 w-full bg-slate-950/95 backdrop-blur-md border-t border-slate-800 flex z-40">
         <button onClick={() => setActiveTab('search')} className={`flex-1 flex flex-col items-center py-3 relative ${activeTab === 'search' ? 'text-cyan-400' : 'text-slate-500'}`}>
           {activeTab === 'search' && <div className="absolute top-0 w-8 h-[2px] bg-cyan-400 rounded-b-full"></div>}
