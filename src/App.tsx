@@ -76,13 +76,11 @@ export default function App() {
   const [grid, setGrid] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(false);
   
-  // Улучшенные стейты сетки
   const [hidePlayed, setHidePlayed] = useState(false); 
   const [groupByRoom, setGroupByRoom] = useState(false);
   const [gridActiveRoom, setGridActiveRoom] = useState<string | null>(null);
 
   const [activeFormats, setActiveFormats] = useState({ isPko: true, isFreezeout: true, isTurbo: true });
-  const [isCompact, setIsCompact] = useState(false);
   const [sortOrder, setSortOrder] = useState<'time' | 'buyin' | 'ev' | 'tier'>('time');
   const [selectedRooms, setSelectedRooms] = useState<string[]>(Object.keys(ROOMS));
 
@@ -94,7 +92,6 @@ export default function App() {
   const getSmartTimer = (timeStr: string, dayWeekStr?: string) => {
     if (!timeStr) return null;
     
-    // Если день турнира не сегодняшний — никаких таймеров быть не может!
     if (dayWeekStr) {
       const cleanDay = dayWeekStr.toLowerCase().replace(/[^а-я]/g, '');
       const days = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
@@ -109,16 +106,11 @@ export default function App() {
     
     const currentTotalMins = now.getHours() * 60 + now.getMinutes();
     const tourneyTotalMins = hours * 60 + mins;
-    
-    // Разница: сколько минут осталось до старта (или прошло после)
     const diffMins = tourneyTotalMins - currentTotalMins;
 
-    // 1. Если до старта от 1 до 60 минут — скоро начнется
     if (diffMins > 0 && diffMins <= 60) {
       return <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 animate-pulse bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30 ml-1.5 shadow-[0_0_8px_rgba(245,158,11,0.2)]">⏳ {diffMins} мин</span>;
-    } 
-    // 2. Если турнир уже идет (начался от 0 до 120 минут назад) — реальная лейт-рега
-    else if (diffMins <= 0 && diffMins >= -120) {
+    } else if (diffMins <= 0 && diffMins >= -120) {
       return <span className="text-[9px] font-black uppercase tracking-wider text-rose-400 animate-pulse bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/30 ml-1.5 shadow-[0_0_8px_rgba(244,63,94,0.2)]">🔥 Late Reg</span>;
     }
     
@@ -206,7 +198,6 @@ export default function App() {
       if (setRes.status === 'success') {
         if (setRes.selected_rooms) setSelectedRooms(setRes.selected_rooms);
         if (setRes.active_formats) setActiveFormats(setRes.active_formats);
-        if (setRes.is_compact !== undefined) setIsCompact(setRes.is_compact);
         if (setRes.sort_order) setSortOrder(setRes.sort_order);
       }
       if (notRes.status === 'success' && notRes.notes) setNotes(notRes.notes);
@@ -222,11 +213,10 @@ export default function App() {
         session_token: sessionToken, 
         selected_rooms: selectedRooms,
         active_formats: activeFormats,
-        is_compact: isCompact,
         sort_order: sortOrder
       });
     }
-  }, [selectedRooms, activeFormats, isCompact, sortOrder, isSettingsLoaded, sessionToken]);
+  }, [selectedRooms, activeFormats, sortOrder, isSettingsLoaded, sessionToken]);
 
   useEffect(() => {
     if (isSettingsLoaded && sessionToken) {
@@ -383,7 +373,6 @@ export default function App() {
     return { max, timeStr };
   };
 
-  // Правильная хронологическая сортировка: сначала по дням недели, потом по времени
   const sortedGrid = useMemo(() => {
     const daysOrder: Record<string, number> = { 'пн': 1, 'вт': 2, 'ср': 3, 'чт': 4, 'пт': 5, 'сб': 6, 'вс': 7 };
 
@@ -392,7 +381,6 @@ export default function App() {
       if (sortOrder === 'ev') return parseNum(b.ev_mtt) - parseNum(a.ev_mtt);
       if (sortOrder === 'tier') return getTier(a).id - getTier(b).id;
 
-      // По умолчанию сортируем по дням недели + время
       const dayA = (a.day_week || '').toLowerCase().replace(/[^а-я]/g, '');
       const dayB = (b.day_week || '').toLowerCase().replace(/[^а-я]/g, '');
       
@@ -400,10 +388,10 @@ export default function App() {
       const indexB = daysOrder[dayB] || 0;
 
       if (indexA !== indexB) {
-        return indexA - indexB; // Сначала более ранние дни недели (Ср -> Чт)
+        return indexA - indexB; 
       }
 
-      return a.time_start.localeCompare(b.time_start); // Внутри одного дня — по времени
+      return a.time_start.localeCompare(b.time_start); 
     });
   }, [grid, sortOrder]);
 
@@ -416,17 +404,12 @@ export default function App() {
 
     const now = new Date();
   
-    // Создаем объект даты для старта турнира СЕГОДНЯ
     const tourneyTime = new Date();
     tourneyTime.setHours(hours, minutes, 0, 0);
 
-    // Если турнир по часам раньше текущего времени более чем на 2 часа — считаем прошедшим
     const diffMs = now.getTime() - tourneyTime.getTime();
     const diffMins = diffMs / (1000 * 60);
 
-    // Если разница от 0 до 120 минут — турнир идет или лейт-рега закрывается
-    // Если разница больше 120 минут (прошло больше 2 часов после старта) — отыгран
-    // Если разница отрицательная (турнир в будущем) — точно НЕ отыгран!
     return diffMins > 120;
   };
   
@@ -441,17 +424,15 @@ export default function App() {
       });
   }, [sortedGrid, hidePlayed]);
 
-  // Получаем уникальные румы из сетки и сортируем их строго в порядке ключей ROOMS (как в поиске)
   const activeGridRooms = useMemo(() => {
     const presentRooms = Array.from(new Set(displayGrid.map(t => t.room)));
-    const roomKeysOrder = Object.values(ROOMS); // ['888Poker', 'Chico', 'GGNetwork', ...]
+    const roomKeysOrder = Object.values(ROOMS); 
     
     return presentRooms.sort((a, b) => {
       return roomKeysOrder.indexOf(a) - roomKeysOrder.indexOf(b);
     });
   }, [displayGrid]);
 
-  // Фильтрация турниров по выбранному чипсу рума
   const filteredGridBySelectedRoom = useMemo(() => {
     if (!groupByRoom) return displayGrid;
     if (!gridActiveRoom) {
@@ -582,29 +563,36 @@ export default function App() {
 
   const renderGridCard = (t: any) => {
     const prioStyles = getPriorityStyles(t.priority);
+    const isAdded = grid.some(item => item.id === t.id);
+    const overlay = isOverlay(t);
+    const played = t.played;
+
     return (
-      <div key={t.id} className={`relative bg-slate-900 rounded-xl p-3.5 shadow-lg border border-slate-800 flex justify-between items-center gap-3 border-l-[3px] ${prioStyles.border} transition-all duration-300 ${t.played ? 'opacity-40 grayscale bg-slate-900/50 border-slate-800/50' : ''}`}>
-        {t.played && (
-          <div className="absolute -top-2.5 right-4 text-[9px] text-slate-400 bg-slate-800 font-bold uppercase tracking-wider border border-slate-700 px-2 py-0.5 rounded-md shadow-sm">
-            Лейт-рега закрыта
+      <div 
+        key={t.id} 
+        onClick={() => setActiveStats(t)}
+        className={`bg-slate-900 rounded-xl p-3 border border-slate-800 transition-all flex items-center justify-between gap-3 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 ${played ? 'opacity-40 grayscale bg-slate-900/50' : ''}`}
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <span className="text-[11px] text-cyan-400 font-mono font-black">{t.time_start}</span>
+            {overlay && <Flame size={12} className="text-orange-500 animate-pulse"/>}
+            {getSmartTimer(t.time_start, t.day_week)}
+            {played && <span className="text-[8px] text-slate-400 uppercase font-bold ml-1">Лейт закр.</span>}
           </div>
-        )}
-        <div className="flex-1 pl-1">
-          <div className="flex items-center gap-2.5">
-            <div className={`w-1.5 h-1.5 rounded-full ${prioStyles.dot}`}></div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-[9px] font-bold text-slate-500 uppercase">{t.day_week}</span>
-              <span className="text-xs font-mono font-bold text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.4)]">{t.time_start}</span>
-              {getSmartTimer(t.time_start, t.day_week)}
-            </div>
-            {!groupByRoom && (
-              <div className="ml-1 scale-90 origin-left"><RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} /></div>
-            )}
+          <div className="font-bold text-sm text-white truncate mb-1">{t.name}</div>
+          <div className="flex items-center gap-2">
+            <span className="font-black text-emerald-400 text-xs">{getRoomCurrency(t.room)}{t.buyin}</span>
+            <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider ml-1">{t.room} • {t.afs} тел</span>
           </div>
-          <div className="font-bold text-sm text-slate-100 mt-1.5 leading-snug">{t.name}</div>
-          <div className="text-sm font-black text-emerald-400 mt-1">{getRoomCurrency(t.room)}{t.buyin} <span className="text-xs text-blue-400 font-normal ml-2">EV: {t.ev_mtt}</span></div>
         </div>
-        <button onClick={() => toggleGrid(t)} className="p-3.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 rounded-xl border border-rose-500/20 transition active:scale-90"><Trash2 size={20} /></button>
+        
+        <button 
+          onClick={(e) => { e.stopPropagation(); toggleGrid(t); }} 
+          className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition-all active:scale-95"
+        >
+          <Trash2 size={16} />
+        </button>
       </div>
     );
   };
@@ -730,9 +718,6 @@ export default function App() {
             <div className="flex flex-col gap-2.5 px-1 pt-2 pb-1">
               <div className="flex justify-between items-center">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Найдено: <span className="text-cyan-400 ml-1">{searchResults.length}</span></span>
-                <button onClick={() => setIsCompact(!isCompact)} className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 active:scale-95 transition-all border border-slate-700">
-                  {isCompact ? 'Детальный вид' : 'Компактный вид'}
-                </button>
               </div>
               
               <div className="flex gap-2">
@@ -746,26 +731,11 @@ export default function App() {
             </div>
           )}
 
-          <div className="space-y-4 mt-2">
+          <div className="space-y-2 mt-2">
             {loading && (
-              <div className="space-y-4 mt-2">
+              <div className="space-y-2 mt-2">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className="bg-slate-900/50 rounded-2xl p-4 border border-slate-800/50 animate-pulse">
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="flex gap-2"><div className="w-2 h-2 bg-slate-700 rounded-full"></div><div className="w-16 h-3 bg-slate-800 rounded"></div></div>
-                      <div className="w-12 h-4 bg-slate-800 rounded-lg"></div>
-                    </div>
-                    <div className="w-2/3 h-5 bg-slate-800 rounded mb-5"></div>
-                    <div className="grid grid-cols-3 gap-2 mb-5">
-                      <div className="h-[52px] bg-slate-800/50 rounded-xl border border-slate-800"></div>
-                      <div className="h-[52px] bg-slate-800/50 rounded-xl border border-slate-800"></div>
-                      <div className="h-[52px] bg-slate-800/50 rounded-xl border border-slate-800"></div>
-                    </div>
-                    <div className="flex gap-2.5">
-                      <div className="flex-[2] h-[46px] bg-slate-800/50 rounded-xl border border-slate-800"></div>
-                      <div className="flex-1 h-[46px] bg-slate-800/50 rounded-xl border border-slate-800"></div>
-                    </div>
-                  </div>
+                  <div key={i} className="h-16 bg-slate-900/50 rounded-xl border border-slate-800/50 animate-pulse"></div>
                 ))}
               </div>
             )}
@@ -791,74 +761,31 @@ export default function App() {
               const overlay = isOverlay(t);
               const prioStyles = getPriorityStyles(t.priority);
               
-              const cardBorder = note?.tag === 'must' ? 'border-l-4 border-l-emerald-500' : `border-l-[3px] ${prioStyles.border}`;
-              const cardGlow = note?.tag === 'must' ? 'shadow-[0_0_20px_rgba(16,185,129,0.1)]' : prioStyles.glow;
-  
-              if (isCompact) {
-                if (note?.tag === 'skip') return null; 
-                
-                return (
-                  <div key={t.id} className={`bg-slate-900 rounded-xl p-3 border border-slate-800 transition-all flex items-center justify-between gap-3 border-l-[3px] ${prioStyles.border}`}>
-                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setActiveStats(t)}>
-                      <div className="flex items-center gap-1.5 mb-1.5">
-                        <span className="text-[11px] text-cyan-400 font-mono font-black">{t.time_start}</span>
-                        {overlay && <Flame size={12} className="text-orange-500 animate-pulse"/>}
-                        {getSmartTimer(t.time_start)}
-                      </div>
-                      <div className="font-bold text-sm text-white truncate mb-1">{t.name}</div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-black text-emerald-400 text-xs">{getRoomCurrency(t.room)}{t.buyin}</span>
-                        <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider ml-1">{t.room} • {t.afs} тел</span>
-                      </div>
-                    </div>
-                    
-                    <button onClick={() => toggleGrid(t)} className={`shrink-0 w-12 h-12 flex items-center justify-center rounded-xl transition-all active:scale-95 ${isAdded ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-[inset_0_0_10px_rgba(16,185,129,0.15)]' : 'bg-slate-800 text-blue-400 hover:bg-slate-700'}`}>
-                      {isAdded ? <Check size={20} strokeWidth={3}/> : <Plus size={20} strokeWidth={3}/>}
-                    </button>
-                  </div>
-                );
-              }
-              
               return (
-                <div key={t.id} className={`bg-slate-900 rounded-2xl p-4 border border-slate-800 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)] ${cardBorder} ${cardGlow}`}>
-                  <div className="flex justify-between items-center mb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className={`w-2 h-2 rounded-full ${prioStyles.dot}`}></div>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t.day_week}</span>
-                        <span className="text-sm text-cyan-400 font-mono font-extrabold drop-shadow-[0_0_8px_rgba(34,211,238,0.3)]">{t.time_start}</span>
-                        {getSmartTimer(t.time_start)}
-                      </div>
+                <div 
+                  key={t.id} 
+                  onClick={() => setActiveStats(t)}
+                  className={`bg-slate-900 rounded-xl p-3 border border-slate-800 transition-all flex items-center justify-between gap-3 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <span className="text-[11px] text-cyan-400 font-mono font-black">{t.time_start}</span>
+                      {overlay && <Flame size={12} className="text-orange-500 animate-pulse"/>}
+                      {getSmartTimer(t.time_start, t.day_week)}
                     </div>
-                    <div className="flex gap-2 items-center">
-                      {overlay && <span className="bg-orange-500/20 text-orange-400 text-[9px] px-2 py-1 rounded-lg border border-orange-500/30 font-black uppercase flex items-center gap-1 shadow-[0_0_8px_rgba(249,115,22,0.2)]"><Flame size={10} className="animate-pulse text-orange-500"/> Overlay</span>}
-                    </div>
-                  </div>
-
-                  <div className="mb-4 flex items-center flex-wrap gap-1.5">
-                    <h3 className="font-bold text-lg text-white leading-snug mr-1">{t.name}</h3>
-                    <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />                  
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 text-xs mb-5">
-                    <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/50 flex flex-col items-center">
-                      <span className="text-slate-500 text-[9px] uppercase tracking-wider mb-1 font-bold">Бай-ин</span>
-                      <span className="font-black text-emerald-400 text-sm">{getRoomCurrency(t.room)}{t.buyin}</span>
-                    </div>
-                    <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/50 flex flex-col items-center">
-                      <span className="text-slate-500 text-[9px] uppercase tracking-wider mb-1 font-bold">ROI / EV</span><span className="font-black text-blue-400 text-sm">{t.roi_str}</span>
-                    </div>
-                    <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/50 flex flex-col items-center">
-                      <span className="text-slate-500 text-[9px] uppercase tracking-wider mb-1 font-bold">Игроки</span><span className="font-black text-purple-400 text-sm">{t.afs}</span>
+                    <div className="font-bold text-sm text-white truncate mb-1">{t.name}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-emerald-400 text-xs">{getRoomCurrency(t.room)}{t.buyin}</span>
+                      <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider ml-1">{t.room} • {t.afs} тел</span>
                     </div>
                   </div>
-
-                  <div className="flex gap-2.5">
-                    <button onClick={() => toggleGrid(t)} className={`flex-2/3 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold active:scale-95 transition-all ${isAdded ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/40 shadow-[inset_0_0_15px_rgba(16,185,129,0.15)]' : 'bg-blue-500/5 hover:bg-blue-500/10 text-blue-400 border border-blue-500/30 shadow-[inset_0_0_15px_rgba(59,130,246,0.1)]'}`}>
-                      {isAdded ? <><Check size={18} strokeWidth={2.5} /> В сетке</> : <><Plus size={18} strokeWidth={2.5} /> Добавить</>}
-                    </button>
-                    <button onClick={() => setActiveStats(t)} className="flex-1/3 bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center py-3 rounded-xl active:scale-95 transition-all"><BarChart2 size={16} /></button>
-                  </div>
+                  
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); toggleGrid(t); }} 
+                    className={`shrink-0 w-10 h-10 flex items-center justify-center rounded-xl transition-all active:scale-95 ${isAdded ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-[inset_0_0_10px_rgba(16,185,129,0.15)]' : 'bg-slate-800 text-blue-400 hover:bg-slate-700'}`}
+                  >
+                    {isAdded ? <Check size={18} strokeWidth={3}/> : <Plus size={18} strokeWidth={3}/>}
+                  </button>
                 </div>
               );
             })}
