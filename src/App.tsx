@@ -174,7 +174,7 @@ export default function App() {
 
   const [showPresetsModal, setShowPresetsModal] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
-  const [presets, setPresets] = useState<{name: string, items: any[]}[]>([]);
+  const [presets, setPresets] = useState<{name: string, items: any[]}[]>(sch => sch);
   
   const [notes, setNotes] = useState<Record<string, NoteData>>({});
   const [sessionsHistory, setSessionsHistory] = useState<SessionData[]>([]);
@@ -741,7 +741,7 @@ export default function App() {
                           <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
                             {formatDayWeek(t.day_week)}{t.time_start}
                           </span>
-                          {isOverlay(t) && <Flame size={12} className="text-orange-500 animate-pulse"/>}
+                          {isOverlay(t) && <Flame size={14} className="text-orange-500 animate-pulse"/>}
                           {getSmartTimer(t.time_start, t.day_week)}
                         </div>
                         <div className="font-bold text-xs text-white truncate mb-1">{t.name}</div>
@@ -769,7 +769,7 @@ export default function App() {
           {/* Сетка */}
           {activeTab === 'grid' && (
             <div className="space-y-3">
-              {/* Компактный блок статистики, совмещенный с управлением сеткой */}
+              {/* Компактный блок статистики и управления сеткой */}
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-xl space-y-3">
                 <div className="grid grid-cols-3 gap-2 pb-2.5 border-b border-slate-800/80 text-center">
                   <div><span className="text-[9px] uppercase font-bold text-slate-500 block">Турниров</span><div className="text-base font-black text-white">{grid.length}</div></div>
@@ -828,16 +828,25 @@ export default function App() {
                 </div>
               ) : groupByRoom ? (
                 <div className="space-y-3">
-                  <div className="overflow-x-auto no-scrollbar flex gap-2 py-1">
-                    {activeGridRooms.map(room => {
-                      const isSelected = gridActiveRoom === room || (!gridActiveRoom && activeGridRooms[0] === room);
-                      return (
-                        <button key={room} onClick={() => setGridActiveRoom(room)} className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition ${isSelected ? 'bg-cyan-950/60 border-cyan-500 text-cyan-300 shadow-sm' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>
-                          {room} ({displayGrid.filter(t => t.room === room).length})
-                        </button>
-                      );
-                    })}
+                  {/* Аккуратный выпадающий селект румов с иконками и названиями, аналогичный поиску */}
+                  <div className="relative">
+                    <select
+                      value={gridActiveRoom || activeGridRooms[0] || ''}
+                      onChange={(e) => setGridActiveRoom(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-200 outline-none focus:border-cyan-500 cursor-pointer shadow-sm appearance-none"
+                    >
+                      {activeGridRooms.map(room => {
+                        const count = displayGrid.filter(t => t.room === room).length;
+                        return (
+                          <option key={room} value={room} className="bg-slate-900 text-slate-200 py-1">
+                            {room} ({count} турн.)
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <ChevronDown size={14} className="absolute right-3.5 top-3.5 text-slate-400 pointer-events-none" />
                   </div>
+
                   <div className="space-y-2">
                     {filteredGridBySelectedRoom.length === 0 ? <div className="text-center py-12 text-slate-500 text-xs">Нет турниров</div> : filteredGridBySelectedRoom.map(t => renderGridCard(t))}
                   </div>
