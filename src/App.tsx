@@ -14,7 +14,7 @@ interface SessionData { id: string; date: string; total_buyin: number; total_cas
 
 const ROOMS: Record<string, string> = {
   '244': '888', '245': 'Chico', '246': 'GGNet', '247': 'iPoker', '248': 'PartyPoker', '249': 'PS(COM',
-  '250': 'PS(ES)', '251': 'WMX', '252': 'WPN', '261': 'PD', '262': 'RPT', '263': 'Coin'
+  '250': 'PS(ES)', '251': 'WMX', '252': 'WPN', '264': 'PD', '262': 'RPT', '265': 'Coin'
 };
 
 const ROOM_DOMAINS: Record<string, string> = {
@@ -27,9 +27,9 @@ const ROOM_DOMAINS: Record<string, string> = {
   '250': 'pokerstars.es',
   '251': 'winamax.fr',
   '252': 'americascardroom.eu',
-  '261': 'pokerdom.com',
+  '264': 'pokerdom.com',
   '262': 'rptbet.com',
-  '263': 'coinpoker.com'
+  '265': 'coinpoker.com'
 };
 
 const getRoomCurrency = (roomName: string) => {
