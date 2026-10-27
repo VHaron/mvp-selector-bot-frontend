@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Plus, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown } from 'lucide-react';
+import { Search, ListTodo, Plus, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown, Zap, ShieldAlert, Disc } from 'lucide-react';
 
 interface Tournament {
   id: string; room: string; name: string; priority: string;
@@ -99,7 +99,6 @@ export default function App() {
   const [isRoomsDropdownOpen, setIsRoomsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Закрытие дропдауна по клику вне его
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -512,7 +511,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans antialiased flex">
       
-      {/* Левый десктопный сайдбар с иконками */}
+      {/* Левый десктопный сайдбар с навигацией и тогглами форматов */}
       <aside className="w-20 bg-slate-950 border-r border-slate-800/80 flex flex-col items-center justify-between py-6 shrink-0 sticky top-0 h-screen z-40">
         <div className="flex flex-col items-center gap-6">
           <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/40 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.2)]">
@@ -547,6 +546,39 @@ export default function App() {
               className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${activeTab === 'diary' ? 'bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}
             >
               <TrendingUp size={20} />
+            </button>
+          </div>
+
+          {/* Разделитель */}
+          <div className="w-8 h-[1px] bg-slate-800 my-1"></div>
+
+          {/* Фильтры форматов в сайдбаре */}
+          <div className="flex flex-col gap-2">
+            <button 
+              onClick={() => toggleFormat('isPko')} 
+              title="Формат: PKO"
+              className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition border ${activeFormats.isPko ? 'bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/40 shadow-sm' : 'bg-slate-900/40 text-slate-600 border-slate-800/80 hover:text-slate-400'}`}
+            >
+              <ShieldAlert size={16} />
+              <span className="text-[9px] font-black">PKO</span>
+            </button>
+            
+            <button 
+              onClick={() => toggleFormat('isTurbo')} 
+              title="Формат: Turbo"
+              className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition border ${activeFormats.isTurbo ? 'bg-amber-500/15 text-amber-400 border-amber-500/40 shadow-sm' : 'bg-slate-900/40 text-slate-600 border-slate-800/80 hover:text-slate-400'}`}
+            >
+              <Zap size={16} />
+              <span className="text-[9px] font-black">TURB</span>
+            </button>
+
+            <button 
+              onClick={() => toggleFormat('isFreezeout')} 
+              title="Формат: Freezeout"
+              className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition border ${activeFormats.isFreezeout ? 'bg-blue-500/15 text-blue-400 border-blue-500/40 shadow-sm' : 'bg-slate-900/40 text-slate-600 border-slate-800/80 hover:text-slate-400'}`}
+            >
+              <Disc size={16} />
+              <span className="text-[9px] font-black">FRZ</span>
             </button>
           </div>
         </div>
@@ -643,37 +675,13 @@ export default function App() {
                 </div>
               </div>
 
-<div className="flex flex-col sm:flex-row gap-3 items-center">
-  {/* Компактные чипсы форматов */}
-  <div className="flex gap-2 w-full sm:flex-1">
-    <button 
-      onClick={() => toggleFormat('isPko')} 
-      className={`flex-1 py-3 px-3 rounded-xl text-xs font-black uppercase border transition flex items-center justify-center gap-1.5 ${activeFormats.isPko ? 'bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/50 shadow-sm' : 'bg-slate-950/40 text-slate-500 border-slate-800/80 hover:text-slate-400'}`}
-    >
-      <span>🎯</span> <span>PKO</span>
-    </button>
-    <button 
-      onClick={() => toggleFormat('isTurbo')} 
-      className={`flex-1 py-3 px-3 rounded-xl text-xs font-black uppercase border transition flex items-center justify-center gap-1.5 ${activeFormats.isTurbo ? 'bg-amber-500/15 text-amber-400 border-amber-500/50 shadow-sm' : 'bg-slate-950/40 text-slate-500 border-slate-800/80 hover:text-slate-400'}`}
-    >
-      <span>⚡</span> <span>Turbo</span>
-    </button>
-    <button 
-      onClick={() => toggleFormat('isFreezeout')} 
-      className={`flex-1 py-3 px-3 rounded-xl text-xs font-black uppercase border transition flex items-center justify-center gap-1.5 ${activeFormats.isFreezeout ? 'bg-blue-500/15 text-blue-400 border-blue-500/50 shadow-sm' : 'bg-slate-950/40 text-slate-500 border-slate-800/80 hover:text-slate-400'}`}
-    >
-      <span>🧊</span> <span>Freeze</span>
-    </button>
-  </div>
-
-  {/* Кнопка поиска на всю оставшуюся ширину */}
-  <button 
-    onClick={fetchTournaments} 
-    className="w-full sm:w-auto px-8 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider flex justify-center items-center gap-2 transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] active:scale-95 shrink-0"
-  >
-    {loading ? <><Search className="animate-spin" size={16} /> Ищем...</> : <><Search size={16} strokeWidth={3} /> Найти турниры</>}
-  </button>
-</div>
+              {/* Кнопка поиска на всю ширину под блоком фильтров */}
+              <button 
+                onClick={fetchTournaments} 
+                className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-3.5 rounded-2xl text-xs uppercase tracking-wider flex justify-center items-center gap-2 transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] active:scale-95"
+              >
+                {loading ? <><Search className="animate-spin" size={16} /> Ищем...</> : <><Search size={16} strokeWidth={3} /> Найти турниры</>}
+              </button>
 
               {!loading && searchResults.length > 0 && (
                 <div className="flex gap-3">
