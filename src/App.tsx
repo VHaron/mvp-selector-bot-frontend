@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Plus, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown, Zap, ShieldAlert, Disc } from 'lucide-react';
+import { Search, ListTodo, Plus, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown, Zap, ShieldAlert, Disc, Layers } from 'lucide-react';
 
 interface Tournament {
   id: string; room: string; name: string; priority: string;
@@ -89,7 +89,6 @@ export default function App() {
   const [grid, setGrid] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(false);
   
-  const [hidePlayed, setHidePlayed] = useState(false); 
   const [groupByRoom, setGroupByRoom] = useState(false);
   const [gridActiveRoom, setGridActiveRoom] = useState<string | null>(null);
 
@@ -122,7 +121,6 @@ export default function App() {
     return tourneyIndex === -1 || tourneyIndex === todayIndex;
   };
 
-  // Исходная функция для сетки (120 минут лейт-рега)
   const isPlayed = (timeString: string, dayWeekStr?: string) => {
     if (!timeString || !isToday(dayWeekStr)) return false;
     const [hours, minutes] = timeString.trim().slice(0, 5).split(':').map(Number);
@@ -131,7 +129,6 @@ export default function App() {
     return (new Date().getTime() - tourneyTime.getTime()) / (1000 * 60) > 120;
   };
 
-  // Новая отдельная функция для поиска (отсекает турниры, которые идут уже больше 15 минут)
   const isStartedTooLongAgo = (timeString: string, dayWeekStr?: string) => {
     if (!timeString || !isToday(dayWeekStr)) return false;
     const [hours, minutes] = timeString.trim().slice(0, 5).split(':').map(Number);
@@ -372,9 +369,8 @@ export default function App() {
   const displayGrid = useMemo(() => {
     return sortedGrid
       .map(t => ({ ...t, played: isPlayed(t.time_start, t.day_week) }))
-      .filter(t => (hidePlayed ? !t.played : true))
       .sort((a, b) => (a.played === b.played ? 0 : a.played ? 1 : -1));
-  }, [sortedGrid, hidePlayed]);
+  }, [sortedGrid]);
 
   const activeGridRooms = useMemo(() => {
     const presentRooms = Array.from(new Set(displayGrid.map(t => t.room)));
@@ -387,7 +383,6 @@ export default function App() {
     return displayGrid.filter(t => t.room === gridActiveRoom);
   }, [displayGrid, groupByRoom, gridActiveRoom, activeGridRooms]);
 
-  // Поиск теперь использует строгую проверку isStartedTooLongAgo (скрывает турниры, начавшиеся > 15 минут назад)
   const searchResults = useMemo(() => {
     return tournaments
       .filter(t => !isStartedTooLongAgo(t.time_start, t.day_week)) 
@@ -789,26 +784,23 @@ export default function App() {
                 </div>
               )}
 
+              {/* Управление сеткой: Кнопка завершения, аккуратная сортировка и компактная кнопка группировки по румам */}
               {grid.length > 0 && (
                 <div className="flex gap-3">
                   <button onClick={() => setShowSessionModal(true)} className="flex-[2] bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 rounded-xl py-3 flex items-center justify-center gap-2 text-xs uppercase font-black"><Wallet size={16} /> Завершить сессию</button>
-                  <button onClick={() => setSortOrder(prev => prev === 'time' ? 'buyin' : prev === 'buyin' ? 'ev' : 'time')} className="flex-1 bg-slate-900 border border-slate-800 rounded-xl py-3 flex items-center justify-center gap-1.5 text-xs uppercase font-black text-blue-400"><ArrowUpDown size={14} /> {sortOrder}</button>
-                  <button onClick={clearGrid} className="w-12 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center justify-center text-rose-400"><Trash2 size={16} /></button>
-                </div>
-              )}
+                  
+                  <button onClick={() => setSortOrder(prev => prev === 'time' ? 'buyin' : prev === 'buyin' ? 'ev' : 'time')} className="flex-1 bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl py-3 flex items-center justify-center gap-1.5 text-xs uppercase font-black text-blue-400 transition"><ArrowUpDown size={14} /> {sortOrder}</button>
+                  
+                  {/* Компактная кнопка группировки по румам вместо громоздкого тумблера */}
+                  <button 
+                    onClick={() => setGroupByRoom(!groupByRoom)} 
+                    title="Группировать по румам"
+                    className={`w-12 h-12 rounded-xl border flex items-center justify-center transition shrink-0 ${groupByRoom ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 shadow-sm' : 'bg-slate-900 text-slate-500 border-slate-800 hover:text-slate-300'}`}
+                  >
+                    <Layers size={18} />
+                  </button>
 
-              {grid.length > 0 && (
-                <div className="flex items-center justify-between px-5 py-3 bg-slate-900/80 rounded-xl border border-slate-800 text-xs">
-                  <label className="flex items-center gap-2.5 cursor-pointer font-bold text-slate-300">
-                    <input type="checkbox" className="hidden" checked={groupByRoom} onChange={() => setGroupByRoom(!groupByRoom)} />
-                    <div className={`w-8 h-4 rounded-full transition-colors ${groupByRoom ? 'bg-cyan-500' : 'bg-slate-700'} relative`}><div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${groupByRoom ? 'translate-x-4' : 'translate-x-0'}`}></div></div>
-                    <span>Группировать по румам</span>
-                  </label>
-                  <label className="flex items-center gap-2.5 cursor-pointer font-bold text-slate-300">
-                    <span>Скрыть старые</span>
-                    <input type="checkbox" className="hidden" checked={hidePlayed} onChange={() => setHidePlayed(!hidePlayed)} />
-                    <div className={`w-8 h-4 rounded-full transition-colors ${hidePlayed ? 'bg-cyan-500' : 'bg-slate-700'} relative`}><div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${hidePlayed ? 'translate-x-4' : 'translate-x-0'}`}></div></div>
-                  </label>
+                  <button onClick={clearGrid} className="w-12 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center justify-center text-rose-400 shrink-0"><Trash2 size={16} /></button>
                 </div>
               )}
 
@@ -972,7 +964,7 @@ export default function App() {
                   <div key={idx} className="flex justify-between items-center bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs">
                     <span className="font-bold text-white">{p.name}</span>
                     <div className="flex gap-1.5">
-                      <button onClick={() => loadPreset(p.items)} className="p-2 bg-cyan-500/10 text-cyan-400 rounded-lg"><Check size={16} /></button>
+                      <button onClick={() => loadPreset(p.items)} className="p-2 bg-cyan-500/10 text-cyan-400 rounded-lg"><Check size5={16} /><Check size={16} /></button>
                       <button onClick={() => deletePreset(idx)} className="p-2 bg-rose-500/10 text-rose-400 rounded-lg"><Trash2 size={16} /></button>
                     </div>
                   </div>
