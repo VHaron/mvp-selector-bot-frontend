@@ -13,7 +13,7 @@ interface NoteData { tag: NoteTag; text: string; }
 interface SessionData { id: string; date: string; total_buyin: number; total_cashes: number; profit: number; tournaments_count: number; }
 
 const ROOMS: Record<string, string> = {
-  '244': '888', '245': 'Chico', '246': 'GGNet', '247': 'iPoker', '248': 'PartyPoker', '249': 'PS(COM',
+  '244': '888', '245': 'Chico', '246': 'GGNet', '247': 'iPoker', '248': 'PartyPoker', '249': 'PS(COM)',
   '250': 'PS(ES)', '251': 'WMX', '252': 'WPN', '264': 'PD', '262': 'RPT', '265': 'Coin'
 };
 
