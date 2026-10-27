@@ -19,9 +19,9 @@ const ROOMS: Record<string, string> = {
 
 const ROOM_DOMAINS: Record<string, string> = {
   '244': '888poker.com',
-  '245': 'tigergaming.com',
+  '245': 'betonline.ag',
   '246': 'ggpoker.com',
-  '247': 'redstarpoker.eu',
+  '247': 'redstar.games',
   '248': 'partypoker.com',
   '249': 'pokerstars.com',
   '250': 'pokerstars.es',
