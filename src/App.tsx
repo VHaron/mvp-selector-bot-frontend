@@ -174,7 +174,7 @@ export default function App() {
 
   const [showPresetsModal, setShowPresetsModal] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
-  const [presets, setPresets] = useState<{name: string, items: any[]}[]>(sch => sch);
+  const [presets, setPresets] = useState<{name: string, items: any[]}[]>([]);
   
   const [notes, setNotes] = useState<Record<string, NoteData>>({});
   const [sessionsHistory, setSessionsHistory] = useState<SessionData[]>([]);
@@ -828,7 +828,7 @@ export default function App() {
                 </div>
               ) : groupByRoom ? (
                 <div className="space-y-3">
-                  {/* Аккуратный выпадающий селект румов с иконками и названиями, аналогичный поиску */}
+                  {/* Аккуратный выпадающий селект румов */}
                   <div className="relative">
                     <select
                       value={gridActiveRoom || activeGridRooms[0] || ''}
