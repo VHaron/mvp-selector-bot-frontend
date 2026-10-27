@@ -656,20 +656,21 @@ export default function App() {
                     <div className="relative flex-1" ref={dropdownRef}>
                       <button 
                         onClick={() => setIsRoomsDropdownOpen(!isRoomsDropdownOpen)}
-                        className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-300 flex items-center justify-between transition shadow-sm"
+                        className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-2 text-xs font-bold text-slate-300 flex items-center justify-between transition shadow-sm"
                       >
                         <div className="flex items-center gap-2 min-w-0 overflow-hidden">
                           <span className="text-cyan-400 font-black uppercase text-[10px] tracking-wider bg-cyan-950/50 px-2 py-1 rounded border border-cyan-500/30 shrink-0">Румы</span>
                           {selectedRooms.length === 0 ? (
                             <span className="text-slate-500 italic">Выберите румы</span>
                           ) : (
-                            <div className="flex items-center gap-1.5 overflow-x-hidden py-0.5">
+                            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
                               {selectedRooms.map(id => {
                                 const domain = ROOM_DOMAINS[id];
                                 const name = ROOMS[id];
                                 return (
-                                  <div key={id} className="w-6 h-6 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0 shadow-sm">
-                                    {domain && <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={name} className="w-3.5 h-3.5 rounded-full object-cover bg-white p-[0.5px]" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
+                                  <div key={id} className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg border font-bold text-[10px] uppercase tracking-wider ${getRoomStyle(name)} shrink-0 shadow-sm`}>
+                                    {domain && <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={name} className="w-3.5 h-3.5 rounded-full object-cover bg-white p-[0.5px] shadow-sm shrink-0" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
+                                    <span>{name}</span>
                                   </div>
                                 );
                               })}
