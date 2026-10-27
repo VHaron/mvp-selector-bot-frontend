@@ -629,12 +629,12 @@ export default function App() {
                   <input type="datetime-local" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 outline-none focus:border-cyan-500 [color-scheme:dark]" />
                 </div>
 
-                {/* Выпадающий список румов */}
-                <div className="relative" ref={dropdownRef}>
-                  <div className="flex gap-2">
+                {/* Выпадающий список румов и интегрированная кнопка Найти в одной строке */}
+                <div className="flex gap-2">
+                  <div className="relative flex-1" ref={dropdownRef}>
                     <button 
                       onClick={() => setIsRoomsDropdownOpen(!isRoomsDropdownOpen)}
-                      className="flex-1 bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-3 text-xs font-bold text-slate-300 flex items-center justify-between transition shadow-sm"
+                      className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-3 text-xs font-bold text-slate-300 flex items-center justify-between transition shadow-sm"
                     >
                       <div className="flex items-center gap-2">
                         <span className="text-cyan-400 font-black uppercase text-[10px] tracking-wider bg-cyan-950/50 px-2 py-0.5 rounded border border-cyan-500/30">Румы</span>
@@ -643,46 +643,45 @@ export default function App() {
                       <ChevronDown size={16} className={`transition-transform ${isRoomsDropdownOpen ? 'rotate-180 text-cyan-400' : 'text-slate-500'}`} />
                     </button>
                     
-                    <button 
-                      onClick={() => setSelectedRooms(selectedRooms.length === Object.keys(ROOMS).length ? [] : Object.keys(ROOMS))} 
-                      className="px-4 py-3 rounded-xl text-xs font-bold border bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-800 transition"
-                    >
-                      {selectedRooms.length === Object.keys(ROOMS).length ? 'Сбросить' : 'Все'}
-                    </button>
+                    {isRoomsDropdownOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-slate-950 border border-slate-800 rounded-2xl p-3 shadow-2xl z-50 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                        {Object.entries(ROOMS).map(([id, name]) => {
+                          const isSel = selectedRooms.includes(id);
+                          const domain = ROOM_DOMAINS[id];
+                          return (
+                            <button 
+                              key={id} 
+                              onClick={() => toggleRoom(id)} 
+                              className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold border transition ${isSel ? 'bg-cyan-950/40 border-cyan-500/50 text-cyan-300 shadow-sm' : 'bg-slate-900/50 border-slate-800/60 text-slate-500 hover:text-slate-300'}`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                {domain && <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={name} className={`w-3.5 h-3.5 rounded-full shrink-0 ${isSel ? '' : 'opacity-30 grayscale'}`} onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
+                                <span className="truncate">{name}</span>
+                              </div>
+                              <div className={`w-4 h-4 rounded flex items-center justify-center text-[10px] border shrink-0 ${isSel ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-black' : 'border-slate-700 text-transparent'}`}>✓</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
-                  {isRoomsDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-slate-950 border border-slate-800 rounded-2xl p-3 shadow-2xl z-50 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                      {Object.entries(ROOMS).map(([id, name]) => {
-                        const isSel = selectedRooms.includes(id);
-                        const domain = ROOM_DOMAINS[id];
-                        return (
-                          <button 
-                            key={id} 
-                            onClick={() => toggleRoom(id)} 
-                            className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold border transition ${isSel ? 'bg-cyan-950/40 border-cyan-500/50 text-cyan-300 shadow-sm' : 'bg-slate-900/50 border-slate-800/60 text-slate-500 hover:text-slate-300'}`}
-                          >
-                            <div className="flex items-center gap-2 min-w-0">
-                              {domain && <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={name} className={`w-3.5 h-3.5 rounded-full shrink-0 ${isSel ? '' : 'opacity-30 grayscale'}`} onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
-                              <span className="truncate">{name}</span>
-                            </div>
-                            <div className={`w-4 h-4 rounded flex items-center justify-center text-[10px] border shrink-0 ${isSel ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-black' : 'border-slate-700 text-transparent'}`}>✓</div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <button 
+                    onClick={() => setSelectedRooms(selectedRooms.length === Object.keys(ROOMS).length ? [] : Object.keys(ROOMS))} 
+                    className="px-4 py-3 rounded-xl text-xs font-bold border bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-800 transition shrink-0"
+                  >
+                    {selectedRooms.length === Object.keys(ROOMS).length ? 'Сбросить' : 'Все'}
+                  </button>
+
+                  <button 
+                    onClick={fetchTournaments} 
+                    className="px-6 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] active:scale-95 shrink-0"
+                  >
+                    {loading ? <Search className="animate-spin" size={16} /> : <Search size={16} strokeWidth={3} />}
+                    <span className="hidden sm:inline">Найти</span>
+                  </button>
                 </div>
               </div>
-
-<div className="flex justify-end pt-1">
-  <button 
-    onClick={fetchTournaments} 
-    className="w-full sm:w-auto px-10 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider flex justify-center items-center gap-2 transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] active:scale-95"
-  >
-    {loading ? <><Search className="animate-spin" size={16} /> Ищем...</> : <><Search size={16} strokeWidth={3} /> Найти турниры</>}
-  </button>
-</div>
 
               {!loading && searchResults.length > 0 && (
                 <div className="flex gap-3">
@@ -698,7 +697,7 @@ export default function App() {
                   <div className="text-center py-24 bg-slate-900/30 rounded-2xl border border-slate-800/50">
                     <div className="text-4xl mb-3 opacity-30">🎲</div>
                     <h3 className="text-slate-300 font-bold text-base">Расписание пусто</h3>
-                    <p className="text-slate-500 text-xs mt-1">Нажмите «Найти турниры» для загрузки</p>
+                    <p className="text-slate-500 text-xs mt-1">Нажмите «Найти» для загрузки расписания</p>
                   </div>
                 )}
                 
