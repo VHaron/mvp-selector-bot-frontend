@@ -122,12 +122,21 @@ export default function App() {
     return tourneyIndex === -1 || tourneyIndex === todayIndex;
   };
 
+  // Исходная функция для сетки (120 минут лейт-рега)
   const isPlayed = (timeString: string, dayWeekStr?: string) => {
     if (!timeString || !isToday(dayWeekStr)) return false;
     const [hours, minutes] = timeString.trim().slice(0, 5).split(':').map(Number);
     if (isNaN(hours) || isNaN(minutes)) return false;
     const tourneyTime = new Date(); tourneyTime.setHours(hours, minutes, 0, 0);
-    // Скрываем, если прошло больше 15 минут с момента старта
+    return (new Date().getTime() - tourneyTime.getTime()) / (1000 * 60) > 120;
+  };
+
+  // Новая отдельная функция для поиска (отсекает турниры, которые идут уже больше 15 минут)
+  const isStartedTooLongAgo = (timeString: string, dayWeekStr?: string) => {
+    if (!timeString || !isToday(dayWeekStr)) return false;
+    const [hours, minutes] = timeString.trim().slice(0, 5).split(':').map(Number);
+    if (isNaN(hours) || isNaN(minutes)) return false;
+    const tourneyTime = new Date(); tourneyTime.setHours(hours, minutes, 0, 0);
     return (new Date().getTime() - tourneyTime.getTime()) / (1000 * 60) > 15;
   };
 
@@ -378,10 +387,10 @@ export default function App() {
     return displayGrid.filter(t => t.room === gridActiveRoom);
   }, [displayGrid, groupByRoom, gridActiveRoom, activeGridRooms]);
 
-  // Скрываем турниры, которые начались более чем 15 минут назад
+  // Поиск теперь использует строгую проверку isStartedTooLongAgo (скрывает турниры, начавшиеся > 15 минут назад)
   const searchResults = useMemo(() => {
     return tournaments
-      .filter(t => !isPlayed(t.time_start, t.day_week)) 
+      .filter(t => !isStartedTooLongAgo(t.time_start, t.day_week)) 
       .sort((a, b) => sortOrder === 'tier' ? getTier(a).id - getTier(b).id : 0);
   }, [tournaments, sortOrder]);
 
@@ -452,6 +461,12 @@ export default function App() {
   const totalBuyin = grid.reduce((sum, t) => sum + parseNum(t.buyin), 0);
   const totalEV = grid.reduce((sum, t) => sum + parseNum(t.ev_mtt), 0);
 
+  const formatDayWeek = (dayWeek?: string) => {
+    if (!dayWeek) return '';
+    const clean = dayWeek.replace(/\./g, '').trim();
+    return clean ? `${clean}. ` : '';
+  };
+
   const renderGridCard = (t: any) => {
     const prioStyles = getPriorityStyles(t.priority);
     const played = isPlayed(t.time_start, t.day_week);
@@ -467,7 +482,7 @@ export default function App() {
           <div className="flex items-center gap-2 mb-2">
             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
             <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">
-              {t.day_week ? `${t.day_week}. ` : ''}{t.time_start}
+              {formatDayWeek(t.day_week)}{t.time_start}
             </span>
             {isOverlay(t) && <Flame size={12} className="text-orange-500 animate-pulse"/>}
             {getSmartTimer(t.time_start, t.day_week)}
@@ -730,7 +745,7 @@ export default function App() {
                         <div className="flex items-center gap-2.5 mb-2">
                           <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
                           <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">
-                            {t.day_week ? `${t.day_week}. ` : ''}{t.time_start}
+                            {formatDayWeek(t.day_week)}{t.time_start}
                           </span>
                           {isOverlay(t) && <Flame size={14} className="text-orange-500 animate-pulse"/>}
                           {getSmartTimer(t.time_start, t.day_week)}
