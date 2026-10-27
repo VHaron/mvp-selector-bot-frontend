@@ -707,14 +707,10 @@ export default function App() {
             <button onClick={() => toggleFormat('isFreezeout')} className={`flex-1 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${activeFormats.isFreezeout ? 'bg-blue-500/10 text-blue-400 border-blue-500/30 shadow-[0_0_8px_rgba(59,130,246,0.2)]' : 'bg-slate-950/60 text-slate-600 border-slate-800 hover:border-slate-700'}`}>🧊 Freez</button>
           </div>
 
-          <div className="flex gap-2">
-            <button onClick={fetchTournaments} className="flex-1 bg-cyan-950/30 border-2 border-cyan-500/60 hover:bg-cyan-900/40 text-cyan-400 font-black py-3.5 rounded-xl active:scale-95 transition-all flex justify-center items-center gap-2 shadow-[0_0_20px_rgba(34,211,238,0.2)]">
-              {loading ? <><Search className="animate-spin" size={18} /> Ищем...</> : <><Search size={18} strokeWidth={2.5} /> Найти турниры</>}
-            </button>
-            <button onClick={() => setSortOrder(p => p === 'time' ? 'tier' : 'time')} className={`border-2 px-4 rounded-xl flex items-center justify-center active:scale-95 transition-all ${sortOrder === 'tier' ? 'bg-fuchsia-950/30 border-fuchsia-500/60 text-fuchsia-400 shadow-[0_0_15px_rgba(217,70,239,0.3)]' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-fuchsia-400'}`}>
-              <Flame size={18} strokeWidth={2.5} />
-            </button>
-          </div>
+          {/* Кнопка поиска во всю ширину */}
+          <button onClick={fetchTournaments} className="w-full bg-cyan-950/30 border-2 border-cyan-500/60 hover:bg-cyan-900/40 text-cyan-400 font-black py-3.5 rounded-xl active:scale-95 transition-all flex justify-center items-center gap-2 shadow-[0_0_20px_rgba(34,211,238,0.2)]">
+            {loading ? <><Search className="animate-spin" size={18} /> Ищем...</> : <><Search size={18} strokeWidth={2.5} /> Найти турниры</>}
+          </button>
 
           {!loading && searchResults.length > 0 && (
             <div className="flex flex-col gap-2.5 px-1 pt-2 pb-1">
