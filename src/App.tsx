@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Plus, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut } from 'lucide-react';
+import { Search, ListTodo, Plus, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown } from 'lucide-react';
 
 interface Tournament {
   id: string; room: string; name: string; priority: string;
@@ -34,21 +34,19 @@ const ROOM_DOMAINS: Record<string, string> = {
 
 const getRoomCurrency = (roomName: string) => {
   const name = (roomName || '').toLowerCase();
-  if (name.includes('pokerdom') || name.includes('rpt')) return '₽';
-  if (name.includes('winamax') || name.includes('ipoker') || name.includes('ps(es)') || name.includes('pokerstars.es')) return '€';
+  if (name.includes('pokerdom') || name.includes('rpt') || name.includes('pd')) return '₽';
+  if (name.includes('winamax') || name.includes('ipoker') || name.includes('ps(es)') || name.includes('wmx')) return '€';
   return '$';
 };
 
 const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle: (n: string) => string }) => {
   const nameLower = (roomName || '').toLowerCase();
   
-  // Ищем ID рума по вхождению подстроки (чтобы GGNETWORK соотнесся с GGNet, а 888Poker с 888)
   let roomId = Object.keys(ROOMS).find(id => {
     const shortName = ROOMS[id].toLowerCase();
     return nameLower.includes(shortName) || (shortName === 'ggnet' && nameLower.includes('gg')) || (shortName === 'wmx' && nameLower.includes('winamax'));
   });
 
-  // Если точного вхождения нет, фолбэк на стандартные ключи
   if (!roomId) {
     if (nameLower.includes('gg')) roomId = '246';
     else if (nameLower.includes('888')) roomId = '244';
@@ -57,16 +55,15 @@ const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle:
   }
 
   const domain = roomId ? ROOM_DOMAINS[roomId] : null;
-  // Берем короткое имя из твоего словаря ROOMS, либо оставляем исходное, если не нашлось
   const displayName = roomId ? ROOMS[roomId] : roomName;
 
   return (
-    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border font-bold text-[10px] uppercase tracking-wider ${getRoomStyle(roomName)} shadow-sm`}>
+    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg border font-bold text-[10px] uppercase tracking-wider ${getRoomStyle(roomName)} shadow-sm`}>
       {domain && (
         <img 
           src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} 
           alt={roomName} 
-          className="w-4 h-4 rounded-full object-cover bg-white p-[0.5px] shadow-sm shrink-0" 
+          className="w-3.5 h-3.5 rounded-full object-cover bg-white p-[0.5px] shadow-sm shrink-0" 
           onError={(e) => { e.currentTarget.style.display = 'none'; }} 
         />
       )}
@@ -99,6 +96,19 @@ export default function App() {
   const [activeFormats, setActiveFormats] = useState({ isPko: true, isFreezeout: true, isTurbo: true });
   const [sortOrder, setSortOrder] = useState<'time' | 'buyin' | 'ev' | 'tier'>('time');
   const [selectedRooms, setSelectedRooms] = useState<string[]>(Object.keys(ROOMS));
+  const [isRoomsDropdownOpen, setIsRoomsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Закрытие дропдауна по клику вне его
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsRoomsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const toggleFormat = (key: 'isPko' | 'isFreezeout' | 'isTurbo') => {
     setActiveFormats(prev => ({ ...prev, [key]: !prev[key] }));
@@ -120,9 +130,9 @@ export default function App() {
     const diffMins = (hours * 60 + mins) - (now.getHours() * 60 + now.getMinutes());
 
     if (diffMins > 0 && diffMins <= 60) {
-      return <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 animate-pulse bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30 ml-1.5">⏳ {diffMins}м</span>;
+      return <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 animate-pulse bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30">⏳ {diffMins}м</span>;
     } else if (diffMins <= 0 && diffMins >= -120) {
-      return <span className="text-[9px] font-black uppercase tracking-wider text-rose-400 animate-pulse bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/30 ml-1.5">🔥 Late</span>;
+      return <span className="text-[9px] font-black uppercase tracking-wider text-rose-400 animate-pulse bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/30">🔥 Late</span>;
     }
     return null;
   };
@@ -260,10 +270,10 @@ export default function App() {
     const name = roomName.toLowerCase();
     if (name.includes('gg') || name.includes('pokerstars') || name.includes('ps')) return 'bg-red-500/10 text-red-400 border-red-500/30';
     if (name.includes('888') || name.includes('wpn') || name.includes('rpt')) return 'bg-blue-500/10 text-blue-400 border-blue-500/30';
-    if (name.includes('pokerdom') || name.includes('ipoker')) return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+    if (name.includes('pokerdom') || name.includes('ipoker') || name.includes('pd')) return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
     if (name.includes('chico') || name.includes('party')) return 'bg-orange-500/10 text-orange-400 border-orange-500/30';
-    if (name.includes('coinpoker')) return 'bg-slate-500/20 text-slate-300 border-slate-500/50';
-    if (name.includes('winamax')) return 'bg-zinc-500/20 text-white border-zinc-500/50';
+    if (name.includes('coinpoker') || name.includes('coin')) return 'bg-slate-500/20 text-slate-300 border-slate-500/50';
+    if (name.includes('winamax') || name.includes('wmx')) return 'bg-zinc-500/20 text-white border-zinc-500/50';
     return 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30';
   };
 
@@ -440,24 +450,33 @@ export default function App() {
   const renderGridCard = (t: any) => {
     const prioStyles = getPriorityStyles(t.priority);
     const played = isPlayed(t.time_start, t.day_week);
+    const isAdded = grid.some(item => item.id === t.id);
+
     return (
-      <div key={t.id} onClick={() => setActiveStats(t)} className={`bg-slate-900 rounded-xl p-4 border border-slate-800 transition-all flex items-center justify-between gap-4 border-l-[4px] ${prioStyles.border} cursor-pointer hover:border-slate-700 ${played ? 'opacity-40 grayscale bg-slate-900/40' : ''}`}>
+      <div 
+        key={t.id} 
+        onClick={() => toggleGrid(t)} 
+        className={`bg-slate-900 rounded-xl p-4 border transition-all flex items-center justify-between gap-4 border-l-[4px] ${prioStyles.border} cursor-pointer hover:border-slate-700 ${played ? 'opacity-40 grayscale bg-slate-900/40' : ''} ${isAdded ? 'border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'border-slate-800'}`}
+      >
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2.5 mb-2">
+          <div className="flex items-center gap-2 mb-2">
             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
+            <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">BT. {t.time_start}</span>
             <span className="text-[10px] font-bold text-slate-500 uppercase">{t.day_week}</span>
-            <span className="text-xs text-cyan-400 font-mono font-black">{t.time_start}</span>
             {isOverlay(t) && <Flame size={12} className="text-orange-500 animate-pulse"/>}
             {getSmartTimer(t.time_start, t.day_week)}
           </div>
           <div className="font-bold text-sm text-white truncate mb-1.5">{t.name}</div>
           <div className="flex items-center gap-4 text-xs">
             <span className="font-black text-emerald-400 text-sm">{getRoomCurrency(t.room)}{t.buyin}</span>
-            <span className="text-slate-400 font-bold">{t.afs} чел</span>
+            <span className="text-slate-400 font-bold">{t.afs} тел</span>
             <span className="text-slate-400 font-bold">GTD: ${t.gtd}</span>
           </div>
         </div>
-        <button onClick={(e) => { e.stopPropagation(); toggleGrid(t); }} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition active:scale-95"><Trash2 size={16} /></button>
+        <div className="shrink-0 flex items-center gap-2">
+          <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded-lg transition">Заметка</button>
+          <button onClick={(e) => { e.stopPropagation(); toggleGrid(t); }} className="w-9 h-9 flex items-center justify-center rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition active:scale-95"><Trash2 size={16} /></button>
+        </div>
       </div>
     );
   };
@@ -578,21 +597,50 @@ export default function App() {
                   <input type="datetime-local" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 outline-none focus:border-cyan-500 [color-scheme:dark]" />
                 </div>
 
-<div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-13 gap-1.5 pt-1">
-  <button onClick={() => setSelectedRooms(selectedRooms.length === Object.keys(ROOMS).length ? [] : Object.keys(ROOMS))} className="px-2 py-2 rounded-xl text-[10px] font-black border bg-slate-800 text-slate-300 border-slate-700 flex items-center justify-center">
-    {selectedRooms.length === Object.keys(ROOMS).length ? 'Сброс' : 'Все'}
-  </button>
-  {Object.entries(ROOMS).map(([id, name]) => {
-    const isSel = selectedRooms.includes(id);
-    const domain = ROOM_DOMAINS[id];
-    return (
-      <button key={id} onClick={() => toggleRoom(id)} className={`flex items-center justify-center gap-1 px-2 py-2 rounded-xl text-[10px] font-bold border transition ${isSel ? 'bg-cyan-950/50 border-cyan-500/60 text-cyan-300 shadow-sm' : 'bg-slate-950/40 border-slate-800/80 text-slate-500 hover:text-slate-300'}`}>
-        {domain && <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={name} className={`w-3 h-3 rounded-full shrink-0 ${isSel ? '' : 'opacity-30 grayscale'}`} onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
-        <span className="truncate">{name}</span>
-      </button>
-    );
-  })}
-</div>
+                {/* Выпадающий список румов */}
+                <div className="relative" ref={dropdownRef}>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => setIsRoomsDropdownOpen(!isRoomsDropdownOpen)}
+                      className="flex-1 bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-3 text-xs font-bold text-slate-300 flex items-center justify-between transition shadow-sm"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-cyan-400 font-black uppercase text-[10px] tracking-wider bg-cyan-950/50 px-2 py-0.5 rounded border border-cyan-500/30">Румы</span>
+                        <span>Выбрано: {selectedRooms.length} из {Object.keys(ROOMS).length}</span>
+                      </div>
+                      <ChevronDown size={16} className={`transition-transform ${isRoomsDropdownOpen ? 'rotate-180 text-cyan-400' : 'text-slate-500'}`} />
+                    </button>
+                    
+                    <button 
+                      onClick={() => setSelectedRooms(selectedRooms.length === Object.keys(ROOMS).length ? [] : Object.keys(ROOMS))} 
+                      className="px-4 py-3 rounded-xl text-xs font-bold border bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-800 transition"
+                    >
+                      {selectedRooms.length === Object.keys(ROOMS).length ? 'Сбросить' : 'Все'}
+                    </button>
+                  </div>
+
+                  {isRoomsDropdownOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-slate-950 border border-slate-800 rounded-2xl p-3 shadow-2xl z-50 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                      {Object.entries(ROOMS).map(([id, name]) => {
+                        const isSel = selectedRooms.includes(id);
+                        const domain = ROOM_DOMAINS[id];
+                        return (
+                          <button 
+                            key={id} 
+                            onClick={() => toggleRoom(id)} 
+                            className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold border transition ${isSel ? 'bg-cyan-950/40 border-cyan-500/50 text-cyan-300 shadow-sm' : 'bg-slate-900/50 border-slate-800/60 text-slate-500 hover:text-slate-300'}`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              {domain && <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={name} className={`w-3.5 h-3.5 rounded-full shrink-0 ${isSel ? '' : 'opacity-30 grayscale'}`} onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
+                              <span className="truncate">{name}</span>
+                            </div>
+                            <div className={`w-4 h-4 rounded flex items-center justify-center text-[10px] border shrink-0 ${isSel ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-black' : 'border-slate-700 text-transparent'}`}>✓</div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3">
@@ -643,12 +691,16 @@ export default function App() {
                   const prioStyles = getPriorityStyles(t.priority);
                   
                   return (
-                    <div key={t.id} onClick={() => setActiveStats(t)} className={`bg-slate-900 rounded-xl p-4 border border-slate-800 flex items-center justify-between gap-4 border-l-[4px] ${prioStyles.border} cursor-pointer hover:border-slate-700 transition shadow-md`}>
+                    <div 
+                      key={t.id} 
+                      onClick={() => toggleGrid(t)} 
+                      className={`bg-slate-900 rounded-xl p-4 border transition-all flex items-center justify-between gap-4 border-l-[4px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-md ${isAdded ? 'border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.15)] bg-slate-900/90' : 'border-slate-800'}`}
+                    >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2.5 mb-2">
                           <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
+                          <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">BT. {t.time_start}</span>
                           <span className="text-[10px] font-bold text-slate-500 uppercase">{t.day_week}</span>
-                          <span className="text-xs text-cyan-400 font-mono font-black">{t.time_start}</span>
                           {isOverlay(t) && <Flame size={14} className="text-orange-500 animate-pulse"/>}
                           {getSmartTimer(t.time_start, t.day_week)}
                         </div>
@@ -661,9 +713,12 @@ export default function App() {
                         </div>
                       </div>
                       
-                      <button onClick={(e) => { e.stopPropagation(); toggleGrid(t); }} className={`shrink-0 w-11 h-11 flex items-center justify-center rounded-xl transition active:scale-95 ${isAdded ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-blue-400 hover:bg-slate-700'}`}>
-                        {isAdded ? <Check size={18} strokeWidth={3}/> : <Plus size={18} strokeWidth={3}/>}
-                      </button>
+                      <div className="shrink-0 flex items-center gap-2">
+                        <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition">Заметка</button>
+                        <div className={`w-10 h-10 flex items-center justify-center rounded-xl border transition ${isAdded ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-slate-800/80 text-slate-500 border-slate-700/50'}`}>
+                          {isAdded ? <Check size={18} strokeWidth={3}/> : <Plus size={18} strokeWidth={2}/>}
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
