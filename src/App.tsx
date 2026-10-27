@@ -696,24 +696,22 @@ export default function App() {
                     </button>
                   </div>
 
-                  {/* Аккуратные компактные чипсы быстрого добавления в правый блок */}
+                  {/* Компактные иконки-кнопки быстрого добавления */}
                   {!loading && searchResults.length > 0 && (
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button 
                         onClick={() => bulkAdd('top')} 
                         title="Добавить все зеленые турниры"
-                        className="px-3 py-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 transition active:scale-95"
+                        className="w-11 h-11 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl flex items-center justify-center transition active:scale-95 shadow-sm"
                       >
-                        <Check size={14} strokeWidth={3} />
-                        <span className="hidden md:inline">Зеленые</span>
+                        <Check size={18} strokeWidth={3} />
                       </button>
                       <button 
                         onClick={() => bulkAdd('overlay')} 
                         title="Добавить все оверлеи"
-                        className="px-3 py-3 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-xl text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 transition active:scale-95"
+                        className="w-11 h-11 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-xl flex items-center justify-center transition active:scale-95 shadow-sm"
                       >
-                        <Flame size={14} className="text-orange-500" />
-                        <span className="hidden md:inline">Оверлеи</span>
+                        <Flame size={18} className="text-orange-500 animate-pulse" />
                       </button>
                     </div>
                   )}
