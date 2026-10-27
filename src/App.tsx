@@ -18,10 +18,10 @@ const ROOMS: Record<string, string> = {
 };
 
 const ROOM_DOMAINS: Record<string, string> = {
-  'GGNetwork': 'ggpoker.com', 'PokerStars': 'pokerstars.com', 'PS(ES)': 'pokerstars.es',
-  '888Poker': '888poker.com', 'Winamax': 'winamax.fr', 'Pokerdom': 'pokerdom.com',
-  'CoinPoker': 'coinpoker.com', 'PartyPoker': 'partypoker.com', 'WPN': 'americascardroom.eu',
-  'iPoker': 'redstarpoker.eu', 'Chico': 'tigergaming.com', 'RPTBet': 'rptbet.com'
+  'GGNet': 'ggpoker.com', 'PS(COM)': 'pokerstars.com', 'PS(ES)': 'pokerstars.es',
+  '888': '888poker.com', 'Winamax': 'winamax.fr', 'PD': 'pokerdom.com',
+  'Coin': 'coinpoker.com', 'PartyPoker': 'partypoker.com', 'WPN': 'americascardroom.eu',
+  'iPoker': 'redstarpoker.eu', 'Chico': 'tigergaming.com', 'RPT': 'rptbet.com'
 };
 
 const getRoomCurrency = (roomName: string) => {
