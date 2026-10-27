@@ -675,13 +675,14 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Кнопка поиска на всю ширину под блоком фильтров */}
-              <button 
-                onClick={fetchTournaments} 
-                className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-3.5 rounded-2xl text-xs uppercase tracking-wider flex justify-center items-center gap-2 transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] active:scale-95"
-              >
-                {loading ? <><Search className="animate-spin" size={16} /> Ищем...</> : <><Search size={16} strokeWidth={3} /> Найти турниры</>}
-              </button>
+<div className="flex justify-end pt-1">
+  <button 
+    onClick={fetchTournaments} 
+    className="w-full sm:w-auto px-10 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider flex justify-center items-center gap-2 transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] active:scale-95"
+  >
+    {loading ? <><Search className="animate-spin" size={16} /> Ищем...</> : <><Search size={16} strokeWidth={3} /> Найти турниры</>}
+  </button>
+</div>
 
               {!loading && searchResults.length > 0 && (
                 <div className="flex gap-3">
