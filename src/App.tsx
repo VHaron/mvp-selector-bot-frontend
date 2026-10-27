@@ -20,7 +20,7 @@ const ROOMS: Record<string, string> = {
 const ROOM_DOMAINS: Record<string, string> = {
   'GGNet': 'ggpoker.com', 'PS(COM)': 'pokerstars.com', 'PS(ES)': 'pokerstars.es',
   '888': '888poker.com', 'Winamax': 'winamax.fr', 'PD': 'pokerdom.com',
-  'Coin': 'coinpoker.com', 'PartyPoker': 'partypoker.com', 'WPN': 'americascardroom.eu',
+  'CoinPoker': 'coinpoker.com', 'PartyPoker': 'partypoker.com', 'WPN': 'americascardroom.eu',
   'iPoker': 'redstarpoker.eu', 'Chico': 'tigergaming.com', 'RPT': 'rptbet.com'
 };
 
