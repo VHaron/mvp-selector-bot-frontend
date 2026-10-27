@@ -663,14 +663,13 @@ export default function App() {
                           {selectedRooms.length === 0 ? (
                             <span className="text-slate-500 italic">Выберите румы</span>
                           ) : (
-                            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                            <div className="flex items-center gap-1.5 overflow-x-hidden py-0.5">
                               {selectedRooms.map(id => {
                                 const domain = ROOM_DOMAINS[id];
                                 const name = ROOMS[id];
                                 return (
-                                  <div key={id} className="flex items-center gap-1 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-lg shrink-0">
+                                  <div key={id} className="w-6 h-6 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0 shadow-sm">
                                     {domain && <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={name} className="w-3.5 h-3.5 rounded-full object-cover bg-white p-[0.5px]" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
-                                    <span className="text-[10px] font-bold text-slate-300 uppercase">{name}</span>
                                   </div>
                                 );
                               })}
