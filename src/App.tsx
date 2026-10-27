@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Plus, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown, Zap, ShieldAlert, Disc, Layers } from 'lucide-react';
+import { Search, ListTodo, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown, Zap, ShieldAlert, Disc, Layers } from 'lucide-react';
 
 interface Tournament {
   id: string; room: string; name: string; priority: string;
@@ -495,8 +495,8 @@ export default function App() {
           </div>
         </div>
         <div className="shrink-0 flex items-center gap-1.5">
-          <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded-lg transition">Заметка</button>
-          <button onClick={(e) => { e.stopPropagation(); toggleGrid(t); }} className="w-7 h-7 flex items-center justify-center rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition active:scale-95"><Trash2 size={14} /></button>
+          <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"><NotebookPen size={14}/></button>
+          <button onClick={(e) => { e.stopPropagation(); toggleGrid(t); }} title="Удалить" className="w-8 h-8 flex items-center justify-center rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition active:scale-95"><Trash2 size={14} /></button>
         </div>
       </div>
     );
@@ -774,10 +774,12 @@ export default function App() {
                       </div>
                       
                       <div className="shrink-0 flex items-center gap-1.5">
-                        <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded-lg transition">Заметка</button>
-                        <div className={`w-7 h-7 flex items-center justify-center rounded-lg border transition ${isAdded ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-slate-800/80 text-slate-500 border-slate-700/50'}`}>
-                          {isAdded ? <Check size={14} strokeWidth={3}/> : <Plus size={14} strokeWidth={2}/>}
-                        </div>
+                        <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"><NotebookPen size={14}/></button>
+                        {isAdded && (
+                          <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                            <Check size={14} strokeWidth={3}/>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
