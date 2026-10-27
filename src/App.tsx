@@ -461,6 +461,7 @@ export default function App() {
           <div className="flex items-center gap-2 mb-2">
             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
             <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">BT. {t.time_start}</span>
+            <span className="text-[10px] font-bold text-slate-500 uppercase">{t.day_week}</span>
             {isOverlay(t) && <Flame size={12} className="text-orange-500 animate-pulse"/>}
             {getSmartTimer(t.time_start, t.day_week)}
           </div>
@@ -722,6 +723,7 @@ export default function App() {
                         <div className="flex items-center gap-2.5 mb-2">
                           <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
                           <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">BT. {t.time_start}</span>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase">{t.day_week}</span>
                           {isOverlay(t) && <Flame size={14} className="text-orange-500 animate-pulse"/>}
                           {getSmartTimer(t.time_start, t.day_week)}
                         </div>
