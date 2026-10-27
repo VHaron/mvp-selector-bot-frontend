@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Plus, Check, Trash2, BarChart2, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen } from 'lucide-react';
+import { Search, ListTodo, Plus, Check, Trash2, BarChart2, X, Lock, User, KeyRound, ArrowUpDown, Save, Flame, Wallet, TrendingUp } from 'lucide-react';
 
 interface Tournament {
   id: string; room: string; name: string; priority: string;
@@ -259,14 +259,6 @@ export default function App() {
     return { id: 3, label: 'C', color: 'text-slate-500 bg-slate-800/50' };
   };
 
-  const getVariance = () => {
-    if (grid.length === 0) return { label: 'Нет данных', color: 'text-slate-500' };
-    const avgAfs = grid.reduce((acc, t) => acc + parseNum(t.afs), 0) / grid.length;
-    if (avgAfs < 300) return { label: 'Низкая', color: 'text-emerald-400' };
-    if (avgAfs < 1000) return { label: 'Средняя', color: 'text-amber-400' };
-    return { label: 'Высокая', color: 'text-rose-400' };
-  };
-
   const getSessionEndTime = (items: Tournament[]) => {
     if (!items || items.length === 0) return "--:--";
     let maxEndTimeMins = 0;
@@ -480,7 +472,7 @@ export default function App() {
     const note = notes[getNoteKey(t)];
     const prioStyles = getPriorityStyles(t.priority);
     
-    if (note?.tag === 'skip' && inSearch) return null; // Не рендерим скипнутые в поиске для чистоты
+    if (note?.tag === 'skip' && inSearch) return null; 
 
     const borderStyle = note?.tag === 'must' ? 'border-l-4 border-l-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : `border-l-[3px] ${prioStyles.border} ${prioStyles.glow}`;
     const playedStyle = (!inSearch && t.played) ? 'opacity-40 grayscale bg-slate-900/50' : 'bg-slate-900';
@@ -785,7 +777,7 @@ export default function App() {
         
         return (
           <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 w-full max-w-sm shadow-2xl relative border-l-4 border-l-cyan-500">
+            <div className={`bg-slate-900 border border-slate-800 rounded-2xl p-4 w-full max-w-sm shadow-2xl relative border-l-4 ${prioStyles.border}`}>
               <button onClick={() => setActiveStats(null)} className="absolute top-3 right-3 p-1.5 bg-slate-800 rounded-full text-slate-400"><X size={16}/></button>
               <h3 className="font-black text-sm text-white mb-1 pr-6 leading-tight">{activeStats.name}</h3>
               <div className="inline-block mb-3"><RoomBadge roomName={activeStats.room} getRoomStyle={getRoomStyle} /></div>            
