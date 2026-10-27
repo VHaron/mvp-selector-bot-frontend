@@ -656,13 +656,28 @@ export default function App() {
                     <div className="relative flex-1" ref={dropdownRef}>
                       <button 
                         onClick={() => setIsRoomsDropdownOpen(!isRoomsDropdownOpen)}
-                        className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-3 text-xs font-bold text-slate-300 flex items-center justify-between transition shadow-sm"
+                        className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-300 flex items-center justify-between transition shadow-sm"
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="text-cyan-400 font-black uppercase text-[10px] tracking-wider bg-cyan-950/50 px-2 py-0.5 rounded border border-cyan-500/30">Румы</span>
-                          <span>Выбрано: {selectedRooms.length} из {Object.keys(ROOMS).length}</span>
+                        <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+                          <span className="text-cyan-400 font-black uppercase text-[10px] tracking-wider bg-cyan-950/50 px-2 py-1 rounded border border-cyan-500/30 shrink-0">Румы</span>
+                          {selectedRooms.length === 0 ? (
+                            <span className="text-slate-500 italic">Выберите румы</span>
+                          ) : (
+                            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                              {selectedRooms.map(id => {
+                                const domain = ROOM_DOMAINS[id];
+                                const name = ROOMS[id];
+                                return (
+                                  <div key={id} className="flex items-center gap-1 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-lg shrink-0">
+                                    {domain && <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={name} className="w-3.5 h-3.5 rounded-full object-cover bg-white p-[0.5px]" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
+                                    <span className="text-[10px] font-bold text-slate-300 uppercase">{name}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
-                        <ChevronDown size={16} className={`transition-transform ${isRoomsDropdownOpen ? 'rotate-180 text-cyan-400' : 'text-slate-500'}`} />
+                        <ChevronDown size={16} className={`transition-transform shrink-0 ml-2 ${isRoomsDropdownOpen ? 'rotate-180 text-cyan-400' : 'text-slate-500'}`} />
                       </button>
                       
                       {isRoomsDropdownOpen && (
