@@ -127,8 +127,8 @@ export default function App() {
     const [hours, minutes] = timeString.trim().slice(0, 5).split(':').map(Number);
     if (isNaN(hours) || isNaN(minutes)) return false;
     const tourneyTime = new Date(); tourneyTime.setHours(hours, minutes, 0, 0);
-    // Скрываем, если прошло 120 минут (конец лейт-реги)
-    return (new Date().getTime() - tourneyTime.getTime()) / (1000 * 60) > 120;
+    // Скрываем, если прошло больше 15 минут с момента старта
+    return (new Date().getTime() - tourneyTime.getTime()) / (1000 * 60) > 15;
   };
 
   const getSmartTimer = (timeStr: string, dayWeekStr?: string) => {
@@ -139,7 +139,7 @@ export default function App() {
 
     if (diffMins > 0 && diffMins <= 60) {
       return <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 animate-pulse bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30">⏳ {diffMins}м</span>;
-    } else if (diffMins <= 0 && diffMins >= -120) {
+    } else if (diffMins <= 0 && diffMins >= -15) {
       return <span className="text-[9px] font-black uppercase tracking-wider text-rose-400 animate-pulse bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/30">🔥 Late</span>;
     }
     return null;
@@ -378,7 +378,7 @@ export default function App() {
     return displayGrid.filter(t => t.room === gridActiveRoom);
   }, [displayGrid, groupByRoom, gridActiveRoom, activeGridRooms]);
 
-  // Фильтруем турниры с закрытой лейт-регой из списка поиска
+  // Скрываем турниры, которые начались более чем 15 минут назад
   const searchResults = useMemo(() => {
     return tournaments
       .filter(t => !isPlayed(t.time_start, t.day_week)) 
