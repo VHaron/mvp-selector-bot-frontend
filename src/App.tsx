@@ -784,23 +784,41 @@ export default function App() {
                 </div>
               )}
 
-              {/* Управление сеткой: Кнопка завершения, аккуратная сортировка и компактная кнопка группировки по румам */}
+              {/* Ультракомпактная панель управления сеткой в один ряд */}
               {grid.length > 0 && (
-                <div className="flex gap-3">
-                  <button onClick={() => setShowSessionModal(true)} className="flex-[2] bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 rounded-xl py-3 flex items-center justify-center gap-2 text-xs uppercase font-black"><Wallet size={16} /> Завершить сессию</button>
+                <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-2xl p-2 shadow-xl">
+                  <button 
+                    onClick={() => setShowSessionModal(true)} 
+                    className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-400 rounded-xl py-2.5 px-3 flex items-center justify-center gap-2 text-xs uppercase font-black transition"
+                  >
+                    <Wallet size={16} /> 
+                    <span className="truncate">Завершить сессию</span>
+                  </button>
                   
-                  <button onClick={() => setSortOrder(prev => prev === 'time' ? 'buyin' : prev === 'buyin' ? 'ev' : 'time')} className="flex-1 bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl py-3 flex items-center justify-center gap-1.5 text-xs uppercase font-black text-blue-400 transition"><ArrowUpDown size={14} /> {sortOrder}</button>
+                  <button 
+                    onClick={() => setSortOrder(prev => prev === 'time' ? 'buyin' : prev === 'buyin' ? 'ev' : 'time')} 
+                    title="Сортировка"
+                    className="px-4 py-2.5 bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl text-xs uppercase font-black text-blue-400 flex items-center gap-1.5 transition shrink-0"
+                  >
+                    <ArrowUpDown size={14} /> 
+                    <span>{sortOrder}</span>
+                  </button>
                   
-                  {/* Компактная кнопка группировки по румам */}
                   <button 
                     onClick={() => setGroupByRoom(!groupByRoom)} 
                     title="Группировать по румам"
-                    className={`w-12 h-12 rounded-xl border flex items-center justify-center transition shrink-0 ${groupByRoom ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 shadow-sm' : 'bg-slate-900 text-slate-500 border-slate-800 hover:text-slate-300'}`}
+                    className={`w-10 h-10 rounded-xl border flex items-center justify-center transition shrink-0 ${groupByRoom ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}`}
                   >
-                    <Layers size={18} />
+                    <Layers size={16} />
                   </button>
 
-                  <button onClick={clearGrid} className="w-12 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center justify-center text-rose-400 shrink-0"><Trash2 size={16} /></button>
+                  <button 
+                    onClick={clearGrid} 
+                    title="Очистить сетку"
+                    className="w-10 h-10 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl flex items-center justify-center text-rose-400 transition shrink-0"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               )}
 
