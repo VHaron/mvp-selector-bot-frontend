@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Plus, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen } from 'lucide-react';
+import { Search, ListTodo, Plus, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut } from 'lucide-react';
 
 interface Tournament {
   id: string; room: string; name: string; priority: string;
@@ -409,7 +409,7 @@ export default function App() {
     const prioStyles = getPriorityStyles(t.priority);
     const played = isPlayed(t.time_start, t.day_week);
     return (
-      <div key={t.id} onClick={() => setActiveStats(t)} className={`bg-slate-900 rounded-xl p-3 border border-slate-800 transition-all flex items-center justify-between gap-3 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 ${played ? 'opacity-40 grayscale bg-slate-900/40' : ''}`}>
+      <div key={t.id} onClick={() => setActiveStats(t)} className={`bg-slate-900 rounded-xl p-3.5 border border-slate-800 transition-all flex items-center justify-between gap-4 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 ${played ? 'opacity-40 grayscale bg-slate-900/40' : ''}`}>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[10px] font-bold text-slate-500 uppercase">{t.day_week}</span>
@@ -457,272 +457,330 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans antialiased pb-24">
+    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans antialiased flex">
       
-      {/* Шапка сайта */}
-      <header className="sticky top-0 bg-slate-950/90 backdrop-blur-md z-30 border-b border-slate-800 px-6 md:px-10 py-3.5 flex justify-between items-center shadow-lg">
-        <div className="flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)] cursor-pointer" onClick={logout} title="Выйти"></div>
-          <h1 className="text-base md:text-lg font-black tracking-wider text-white uppercase">МВП Селектор</h1>
-        </div>
-
-        <div className="bg-slate-900 border border-slate-800 px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-4 shadow-sm">
-          <div>Загрузка: <b className="text-emerald-400">${totalBuyin.toFixed(1)}</b></div>
-          <div>EV: <b className={totalEV >= 0 ? 'text-blue-400' : 'text-rose-400'}>{totalEV > 0 ? '+' : ''}${totalEV.toFixed(1)}</b></div>
-        </div>
-      </header>
-
-      {/* Основной контент */}
-      <main className="max-w-6xl mx-auto px-4 md:px-8 py-6">
-        
-        {/* Поиск */}
-        {activeTab === 'search' && (
-          <div className="space-y-4">
-            <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4 shadow-xl space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Фильтр периода и румов</span>
-                <div className="flex gap-2">
-                  <button onClick={() => setPresetDate('today')} className="px-2.5 py-1 text-[10px] font-bold uppercase bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">Сегодня</button>
-                  <button onClick={() => setPresetDate('tomorrow')} className="px-2.5 py-1 text-[10px] font-bold uppercase bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">Завтра</button>
-                  <button onClick={() => setPresetDate('clear')} className="px-2 py-1 text-[10px] uppercase bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg"><X size={12}/></button>
-                  <button onClick={() => setShowPresetsModal(true)} className="px-2.5 py-1 text-[10px] font-bold uppercase bg-cyan-950/50 text-cyan-400 border border-cyan-500/40 rounded-lg ml-2">Шаблоны</button>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input type="datetime-local" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 outline-none focus:border-cyan-500 [color-scheme:dark]" />
-                <input type="datetime-local" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 outline-none focus:border-cyan-500 [color-scheme:dark]" />
-              </div>
-
-              <div className="flex flex-wrap gap-1.5 pt-2">
-                <button onClick={() => setSelectedRooms(selectedRooms.length === Object.keys(ROOMS).length ? [] : Object.keys(ROOMS))} className="px-3 py-1.5 rounded-xl text-xs font-black border bg-slate-800 text-slate-300 border-slate-700">
-                  {selectedRooms.length === Object.keys(ROOMS).length ? 'Сбросить' : 'Все румы'}
-                </button>
-                {Object.entries(ROOMS).map(([id, name]) => {
-                  const isSel = selectedRooms.includes(id);
-                  const domain = ROOM_DOMAINS[name];
-                  return (
-                    <button key={id} onClick={() => toggleRoom(id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition ${isSel ? 'bg-cyan-950/50 border-cyan-500/60 text-cyan-300 shadow-sm' : 'bg-slate-950/40 border-slate-800/80 text-slate-500 hover:text-slate-300'}`}>
-                      {domain && <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={name} className={`w-3.5 h-3.5 rounded-full ${isSel ? '' : 'opacity-30 grayscale'}`} onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
-                      <span>{name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Панель форматов и кнопка поиска во всю ширину блока */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex gap-2 flex-1">
-                <button onClick={() => toggleFormat('isPko')} className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase border transition ${activeFormats.isPko ? 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/40' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🎯 PKO</button>
-                <button onClick={() => toggleFormat('isTurbo')} className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase border transition ${activeFormats.isTurbo ? 'bg-amber-500/10 text-amber-400 border-amber-500/40' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>⚡ Turbo</button>
-                <button onClick={() => toggleFormat('isFreezeout')} className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase border transition ${activeFormats.isFreezeout ? 'bg-blue-500/10 text-blue-400 border-blue-500/40' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🧊 Freez</button>
-              </div>
-
-              <div className="flex gap-2">
-                <button 
-                  onClick={fetchTournaments} 
-                  className="w-full sm:w-auto px-8 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider flex justify-center items-center gap-2 transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] active:scale-95"
-                >
-                  {loading ? <><Search className="animate-spin" size={16} /> Ищем...</> : <><Search size={16} strokeWidth={3} /> Найти турниры</>}
-                </button>
-              </div>
-            </div>
-
-            {!loading && searchResults.length > 0 && (
-              <div className="flex gap-3">
-                <button onClick={() => bulkAdd('top')} className="flex-1 py-2.5 text-xs font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/20 transition">+ Все зеленые</button>
-                <button onClick={() => bulkAdd('overlay')} className="flex-1 py-2.5 text-xs font-black uppercase bg-orange-500/10 text-orange-400 border border-orange-500/30 rounded-xl hover:bg-orange-500/20 transition">+ Все Оверлеи</button>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-              {loading && [1, 2, 3, 4].map(i => <div key={i} className="h-20 bg-slate-900/40 rounded-xl border border-slate-800/40 animate-pulse"></div>)}
-              
-              {searchResults.length === 0 && !loading && (
-                <div className="col-span-full text-center py-20 bg-slate-900/30 rounded-2xl border border-slate-800/50">
-                  <div className="text-4xl mb-3 opacity-30">🎲</div>
-                  <h3 className="text-slate-300 font-bold text-base">Расписание пусто</h3>
-                  <p className="text-slate-500 text-xs mt-1">Нажмите «Найти турниры» для загрузки</p>
-                </div>
-              )}
-              
-              {searchResults.map((t) => {
-                const note = notes[getNoteKey(t)];
-                if (note?.tag === 'skip') return (
-                  <div key={t.id} className="bg-slate-900/30 rounded-xl p-3 border border-slate-800/40 flex justify-between items-center opacity-40 grayscale text-xs">
-                    <div className="flex items-center gap-2"><Ban size={16} className="text-rose-500"/><span className="line-through">{t.name}</span></div>
-                    <button onClick={() => setActiveStats(t)} className="text-xs text-blue-400 font-bold">Вернуть</button>
-                  </div>
-                );
-
-                const isAdded = grid.some(item => item.id === t.id);
-                const prioStyles = getPriorityStyles(t.priority);
-                
-                return (
-                  <div key={t.id} onClick={() => setActiveStats(t)} className={`bg-slate-900 rounded-xl p-3.5 border border-slate-800 flex items-center justify-between gap-3 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 transition shadow-md`}>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase">{t.day_week}</span>
-                        <span className="text-xs text-cyan-400 font-mono font-black">{t.time_start}</span>
-                        {isOverlay(t) && <Flame size={14} className="text-orange-500 animate-pulse"/>}
-                        {getSmartTimer(t.time_start, t.day_week)}
-                      </div>
-                      <div className="font-bold text-sm text-white truncate mb-1">{t.name}</div>
-                      <div className="flex items-center gap-3 text-xs">
-                        <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
-                        <span className="text-slate-500 font-bold uppercase">{t.room} • {t.afs} тел</span>
-                      </div>
-                    </div>
-                    
-                    <button onClick={(e) => { e.stopPropagation(); toggleGrid(t); }} className={`shrink-0 w-10 h-10 flex items-center justify-center rounded-xl transition active:scale-95 ${isAdded ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-blue-400 hover:bg-slate-700'}`}>
-                      {isAdded ? <Check size={18} strokeWidth={3}/> : <Plus size={18} strokeWidth={3}/>}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+      {/* Левый десктопный сайдбар с иконками */}
+      <aside className="w-20 bg-slate-950 border-r border-slate-800/80 flex flex-col items-center justify-between py-6 shrink-0 sticky top-0 h-screen z-40">
+        <div className="flex flex-col items-center gap-6">
+          {/* Логотип-индикатор */}
+          <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/40 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+            <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse"></div>
           </div>
-        )}
 
-        {/* Сетка */}
-        {activeTab === 'grid' && (
-          <div className="space-y-4">
-            {grid.length > 0 && (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
-                <div className="grid grid-cols-3 gap-2 mb-3 pb-3 border-b border-slate-800 text-center">
-                  <div><span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Турниров</span><div className="text-lg font-black text-white">{grid.length}</div></div>
-                  <div className="border-x border-slate-800"><span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Ожидание</span><div className={`text-lg font-black ${totalEV >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{totalEV > 0 ? '+' : ''}${totalEV.toFixed(1)}</div></div>
-                  <div><span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Конец</span><div className="text-lg font-black text-cyan-400">~{getSessionEndTime(grid)}</div></div>
+          {/* Иконки навигации */}
+          <div className="flex flex-col gap-2">
+            <button 
+              onClick={() => setActiveTab('search')} 
+              title="Поиск турниров"
+              className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${activeTab === 'search' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}
+            >
+              <Search size={20} />
+            </button>
+            
+            <button 
+              onClick={() => setActiveTab('grid')} 
+              title="Сетка"
+              className={`w-12 h-12 rounded-2xl flex items-center justify-center transition relative ${activeTab === 'grid' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}
+            >
+              <ListTodo size={20} />
+              {grid.length > 0 && (
+                <span className="absolute top-2 right-2 bg-emerald-500 text-slate-950 text-[9px] font-black h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center">
+                  {grid.length}
+                </span>
+              )}
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('diary')} 
+              title="Дневник и банкролл"
+              className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${activeTab === 'diary' ? 'bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}
+            >
+              <TrendingUp size={20} />
+            </button>
+          </div>
+        </div>
+
+        {/* Кнопка выхода */}
+        <button 
+          onClick={logout} 
+          title="Выйти из системы"
+          className="w-12 h-12 rounded-2xl flex items-center justify-center text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/30 transition"
+        >
+          <LogOut size={18} />
+        </button>
+      </aside>
+
+      {/* Основная рабочая область */}
+      <div className="flex-1 flex flex-col min-w-0">
+        
+        {/* Верхняя мини-плашка статуса */}
+        <header className="h-16 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 px-8 flex justify-between items-center sticky top-0 z-30">
+          <div className="text-xs font-black tracking-wider text-white uppercase">
+            {activeTab === 'search' && 'Поиск турниров'}
+            {activeTab === 'grid' && 'Текущая сетка сессии'}
+            {activeTab === 'diary' && 'Дневник сессий и банкролл'}
+          </div>
+
+          <div className="bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-6 shadow-sm">
+            <div>Загрузка: <b className="text-emerald-400">${totalBuyin.toFixed(1)}</b></div>
+            <div>EV: <b className={totalEV >= 0 ? 'text-blue-400' : 'text-rose-400'}>{totalEV > 0 ? '+' : ''}${totalEV.toFixed(1)}</b></div>
+          </div>
+        </header>
+
+        {/* Контент */}
+        <main className="max-w-5xl w-full mx-auto px-6 py-8">
+          
+          {/* Поиск */}
+          {activeTab === 'search' && (
+            <div className="space-y-4">
+              <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Фильтр периода и румов</span>
+                  <div className="flex gap-2">
+                    <button onClick={() => setPresetDate('today')} className="px-3 py-1.5 text-xs font-bold uppercase bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl">Сегодня</button>
+                    <button onClick={() => setPresetDate('tomorrow')} className="px-3 py-1.5 text-xs font-bold uppercase bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl">Завтра</button>
+                    <button onClick={() => setPresetDate('clear')} className="px-2.5 py-1.5 text-xs uppercase bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl"><X size={14}/></button>
+                    <button onClick={() => setShowPresetsModal(true)} className="px-3 py-1.5 text-xs font-bold uppercase bg-cyan-950/50 text-cyan-400 border border-cyan-500/40 rounded-xl ml-2">Шаблоны</button>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center text-xs font-bold text-slate-400 px-1">
-                  <span>Дисперсия: <b className={getVariance().color}>{getVariance().label}</b></span>
-                  <span>Пик столов: <b className="text-cyan-400">{getPeakTablesData(grid).max} шт (~{getPeakTablesData(grid).timeStr})</b></span>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <input type="datetime-local" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 outline-none focus:border-cyan-500 [color-scheme:dark]" />
+                  <input type="datetime-local" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 outline-none focus:border-cyan-500 [color-scheme:dark]" />
                 </div>
-              </div>
-            )}
 
-            {grid.length > 0 && (
-              <div className="flex gap-3">
-                <button onClick={() => setShowSessionModal(true)} className="flex-[2] bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 rounded-xl py-2.5 flex items-center justify-center gap-2 text-xs uppercase font-black"><Wallet size={16} /> Завершить сессию</button>
-                <button onClick={() => setSortOrder(prev => prev === 'time' ? 'buyin' : prev === 'buyin' ? 'ev' : 'time')} className="flex-1 bg-slate-900 border border-slate-800 rounded-xl py-2.5 flex items-center justify-center gap-1.5 text-xs uppercase font-black text-blue-400"><ArrowUpDown size={14} /> {sortOrder}</button>
-                <button onClick={clearGrid} className="w-11 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center justify-center text-rose-400"><Trash2 size={16} /></button>
-              </div>
-            )}
-
-            {grid.length > 0 && (
-              <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900/80 rounded-xl border border-slate-800 text-xs">
-                <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-300">
-                  <input type="checkbox" className="hidden" checked={groupByRoom} onChange={() => setGroupByRoom(!groupByRoom)} />
-                  <div className={`w-8 h-4 rounded-full transition-colors ${groupByRoom ? 'bg-cyan-500' : 'bg-slate-700'} relative`}><div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${groupByRoom ? 'translate-x-4' : 'translate-x-0'}`}></div></div>
-                  <span>Группировать по румам</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-300">
-                  <span>Скрыть старые</span>
-                  <input type="checkbox" className="hidden" checked={hidePlayed} onChange={() => setHidePlayed(!hidePlayed)} />
-                  <div className={`w-8 h-4 rounded-full transition-colors ${hidePlayed ? 'bg-cyan-500' : 'bg-slate-700'} relative`}><div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${hidePlayed ? 'translate-x-4' : 'translate-x-0'}`}></div></div>
-                </label>
-              </div>
-            )}
-
-            {grid.length === 0 ? (
-              <div className="text-center py-20 bg-slate-900/40 rounded-2xl border border-slate-800/50">
-                <div className="text-5xl mb-3 opacity-30">📋</div>
-                <h3 className="text-slate-200 font-bold text-base">Сетка пуста</h3>
-                <button onClick={() => setActiveTab('search')} className="mt-4 bg-cyan-950/40 border border-cyan-500/50 text-cyan-400 font-bold text-xs py-2.5 px-6 rounded-xl">Искать турниры</button>
-              </div>
-            ) : groupByRoom ? (
-              <div className="space-y-3">
-                <div className="overflow-x-auto no-scrollbar flex gap-1.5 py-1">
-                  {activeGridRooms.map(room => {
-                    const isSelected = gridActiveRoom === room || (!gridActiveRoom && activeGridRooms[0] === room);
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <button onClick={() => setSelectedRooms(selectedRooms.length === Object.keys(ROOMS).length ? [] : Object.keys(ROOMS))} className="px-3 py-2 rounded-xl text-xs font-black border bg-slate-800 text-slate-300 border-slate-700">
+                    {selectedRooms.length === Object.keys(ROOMS).length ? 'Сбросить' : 'Все румы'}
+                  </button>
+                  {Object.entries(ROOMS).map(([id, name]) => {
+                    const isSel = selectedRooms.includes(id);
+                    const domain = ROOM_DOMAINS[name];
                     return (
-                      <button key={room} onClick={() => setGridActiveRoom(room)} className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition ${isSelected ? 'bg-cyan-950/60 border-cyan-500 text-cyan-300 shadow-sm' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>
-                        {room} ({displayGrid.filter(t => t.room === room).length})
+                      <button key={id} onClick={() => toggleRoom(id)} className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition ${isSel ? 'bg-cyan-950/50 border-cyan-500/60 text-cyan-300 shadow-sm' : 'bg-slate-950/40 border-slate-800/80 text-slate-500 hover:text-slate-300'}`}>
+                        {domain && <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={name} className={`w-3.5 h-3.5 rounded-full ${isSel ? '' : 'opacity-30 grayscale'}`} onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
+                        <span>{name}</span>
                       </button>
                     );
                   })}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {filteredGridBySelectedRoom.length === 0 ? <div className="col-span-full text-center py-10 text-slate-500 text-xs">Нет турниров</div> : filteredGridBySelectedRoom.map(t => renderGridCard(t))}
-                </div>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {displayGrid.map(t => renderGridCard(t))}
-              </div>
-            )}
-          </div>
-        )}
 
-        {/* Дневник */}
-        {activeTab === 'diary' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-1 space-y-4">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
-                <div className="flex justify-between items-center mb-3">
-                  <h2 className="text-slate-400 font-bold uppercase text-xs tracking-wider flex items-center gap-2"><Wallet size={16} className="text-emerald-500" /> Банкролл</h2>
-                  <div className="text-emerald-400 font-black text-xl">${totalBankroll.toFixed(1)}</div>
+              {/* Панель форматов и кнопка поиска */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex gap-2 flex-1">
+                  <button onClick={() => toggleFormat('isPko')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase border transition ${activeFormats.isPko ? 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/40' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🎯 PKO</button>
+                  <button onClick={() => toggleFormat('isTurbo')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase border transition ${activeFormats.isTurbo ? 'bg-amber-500/10 text-amber-400 border-amber-500/40' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>⚡ Turbo</button>
+                  <button onClick={() => toggleFormat('isFreezeout')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase border transition ${activeFormats.isFreezeout ? 'bg-blue-500/10 text-blue-400 border-blue-500/40' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🧊 Freez</button>
                 </div>
-                <div className="space-y-2">
-                  {selectedRooms.map(roomId => {
-                    const roomName = ROOMS[roomId];
-                    return (
-                      <div key={roomId} className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2">
-                        <RoomBadge roomName={roomName} getRoomStyle={getRoomStyle} />
-                        <div className="flex items-center gap-1">
-                          <span className="text-slate-500 text-xs font-black">{getRoomCurrency(roomName)}</span>
-                          <input type="number" value={balances[roomName] || ''} onChange={(e) => updateBalance(roomName, e.target.value)} placeholder="0" className="w-16 bg-transparent text-right text-white font-bold text-sm outline-none [appearance:textfield]" />
+
+                <div className="flex gap-2">
+                  <button 
+                    onClick={fetchTournaments} 
+                    className="w-full sm:w-auto px-10 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-3.5 rounded-xl text-xs uppercase tracking-wider flex justify-center items-center gap-2 transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] active:scale-95"
+                  >
+                    {loading ? <><Search className="animate-spin" size={16} /> Ищем...</> : <><Search size={16} strokeWidth={3} /> Найти турниры</>}
+                  </button>
+                </div>
+              </div>
+
+              {!loading && searchResults.length > 0 && (
+                <div className="flex gap-3">
+                  <button onClick={() => bulkAdd('top')} className="flex-1 py-3 text-xs font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/20 transition">+ Все зеленые</button>
+                  <button onClick={() => bulkAdd('overlay')} className="flex-1 py-3 text-xs font-black uppercase bg-orange-500/10 text-orange-400 border border-orange-500/30 rounded-xl hover:bg-orange-500/20 transition">+ Все Оверлеи</button>
+                </div>
+              )}
+
+              {/* СПИСОК РЕЗУЛЬТАТОВ В 1 КОЛОНКУ (ОДИН РЯД НА ПК) */}
+              <div className="space-y-3 pt-2">
+                {loading && [1, 2, 3, 4].map(i => <div key={i} className="h-20 bg-slate-900/40 rounded-xl border border-slate-800/40 animate-pulse"></div>)}
+                
+                {searchResults.length === 0 && !loading && (
+                  <div className="text-center py-24 bg-slate-900/30 rounded-2xl border border-slate-800/50">
+                    <div className="text-4xl mb-3 opacity-30">🎲</div>
+                    <h3 className="text-slate-300 font-bold text-base">Расписание пусто</h3>
+                    <p className="text-slate-500 text-xs mt-1">Нажмите «Найти турниры» для загрузки</p>
+                  </div>
+                )}
+                
+                {searchResults.map((t) => {
+                  const note = notes[getNoteKey(t)];
+                  if (note?.tag === 'skip') return (
+                    <div key={t.id} className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/40 flex justify-between items-center opacity-40 grayscale text-xs">
+                      <div className="flex items-center gap-2"><Ban size={16} className="text-rose-500"/><span className="line-through">{t.name}</span></div>
+                      <button onClick={() => setActiveStats(t)} className="text-xs text-blue-400 font-bold">Вернуть</button>
+                    </div>
+                  );
+
+                  const isAdded = grid.some(item => item.id === t.id);
+                  const prioStyles = getPriorityStyles(t.priority);
+                  
+                  return (
+                    <div key={t.id} onClick={() => setActiveStats(t)} className={`bg-slate-900 rounded-xl p-4 border border-slate-800 flex items-center justify-between gap-4 border-l-[4px] ${prioStyles.border} cursor-pointer hover:border-slate-700 transition shadow-md`}>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase">{t.day_week}</span>
+                          <span className="text-xs text-cyan-400 font-mono font-black">{t.time_start}</span>
+                          {isOverlay(t) && <Flame size={14} className="text-orange-500 animate-pulse"/>}
+                          {getSmartTimer(t.time_start, t.day_week)}
+                        </div>
+                        <div className="font-bold text-sm text-white truncate mb-1">{t.name}</div>
+                        <div className="flex items-center gap-4 text-xs">
+                          <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
+                          <span className="text-slate-500 font-bold uppercase">{t.room} • {t.afs} тел</span>
+                          <span className="text-slate-400 font-bold">GTD: ${t.gtd}</span>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                      
+                      <button onClick={(e) => { e.stopPropagation(); toggleGrid(t); }} className={`shrink-0 w-11 h-11 flex items-center justify-center rounded-xl transition active:scale-95 ${isAdded ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-blue-400 hover:bg-slate-700'}`}>
+                        {isAdded ? <Check size={18} strokeWidth={3}/> : <Plus size={18} strokeWidth={3}/>}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
+          )}
 
-            <div className="md:col-span-2 space-y-4">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
-                <div className="flex justify-between items-center mb-3">
-                  <h2 className="text-slate-400 font-bold uppercase text-xs tracking-wider">График профита</h2>
-                  <button onClick={clearHistory} className="bg-rose-500/10 text-rose-400 p-2 rounded-xl"><Trash2 size={14} /></button>
-                </div>
-                <div className="relative h-44 w-full bg-slate-950/50 rounded-xl border border-slate-800/80 overflow-hidden">
-                  {sessionsHistory.length === 0 ? (
-                    <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-500 font-bold">Нет сыгранных сессий</div>
-                  ) : (
-                    <svg className="absolute inset-0 w-full h-full" viewBox="-2 -2 104 104" preserveAspectRatio="none">
-                      <line x1="0" y1={chartData.zeroY} x2="100" y2={chartData.zeroY} stroke="#334155" strokeWidth="0.5" strokeDasharray="2 2" />
-                      <polyline points={chartData.points} fill="none" stroke={chartData.current >= 0 ? '#34d399' : '#fb7185'} strokeWidth="2" strokeLinejoin="round" />
-                    </svg>
-                  )}
-                </div>
-                <div className="mt-3 pt-3 border-t border-slate-800/50 flex justify-between items-end text-sm">
-                  <span className="text-slate-500 font-bold uppercase text-xs">Итог профита</span>
-                  <div className={`font-black text-lg ${chartData.current >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>${chartData.current.toFixed(1)}</div>
-                </div>
-              </div>
-
-              <h3 className="font-bold text-sm text-white">История сессий</h3>
-              <div className="space-y-2">
-                {sessionsHistory.length === 0 && <div className="text-center py-8 text-slate-500 text-xs">Дневник пуст</div>}
-                {sessionsHistory.map(h => (
-                  <div key={h.id} className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 flex justify-between items-center text-xs shadow-sm">
-                    <div>
-                      <div className="text-[10px] text-slate-500 mb-1">{h.date} • <span className="text-cyan-400 font-bold">{h.tournaments_count} турн.</span></div>
-                      <div className="font-bold text-white">Вгружено: <span className="text-emerald-400">${h.total_buyin.toFixed(1)}</span></div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[10px] text-slate-500 mb-1">Призовые: ${h.total_cashes.toFixed(1)}</div>
-                      <div className={`font-black text-sm ${h.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{h.profit > 0 ? '+' : ''}${h.profit.toFixed(1)}</div>
-                    </div>
+          {/* Сетка */}
+          {activeTab === 'grid' && (
+            <div className="space-y-4">
+              {grid.length > 0 && (
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                  <div className="grid grid-cols-3 gap-4 mb-4 pb-4 border-b border-slate-800 text-center">
+                    <div><span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Турниров</span><div className="text-xl font-black text-white">{grid.length}</div></div>
+                    <div className="border-x border-slate-800"><span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Ожидание</span><div className={`text-xl font-black ${totalEV >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{totalEV > 0 ? '+' : ''}${totalEV.toFixed(1)}</div></div>
+                    <div><span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Конец</span><div className="text-xl font-black text-cyan-400">~{getSessionEndTime(grid)}</div></div>
                   </div>
-                ))}
+                  <div className="flex justify-between items-center text-xs font-bold text-slate-400 px-1">
+                    <span>Дисперсия: <b className={getVariance().color}>{getVariance().label}</b></span>
+                    <span>Пик столов: <b className="text-cyan-400">{getPeakTablesData(grid).max} шт (~{getPeakTablesData(grid).timeStr})</b></span>
+                  </div>
+                </div>
+              )}
+
+              {grid.length > 0 && (
+                <div className="flex gap-3">
+                  <button onClick={() => setShowSessionModal(true)} className="flex-[2] bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 rounded-xl py-3 flex items-center justify-center gap-2 text-xs uppercase font-black"><Wallet size={16} /> Завершить сессию</button>
+                  <button onClick={() => setSortOrder(prev => prev === 'time' ? 'buyin' : prev === 'buyin' ? 'ev' : 'time')} className="flex-1 bg-slate-900 border border-slate-800 rounded-xl py-3 flex items-center justify-center gap-1.5 text-xs uppercase font-black text-blue-400"><ArrowUpDown size={14} /> {sortOrder}</button>
+                  <button onClick={clearGrid} className="w-12 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center justify-center text-rose-400"><Trash2 size={16} /></button>
+                </div>
+              )}
+
+              {grid.length > 0 && (
+                <div className="flex items-center justify-between px-5 py-3 bg-slate-900/80 rounded-xl border border-slate-800 text-xs">
+                  <label className="flex items-center gap-2.5 cursor-pointer font-bold text-slate-300">
+                    <input type="checkbox" className="hidden" checked={groupByRoom} onChange={() => setGroupByRoom(!groupByRoom)} />
+                    <div className={`w-8 h-4 rounded-full transition-colors ${groupByRoom ? 'bg-cyan-500' : 'bg-slate-700'} relative`}><div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${groupByRoom ? 'translate-x-4' : 'translate-x-0'}`}></div></div>
+                    <span>Группировать по румам</span>
+                  </label>
+                  <label className="flex items-center gap-2.5 cursor-pointer font-bold text-slate-300">
+                    <span>Скрыть старые</span>
+                    <input type="checkbox" className="hidden" checked={hidePlayed} onChange={() => setHidePlayed(!hidePlayed)} />
+                    <div className={`w-8 h-4 rounded-full transition-colors ${hidePlayed ? 'bg-cyan-500' : 'bg-slate-700'} relative`}><div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${hidePlayed ? 'translate-x-4' : 'translate-x-0'}`}></div></div>
+                  </label>
+                </div>
+              )}
+
+              {grid.length === 0 ? (
+                <div className="text-center py-24 bg-slate-900/40 rounded-2xl border border-slate-800/50">
+                  <div className="text-5xl mb-3 opacity-30">📋</div>
+                  <h3 className="text-slate-200 font-bold text-base">Сетка пуста</h3>
+                  <button onClick={() => setActiveTab('search')} className="mt-4 bg-cyan-950/40 border border-cyan-500/50 text-cyan-400 font-bold text-xs py-3 px-8 rounded-xl">Искать турниры</button>
+                </div>
+              ) : groupByRoom ? (
+                <div className="space-y-4">
+                  <div className="overflow-x-auto no-scrollbar flex gap-2 py-1">
+                    {activeGridRooms.map(room => {
+                      const isSelected = gridActiveRoom === room || (!gridActiveRoom && activeGridRooms[0] === room);
+                      return (
+                        <button key={room} onClick={() => setGridActiveRoom(room)} className={`px-4 py-2.5 rounded-xl text-xs font-bold border transition ${isSelected ? 'bg-cyan-950/60 border-cyan-500 text-cyan-300 shadow-sm' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>
+                          {room} ({displayGrid.filter(t => t.room === room).length})
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="space-y-3">
+                    {filteredGridBySelectedRoom.length === 0 ? <div className="text-center py-12 text-slate-500 text-xs">Нет турниров</div> : filteredGridBySelectedRoom.map(t => renderGridCard(t))}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {displayGrid.map(t => renderGridCard(t))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Дневник */}
+          {activeTab === 'diary' && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-1 space-y-4">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-slate-400 font-bold uppercase text-xs tracking-wider flex items-center gap-2"><Wallet size={16} className="text-emerald-500" /> Банкролл</h2>
+                    <div className="text-emerald-400 font-black text-xl">${totalBankroll.toFixed(1)}</div>
+                  </div>
+                  <div className="space-y-2.5">
+                    {selectedRooms.map(roomId => {
+                      const roomName = ROOMS[roomId];
+                      return (
+                        <div key={roomId} className="bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center justify-between gap-2">
+                          <RoomBadge roomName={roomName} getRoomStyle={getRoomStyle} />
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-500 text-xs font-black">{getRoomCurrency(roomName)}</span>
+                            <input type="number" value={balances[roomName] || ''} onChange={(e) => updateBalance(roomName, e.target.value)} placeholder="0" className="w-20 bg-transparent text-right text-white font-bold text-sm outline-none [appearance:textfield]" />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="md:col-span-2 space-y-4">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-slate-400 font-bold uppercase text-xs tracking-wider">График профита</h2>
+                    <button onClick={clearHistory} className="bg-rose-500/10 text-rose-400 p-2 rounded-xl"><Trash2 size={14} /></button>
+                  </div>
+                  <div className="relative h-48 w-full bg-slate-950/50 rounded-xl border border-slate-800/80 overflow-hidden">
+                    {sessionsHistory.length === 0 ? (
+                      <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-500 font-bold">Нет сыгранных сессий</div>
+                    ) : (
+                      <svg className="absolute inset-0 w-full h-full" viewBox="-2 -2 104 104" preserveAspectRatio="none">
+                        <line x1="0" y1={chartData.zeroY} x2="100" y2={chartData.zeroY} stroke="#334155" strokeWidth="0.5" strokeDasharray="2 2" />
+                        <polyline points={chartData.points} fill="none" stroke={chartData.current >= 0 ? '#34d399' : '#fb7185'} strokeWidth="2" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-slate-800/50 flex justify-between items-end text-sm">
+                    <span className="text-slate-500 font-bold uppercase text-xs">Итог профита</span>
+                    <div className={`font-black text-lg ${chartData.current >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>${chartData.current.toFixed(1)}</div>
+                  </div>
+                </div>
+
+                <h3 className="font-bold text-sm text-white pt-2">История сессий</h3>
+                <div className="space-y-2.5">
+                  {sessionsHistory.length === 0 && <div className="text-center py-10 text-slate-500 text-xs">Дневник пуст</div>}
+                  {sessionsHistory.map(h => (
+                    <div key={h.id} className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex justify-between items-center text-xs shadow-sm">
+                      <div>
+                        <div className="text-[10px] text-slate-500 mb-1">{h.date} • <span className="text-cyan-400 font-bold">{h.tournaments_count} турн.</span></div>
+                        <div className="font-bold text-white">Вгружено: <span className="text-emerald-400">${h.total_buyin.toFixed(1)}</span></div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-[10px] text-slate-500 mb-1">Призовые: ${h.total_cashes.toFixed(1)}</div>
+                        <div className={`font-black text-sm ${h.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{h.profit > 0 ? '+' : ''}${h.profit.toFixed(1)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </main>
+          )}
+        </main>
+      </div>
 
       {/* Модалки */}
       {activeStats && (() => {
@@ -794,22 +852,6 @@ export default function App() {
           </div>
         </div>
       )}
-
-      {/* Нижняя навигация */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto mb-3 px-4 z-40">
-        <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-1.5 flex shadow-2xl">
-          <button onClick={() => setActiveTab('search')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold uppercase transition ${activeTab === 'search' ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)]' : 'text-slate-400 hover:text-white'}`}>
-            <Search size={16} /> Поиск
-          </button>
-          <button onClick={() => setActiveTab('grid')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold uppercase transition relative ${activeTab === 'grid' ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'text-slate-400 hover:text-white'}`}>
-            <ListTodo size={16} /> Сетка
-            {grid.length > 0 && <span className="absolute -top-1 -right-1 bg-emerald-500 text-slate-950 text-[9px] font-black h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center">{grid.length}</span>}
-          </button>
-          <button onClick={() => setActiveTab('diary')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold uppercase transition ${activeTab === 'diary' ? 'bg-fuchsia-500/20 border border-fuchsia-500/40 text-fuchsia-300 shadow-[0_0_15px_rgba(217,70,239,0.2)]' : 'text-slate-400 hover:text-white'}`}>
-            <TrendingUp size={16} /> Дневник
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
