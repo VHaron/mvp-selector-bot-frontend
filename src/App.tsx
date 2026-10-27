@@ -644,11 +644,26 @@ export default function App() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex gap-2 flex-1">
-                  <button onClick={() => toggleFormat('isPko')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase border transition ${activeFormats.isPko ? 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/40' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🎯 PKO</button>
-                  <button onClick={() => toggleFormat('isTurbo')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase border transition ${activeFormats.isTurbo ? 'bg-amber-500/10 text-amber-400 border-amber-500/40' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>⚡ Turbo</button>
-                  <button onClick={() => toggleFormat('isFreezeout')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase border transition ${activeFormats.isFreezeout ? 'bg-blue-500/10 text-blue-400 border-blue-500/40' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🧊 Freez</button>
-                </div>
+<div className="flex gap-2">
+  <button 
+    onClick={() => toggleFormat('isPko')} 
+    className={`flex-1 py-2 px-3 rounded-xl text-xs font-black uppercase border transition flex items-center justify-center gap-1.5 ${activeFormats.isPko ? 'bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/50 shadow-sm' : 'bg-slate-900/50 text-slate-500 border-slate-800/80 hover:text-slate-400'}`}
+  >
+    <span>🎯</span> <span>PKO</span>
+  </button>
+  <button 
+    onClick={() => toggleFormat('isTurbo')} 
+    className={`flex-1 py-2 px-3 rounded-xl text-xs font-black uppercase border transition flex items-center justify-center gap-1.5 ${activeFormats.isTurbo ? 'bg-amber-500/15 text-amber-400 border-amber-500/50 shadow-sm' : 'bg-slate-900/50 text-slate-500 border-slate-800/80 hover:text-slate-400'}`}
+  >
+    <span>⚡</span> <span>Turbo</span>
+  </button>
+  <button 
+    onClick={() => toggleFormat('isFreezeout')} 
+    className={`flex-1 py-2 px-3 rounded-xl text-xs font-black uppercase border transition flex items-center justify-center gap-1.5 ${activeFormats.isFreezeout ? 'bg-blue-500/15 text-blue-400 border-blue-500/50 shadow-sm' : 'bg-slate-900/50 text-slate-500 border-slate-800/80 hover:text-slate-400'}`}
+  >
+    <span>🧊</span> <span>Freeze</span>
+  </button>
+</div>
 
                 <div className="flex gap-2">
                   <button 
