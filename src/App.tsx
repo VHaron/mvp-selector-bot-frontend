@@ -122,6 +122,15 @@ export default function App() {
     return tourneyIndex === -1 || tourneyIndex === todayIndex;
   };
 
+  const isPlayed = (timeString: string, dayWeekStr?: string) => {
+    if (!timeString || !isToday(dayWeekStr)) return false;
+    const [hours, minutes] = timeString.trim().slice(0, 5).split(':').map(Number);
+    if (isNaN(hours) || isNaN(minutes)) return false;
+    const tourneyTime = new Date(); tourneyTime.setHours(hours, minutes, 0, 0);
+    // Скрываем, если прошло 120 минут (конец лейт-реги)
+    return (new Date().getTime() - tourneyTime.getTime()) / (1000 * 60) > 120;
+  };
+
   const getSmartTimer = (timeStr: string, dayWeekStr?: string) => {
     if (!timeStr || !isToday(dayWeekStr)) return null;
     const [hours, mins] = timeStr.split(':').map(Number);
@@ -351,14 +360,6 @@ export default function App() {
     });
   }, [grid, sortOrder]);
 
-  const isPlayed = (timeString: string, dayWeekStr?: string) => {
-    if (!timeString || !isToday(dayWeekStr)) return false;
-    const [hours, minutes] = timeString.trim().slice(0, 5).split(':').map(Number);
-    if (isNaN(hours) || isNaN(minutes)) return false;
-    const tourneyTime = new Date(); tourneyTime.setHours(hours, minutes, 0, 0);
-    return (new Date().getTime() - tourneyTime.getTime()) / (1000 * 60) > 120;
-  };
-  
   const displayGrid = useMemo(() => {
     return sortedGrid
       .map(t => ({ ...t, played: isPlayed(t.time_start, t.day_week) }))
@@ -377,7 +378,12 @@ export default function App() {
     return displayGrid.filter(t => t.room === gridActiveRoom);
   }, [displayGrid, groupByRoom, gridActiveRoom, activeGridRooms]);
 
-  const searchResults = useMemo(() => [...tournaments].sort((a, b) => sortOrder === 'tier' ? getTier(a).id - getTier(b).id : 0), [tournaments, sortOrder]);
+  // Фильтруем турниры с закрытой лейт-регой из списка поиска
+  const searchResults = useMemo(() => {
+    return tournaments
+      .filter(t => !isPlayed(t.time_start, t.day_week)) 
+      .sort((a, b) => sortOrder === 'tier' ? getTier(a).id - getTier(b).id : 0);
+  }, [tournaments, sortOrder]);
 
   const toggleGrid = (t: Tournament) => {
     if (grid.some(item => item.id === t.id)) setGrid(grid.filter(item => item.id !== t.id)); 
