@@ -6,6 +6,7 @@ interface Tournament {
   id: string; room: string; name: string; priority: string;
   buyin: string; time_start: string; roi_str: string; gtd: string;
   afs: string; duration: string; ev_mtt: string; day_week: string;
+  played?: boolean; // <-- Добавили, чтобы TypeScript не ругался при рендере
 }
 
 type NoteTag = 'skip' | 'must' | 'none' | string;
