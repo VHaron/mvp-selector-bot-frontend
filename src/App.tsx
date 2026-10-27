@@ -90,7 +90,7 @@ export default function App() {
   };
 
   const isToday = (dayWeekStr?: string) => {
-    if (!dayWeekStr) return true; // Если день не указан, считаем актуальным
+    if (!dayWeekStr) return true;
     const cleanDay = dayWeekStr.toLowerCase().replace(/[^а-яё]/g, '');
     const days = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
     const todayIndex = new Date().getDay();
@@ -297,7 +297,7 @@ export default function App() {
   };
 
   const isOverlay = (t: Tournament) => {
-    if (!isToday(t.day_week)) return false; // Турниры другого дня не могут быть оверлеями сего дня
+    if (!isToday(t.day_week)) return false;
     const buyin = parseNum(t.buyin); const gtd = parseNum(t.gtd); const afs = parseNum(t.afs);
     return (gtd > 0 && buyin > 0 && afs > 0 && (buyin * afs * 0.9) < gtd);
   };
@@ -399,7 +399,6 @@ export default function App() {
   const isPlayed = (timeString: string, dayWeekStr?: string) => {
     if (!timeString) return false;
   
-    // Если турнир запланирован на другой день (не сегодняшний), он точно НЕ отыгран
     if (!isToday(dayWeekStr)) return false;
 
     const cleanTime = timeString.trim().slice(0, 5);
