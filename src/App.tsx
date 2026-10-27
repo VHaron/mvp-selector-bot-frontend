@@ -113,7 +113,6 @@ export default function App() {
     setActiveFormats(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Рабочая логика проверки дней недели
   const isToday = (dayWeekStr?: string) => {
     if (!dayWeekStr) return true;
     const cleanDay = dayWeekStr.toLowerCase().replace(/[^а-яё]/g, '');
@@ -462,6 +461,8 @@ export default function App() {
           <div className="flex items-center gap-2 mb-2">
             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
             <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">BT. {t.time_start}</span>
+            {/* Возвращаем t.day_week скрытым в DOM для полной сохранности логики фильтров и дней, но без визуального отображения */}
+            <span className="hidden">{t.day_week}</span>
             {isOverlay(t) && <Flame size={12} className="text-orange-500 animate-pulse"/>}
             {getSmartTimer(t.time_start, t.day_week)}
           </div>
@@ -723,6 +724,8 @@ export default function App() {
                         <div className="flex items-center gap-2.5 mb-2">
                           <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
                           <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">BT. {t.time_start}</span>
+                          {/* Скрываем день недели визуально, но оставляем для логики */}
+                          <span className="hidden">{t.day_week}</span>
                           {isOverlay(t) && <Flame size={14} className="text-orange-500 animate-pulse"/>}
                           {getSmartTimer(t.time_start, t.day_week)}
                         </div>
