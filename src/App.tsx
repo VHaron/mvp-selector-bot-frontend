@@ -58,12 +58,12 @@ const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle:
   const displayName = roomId ? ROOMS[roomId] : roomName;
 
   return (
-    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg border font-bold text-[10px] uppercase tracking-wider ${getRoomStyle(roomName)} shadow-sm`}>
+    <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border font-bold text-[9px] uppercase tracking-wider ${getRoomStyle(roomName)}`}>
       {domain && (
         <img 
           src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} 
           alt={roomName} 
-          className="w-3.5 h-3.5 rounded-full object-cover bg-white p-[0.5px] shadow-sm shrink-0" 
+          className="w-3 h-3 rounded-full object-cover bg-white p-[0.5px] shrink-0" 
           onError={(e) => { e.currentTarget.style.display = 'none'; }} 
         />
       )}
@@ -144,9 +144,9 @@ export default function App() {
     const diffMins = (hours * 60 + mins) - (now.getHours() * 60 + now.getMinutes());
 
     if (diffMins > 0 && diffMins <= 60) {
-      return <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 animate-pulse bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30">⏳ {diffMins}м</span>;
+      return <span className="text-[8px] font-black uppercase tracking-wider text-amber-400 animate-pulse bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/30">⏳ {diffMins}м</span>;
     } else if (diffMins <= 0 && diffMins >= -15) {
-      return <span className="text-[9px] font-black uppercase tracking-wider text-rose-400 animate-pulse bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/30">🔥 Late</span>;
+      return <span className="text-[8px] font-black uppercase tracking-wider text-rose-400 animate-pulse bg-rose-500/10 px-1 py-0.5 rounded border border-rose-500/30">🔥 Late</span>;
     }
     return null;
   };
@@ -471,27 +471,27 @@ export default function App() {
       <div 
         key={t.id} 
         onClick={() => toggleGrid(t)} 
-        className={`bg-slate-900 rounded-xl p-4 border transition-all flex items-center justify-between gap-4 border-l-[4px] ${prioStyles.border} cursor-pointer hover:border-slate-700 ${played ? 'opacity-40 grayscale bg-slate-900/40' : ''} ${isAdded ? 'border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'border-slate-800'}`}
+        className={`bg-slate-900 rounded-xl px-3 py-2 border transition-all flex items-center justify-between gap-3 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 ${played ? 'opacity-40 grayscale bg-slate-900/40' : ''} ${isAdded ? 'border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.1)]' : 'border-slate-800'}`}
       >
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-1.5 mb-1">
             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
-            <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">
+            <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
               {formatDayWeek(t.day_week)}{t.time_start}
             </span>
             {isOverlay(t) && <Flame size={12} className="text-orange-500 animate-pulse"/>}
             {getSmartTimer(t.time_start, t.day_week)}
           </div>
-          <div className="font-bold text-sm text-white truncate mb-1.5">{t.name}</div>
-          <div className="flex items-center gap-4 text-xs">
-            <span className="font-black text-emerald-400 text-sm">{getRoomCurrency(t.room)}{t.buyin}</span>
-            <span className="text-slate-400 font-bold">{t.afs} тел</span>
-            <span className="text-slate-400 font-bold">GTD: ${t.gtd}</span>
+          <div className="font-bold text-xs text-white truncate mb-1">{t.name}</div>
+          <div className="flex items-center gap-3 text-[11px]">
+            <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
+            <span className="text-slate-400">{t.afs} тел</span>
+            <span className="text-slate-400">GTD: ${t.gtd}</span>
           </div>
         </div>
-        <div className="shrink-0 flex items-center gap-2">
-          <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded-lg transition">Заметка</button>
-          <button onClick={(e) => { e.stopPropagation(); toggleGrid(t); }} className="w-9 h-9 flex items-center justify-center rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition active:scale-95"><Trash2 size={16} /></button>
+        <div className="shrink-0 flex items-center gap-1.5">
+          <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded-lg transition">Заметка</button>
+          <button onClick={(e) => { e.stopPropagation(); toggleGrid(t); }} className="w-7 h-7 flex items-center justify-center rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition active:scale-95"><Trash2 size={14} /></button>
         </div>
       </div>
     );
@@ -646,7 +646,6 @@ export default function App() {
                   <input type="datetime-local" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 outline-none focus:border-cyan-500 [color-scheme:dark]" />
                 </div>
 
-                {/* Выпадающий список румов и интегрированная кнопка Найти в одной строке */}
                 <div className="flex gap-2">
                   <div className="relative flex-1" ref={dropdownRef}>
                     <button 
@@ -707,8 +706,8 @@ export default function App() {
                 </div>
               )}
 
-              <div className="space-y-3 pt-2">
-                {loading && [1, 2, 3, 4].map(i => <div key={i} className="h-20 bg-slate-900/40 rounded-xl border border-slate-800/40 animate-pulse"></div>)}
+              <div className="space-y-2 pt-1">
+                {loading && [1, 2, 3, 4].map(i => <div key={i} className="h-16 bg-slate-900/40 rounded-xl border border-slate-800/40 animate-pulse"></div>)}
                 
                 {searchResults.length === 0 && !loading && (
                   <div className="text-center py-24 bg-slate-900/30 rounded-2xl border border-slate-800/50">
@@ -721,8 +720,8 @@ export default function App() {
                 {searchResults.map((t) => {
                   const note = notes[getNoteKey(t)];
                   if (note?.tag === 'skip') return (
-                    <div key={t.id} className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/40 flex justify-between items-center opacity-40 grayscale text-xs">
-                      <div className="flex items-center gap-2"><Ban size={16} className="text-rose-500"/><span className="line-through">{t.name}</span></div>
+                    <div key={t.id} className="bg-slate-900/30 rounded-xl px-3 py-2 border border-slate-800/40 flex justify-between items-center opacity-40 grayscale text-xs">
+                      <div className="flex items-center gap-2"><Ban size={14} className="text-rose-500"/><span className="line-through">{t.name}</span></div>
                       <button onClick={() => setActiveStats(t)} className="text-xs text-blue-400 font-bold">Вернуть</button>
                     </div>
                   );
@@ -734,30 +733,30 @@ export default function App() {
                     <div 
                       key={t.id} 
                       onClick={() => toggleGrid(t)} 
-                      className={`bg-slate-900 rounded-xl p-4 border transition-all flex items-center justify-between gap-4 border-l-[4px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-md ${isAdded ? 'border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.15)] bg-slate-900/90' : 'border-slate-800'}`}
+                      className={`bg-slate-900 rounded-xl px-3 py-2 border transition-all flex items-center justify-between gap-3 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-sm ${isAdded ? 'border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.1)] bg-slate-900/90' : 'border-slate-800'}`}
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2.5 mb-2">
+                        <div className="flex items-center gap-1.5 mb-1">
                           <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
-                          <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">
+                          <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
                             {formatDayWeek(t.day_week)}{t.time_start}
                           </span>
-                          {isOverlay(t) && <Flame size={14} className="text-orange-500 animate-pulse"/>}
+                          {isOverlay(t) && <Flame size={12} className="text-orange-500 animate-pulse"/>}
                           {getSmartTimer(t.time_start, t.day_week)}
                         </div>
-                        <div className="font-bold text-sm text-white truncate mb-1.5">{t.name}</div>
-                        <div className="flex items-center gap-4 text-xs">
-                          <span className="font-black text-emerald-400 text-sm">{getRoomCurrency(t.room)}{t.buyin}</span>
-                          <span className="text-slate-400 font-bold">{t.afs} тел</span>
-                          <span className="text-slate-400 font-bold">GTD: ${t.gtd}</span>
-                          <span className="text-blue-400 font-bold">EV: {parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
+                        <div className="font-bold text-xs text-white truncate mb-1">{t.name}</div>
+                        <div className="flex items-center gap-3 text-[11px]">
+                          <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
+                          <span className="text-slate-400">{t.afs} тел</span>
+                          <span className="text-slate-400">GTD: ${t.gtd}</span>
+                          <span className="text-blue-400">EV: {parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
                         </div>
                       </div>
                       
-                      <div className="shrink-0 flex items-center gap-2">
-                        <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition">Заметка</button>
-                        <div className={`w-10 h-10 flex items-center justify-center rounded-xl border transition ${isAdded ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-slate-800/80 text-slate-500 border-slate-700/50'}`}>
-                          {isAdded ? <Check size={18} strokeWidth={3}/> : <Plus size={18} strokeWidth={2}/>}
+                      <div className="shrink-0 flex items-center gap-1.5">
+                        <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded-lg transition">Заметка</button>
+                        <div className={`w-7 h-7 flex items-center justify-center rounded-lg border transition ${isAdded ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-slate-800/80 text-slate-500 border-slate-700/50'}`}>
+                          {isAdded ? <Check size={14} strokeWidth={3}/> : <Plus size={14} strokeWidth={2}/>}
                         </div>
                       </div>
                     </div>
@@ -769,58 +768,57 @@ export default function App() {
 
           {/* Сетка */}
           {activeTab === 'grid' && (
-            <div className="space-y-4">
-              {grid.length > 0 && (
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
-                  <div className="grid grid-cols-3 gap-4 mb-4 pb-4 border-b border-slate-800 text-center">
-                    <div><span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Турниров</span><div className="text-xl font-black text-white">{grid.length}</div></div>
-                    <div className="border-x border-slate-800"><span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Ожидание</span><div className={`text-xl font-black ${totalEV >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{totalEV > 0 ? '+' : ''}${totalEV.toFixed(1)}</div></div>
-                    <div><span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Конец</span><div className="text-xl font-black text-cyan-400">~{getSessionEndTime(grid)}</div></div>
-                  </div>
-                  <div className="flex justify-between items-center text-xs font-bold text-slate-400 px-1">
-                    <span>Дисперсия: <b className={getVariance().color}>{getVariance().label}</b></span>
-                    <span>Пик столов: <b className="text-cyan-400">{getPeakTablesData(grid).max} шт (~{getPeakTablesData(grid).timeStr})</b></span>
-                  </div>
+            <div className="space-y-3">
+              {/* Компактный блок статистики, совмещенный с управлением сеткой */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-xl space-y-3">
+                <div className="grid grid-cols-3 gap-2 pb-2.5 border-b border-slate-800/80 text-center">
+                  <div><span className="text-[9px] uppercase font-bold text-slate-500 block">Турниров</span><div className="text-base font-black text-white">{grid.length}</div></div>
+                  <div className="border-x border-slate-800/80"><span className="text-[9px] uppercase font-bold text-slate-500 block">Ожидание</span><div className={`text-base font-black ${totalEV >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{totalEV > 0 ? '+' : ''}${totalEV.toFixed(1)}</div></div>
+                  <div><span className="text-[9px] uppercase font-bold text-slate-500 block">Конец</span><div className="text-base font-black text-cyan-400">~{getSessionEndTime(grid)}</div></div>
                 </div>
-              )}
 
-              {/* Ультракомпактная панель управления сеткой в один ряд */}
-              {grid.length > 0 && (
-                <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-2xl p-2 shadow-xl">
-                  <button 
-                    onClick={() => setShowSessionModal(true)} 
-                    className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-400 rounded-xl py-2.5 px-3 flex items-center justify-center gap-2 text-xs uppercase font-black transition"
-                  >
-                    <Wallet size={16} /> 
-                    <span className="truncate">Завершить сессию</span>
-                  </button>
-                  
-                  <button 
-                    onClick={() => setSortOrder(prev => prev === 'time' ? 'buyin' : prev === 'buyin' ? 'ev' : 'time')} 
-                    title="Сортировка"
-                    className="px-4 py-2.5 bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl text-xs uppercase font-black text-blue-400 flex items-center gap-1.5 transition shrink-0"
-                  >
-                    <ArrowUpDown size={14} /> 
-                    <span>{sortOrder}</span>
-                  </button>
-                  
-                  <button 
-                    onClick={() => setGroupByRoom(!groupByRoom)} 
-                    title="Группировать по румам"
-                    className={`w-10 h-10 rounded-xl border flex items-center justify-center transition shrink-0 ${groupByRoom ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}`}
-                  >
-                    <Layers size={16} />
-                  </button>
-
-                  <button 
-                    onClick={clearGrid} 
-                    title="Очистить сетку"
-                    className="w-10 h-10 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl flex items-center justify-center text-rose-400 transition shrink-0"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 px-1">
+                  <span>Дисперсия: <b className={getVariance().color}>{getVariance().label}</b></span>
+                  <span>Пик: <b className="text-cyan-400">{getPeakTablesData(grid).max} шт (~{getPeakTablesData(grid).timeStr})</b></span>
                 </div>
-              )}
+
+                {grid.length > 0 && (
+                  <div className="flex items-center gap-1.5 pt-1 border-t border-slate-800/80">
+                    <button 
+                      onClick={() => setShowSessionModal(true)} 
+                      className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-400 rounded-xl py-2 px-2 flex items-center justify-center gap-1.5 text-[11px] uppercase font-black transition"
+                    >
+                      <Wallet size={14} /> 
+                      <span className="truncate">Завершить сессию</span>
+                    </button>
+                    
+                    <button 
+                      onClick={() => setSortOrder(prev => prev === 'time' ? 'buyin' : prev === 'buyin' ? 'ev' : 'time')} 
+                      title="Сортировка"
+                      className="px-3 py-2 bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl text-[11px] uppercase font-black text-blue-400 flex items-center gap-1 transition shrink-0"
+                    >
+                      <ArrowUpDown size={12} /> 
+                      <span>{sortOrder}</span>
+                    </button>
+                    
+                    <button 
+                      onClick={() => setGroupByRoom(!groupByRoom)} 
+                      title="Группировать по румам"
+                      className={`w-9 h-9 rounded-xl border flex items-center justify-center transition shrink-0 ${groupByRoom ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}`}
+                    >
+                      <Layers size={14} />
+                    </button>
+
+                    <button 
+                      onClick={clearGrid} 
+                      title="Очистить сетку"
+                      className="w-9 h-9 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl flex items-center justify-center text-rose-400 transition shrink-0"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {grid.length === 0 ? (
                 <div className="text-center py-24 bg-slate-900/40 rounded-2xl border border-slate-800/50">
@@ -829,23 +827,23 @@ export default function App() {
                   <button onClick={() => setActiveTab('search')} className="mt-4 bg-cyan-950/40 border border-cyan-500/50 text-cyan-400 font-bold text-xs py-3 px-8 rounded-xl">Искать турниры</button>
                 </div>
               ) : groupByRoom ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="overflow-x-auto no-scrollbar flex gap-2 py-1">
                     {activeGridRooms.map(room => {
                       const isSelected = gridActiveRoom === room || (!gridActiveRoom && activeGridRooms[0] === room);
                       return (
-                        <button key={room} onClick={() => setGridActiveRoom(room)} className={`px-4 py-2.5 rounded-xl text-xs font-bold border transition ${isSelected ? 'bg-cyan-950/60 border-cyan-500 text-cyan-300 shadow-sm' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>
+                        <button key={room} onClick={() => setGridActiveRoom(room)} className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition ${isSelected ? 'bg-cyan-950/60 border-cyan-500 text-cyan-300 shadow-sm' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>
                           {room} ({displayGrid.filter(t => t.room === room).length})
                         </button>
                       );
                     })}
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {filteredGridBySelectedRoom.length === 0 ? <div className="text-center py-12 text-slate-500 text-xs">Нет турниров</div> : filteredGridBySelectedRoom.map(t => renderGridCard(t))}
                   </div>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {displayGrid.map(t => renderGridCard(t))}
                 </div>
               )}
