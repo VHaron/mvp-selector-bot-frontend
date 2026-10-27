@@ -943,7 +943,7 @@ export default function App() {
             <h2 className="text-base font-black text-white mb-4">Шаблоны фильтров</h2>
             <div className="flex gap-2 mb-4">
               <input value={newPresetName} onChange={e => setNewPresetName(e.target.value)} placeholder="Название..." className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none" />
-              <button onClick={savePreset} disabled={!newPresetName.trim()} className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-3.5 rounded-xl disabled:opacity-30"><Save size5={18} /></button>
+              <button onClick={savePreset} disabled={!newPresetName.trim()} className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-3.5 rounded-xl disabled:opacity-30"><Save size={18} /></button>
             </div>
             <div className="space-y-2 max-h-56 overflow-y-auto">
               {presets.length === 0 ? <div className="text-center py-6 text-slate-500 text-xs">Нет сохраненных шаблонов</div> : 
