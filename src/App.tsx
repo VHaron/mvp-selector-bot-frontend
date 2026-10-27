@@ -39,6 +39,11 @@ const getRoomCurrency = (roomName: string) => {
   return '$';
 };
 
+const ROOMS: Record<string, string> = {
+  '244': '888', '245': 'Chico', '246': 'GGNet', '247': 'iPoker', '248': 'PartyPoker', '249': 'PS(COM',
+  '250': 'PS(ES)', '251': 'WMX', '252': 'WPN', '264': 'PD', '262': 'RPT', '265': 'Coin'
+};
+
 const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle: (n: string) => string }) => {
   const nameLower = (roomName || '').toLowerCase();
   
@@ -50,8 +55,11 @@ const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle:
   if (!roomId) {
     if (nameLower.includes('gg')) roomId = '246';
     else if (nameLower.includes('888')) roomId = '244';
+    // Если в названии турнира фигурирует es или сессия испанская
+    else if (nameLower.includes('es') && nameLower.includes('ps')) roomId = '250';
     else if (nameLower.includes('pokerstars') || nameLower.includes('ps')) roomId = '249';
-    else if (nameLower.includes('pokerdom')) roomId = '261';
+    else if (nameLower.includes('pokerdom') || nameLower.includes('pd')) roomId = '264';
+    else if (nameLower.includes('coin')) roomId = '265';
   }
 
   const domain = roomId ? ROOM_DOMAINS[roomId] : null;
