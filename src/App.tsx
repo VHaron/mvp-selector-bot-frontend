@@ -791,7 +791,7 @@ export default function App() {
                   
                   <button onClick={() => setSortOrder(prev => prev === 'time' ? 'buyin' : prev === 'buyin' ? 'ev' : 'time')} className="flex-1 bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl py-3 flex items-center justify-center gap-1.5 text-xs uppercase font-black text-blue-400 transition"><ArrowUpDown size={14} /> {sortOrder}</button>
                   
-                  {/* Компактная кнопка группировки по румам вместо громоздкого тумблера */}
+                  {/* Компактная кнопка группировки по румам */}
                   <button 
                     onClick={() => setGroupByRoom(!groupByRoom)} 
                     title="Группировать по румам"
@@ -964,7 +964,7 @@ export default function App() {
                   <div key={idx} className="flex justify-between items-center bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs">
                     <span className="font-bold text-white">{p.name}</span>
                     <div className="flex gap-1.5">
-                      <button onClick={() => loadPreset(p.items)} className="p-2 bg-cyan-500/10 text-cyan-400 rounded-lg"><Check size5={16} /><Check size={16} /></button>
+                      <button onClick={() => loadPreset(p.items)} className="p-2 bg-cyan-500/10 text-cyan-400 rounded-lg"><Check size={16} /></button>
                       <button onClick={() => deletePreset(idx)} className="p-2 bg-rose-500/10 text-rose-400 rounded-lg"><Trash2 size={16} /></button>
                     </div>
                   </div>
