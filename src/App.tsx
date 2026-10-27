@@ -511,7 +511,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Панель форматов и яркая кнопка поиска */}
+            {/* Панель форматов и яркая кнопка поиска (без о огонька) */}
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex gap-2 flex-1">
                 <button onClick={() => toggleFormat('isPko')} className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase border transition ${activeFormats.isPko ? 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/40' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🎯 PKO</button>
@@ -796,7 +796,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Удобная нижняя панель навигации (возвращена на место) */}
+      {/* Нижняя навигация */}
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto mb-3 px-4 z-40">
         <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-1.5 flex shadow-2xl">
           <button onClick={() => setActiveTab('search')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold uppercase transition ${activeTab === 'search' ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)]' : 'text-slate-400 hover:text-white'}`}>
