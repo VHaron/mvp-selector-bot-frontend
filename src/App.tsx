@@ -113,6 +113,7 @@ export default function App() {
     setActiveFormats(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  // Рабочая логика проверки дней недели
   const isToday = (dayWeekStr?: string) => {
     if (!dayWeekStr) return true;
     const cleanDay = dayWeekStr.toLowerCase().replace(/[^а-яё]/g, '');
