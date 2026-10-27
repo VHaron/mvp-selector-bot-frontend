@@ -416,18 +416,20 @@ export default function App() {
     const prioStyles = getPriorityStyles(t.priority);
     const played = isPlayed(t.time_start, t.day_week);
     return (
-      <div key={t.id} onClick={() => setActiveStats(t)} className={`bg-slate-900 rounded-xl p-3.5 border border-slate-800 transition-all flex items-center justify-between gap-4 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 ${played ? 'opacity-40 grayscale bg-slate-900/40' : ''}`}>
+      <div key={t.id} onClick={() => setActiveStats(t)} className={`bg-slate-900 rounded-xl p-4 border border-slate-800 transition-all flex items-center justify-between gap-4 border-l-[4px] ${prioStyles.border} cursor-pointer hover:border-slate-700 ${played ? 'opacity-40 grayscale bg-slate-900/40' : ''}`}>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2.5 mb-2">
+            <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
             <span className="text-[10px] font-bold text-slate-500 uppercase">{t.day_week}</span>
             <span className="text-xs text-cyan-400 font-mono font-black">{t.time_start}</span>
             {isOverlay(t) && <Flame size={12} className="text-orange-500 animate-pulse"/>}
             {getSmartTimer(t.time_start, t.day_week)}
           </div>
-          <div className="font-bold text-sm text-white truncate mb-1">{t.name}</div>
-          <div className="flex items-center gap-3 text-xs">
-            <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
-            <span className="text-slate-500 font-bold uppercase">{t.room} • {t.afs} тел</span>
+          <div className="font-bold text-sm text-white truncate mb-1.5">{t.name}</div>
+          <div className="flex items-center gap-4 text-xs">
+            <span className="font-black text-emerald-400 text-sm">{getRoomCurrency(t.room)}{t.buyin}</span>
+            <span className="text-slate-400 font-bold">{t.afs} тел</span>
+            <span className="text-slate-400 font-bold">GTD: ${t.gtd}</span>
           </div>
         </div>
         <button onClick={(e) => { e.stopPropagation(); toggleGrid(t); }} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition active:scale-95"><Trash2 size={16} /></button>
@@ -469,12 +471,10 @@ export default function App() {
       {/* Левый десктопный сайдбар с иконками */}
       <aside className="w-20 bg-slate-950 border-r border-slate-800/80 flex flex-col items-center justify-between py-6 shrink-0 sticky top-0 h-screen z-40">
         <div className="flex flex-col items-center gap-6">
-          {/* Логотип-индикатор */}
           <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/40 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.2)]">
             <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse"></div>
           </div>
 
-          {/* Иконки навигации */}
           <div className="flex flex-col gap-2">
             <button 
               onClick={() => setActiveTab('search')} 
@@ -507,7 +507,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Кнопка выхода */}
         <button 
           onClick={logout} 
           title="Выйти из системы"
@@ -520,7 +519,6 @@ export default function App() {
       {/* Основная рабочая область */}
       <div className="flex-1 flex flex-col min-w-0">
         
-        {/* Верхняя мини-плашка статуса */}
         <header className="h-16 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 px-8 flex justify-between items-center sticky top-0 z-30">
           <div className="text-xs font-black tracking-wider text-white uppercase">
             {activeTab === 'search' && 'Поиск турниров'}
@@ -534,7 +532,6 @@ export default function App() {
           </div>
         </header>
 
-        {/* Контент */}
         <main className="max-w-5xl w-full mx-auto px-6 py-8">
           
           {/* Поиск */}
@@ -573,7 +570,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Панель форматов и кнопка поиска */}
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex gap-2 flex-1">
                   <button onClick={() => toggleFormat('isPko')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase border transition ${activeFormats.isPko ? 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/40' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🎯 PKO</button>
@@ -598,7 +594,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* СПИСОК РЕЗУЛЬТАТОВ В 1 КОЛОНКУ (ОДИН РЯД НА ПК) */}
               <div className="space-y-3 pt-2">
                 {loading && [1, 2, 3, 4].map(i => <div key={i} className="h-20 bg-slate-900/40 rounded-xl border border-slate-800/40 animate-pulse"></div>)}
                 
@@ -610,43 +605,46 @@ export default function App() {
                   </div>
                 )}
                 
-{searchResults.map((t) => {
-  const note = notes[getNoteKey(t)];
-  if (note?.tag === 'skip') return (
-    <div key={t.id} className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/40 flex justify-between items-center opacity-40 grayscale text-xs">
-      <div className="flex items-center gap-2"><Ban size={16} className="text-rose-500"/><span className="line-through">{t.name}</span></div>
-      <button onClick={() => setActiveStats(t)} className="text-xs text-blue-400 font-bold">Вернуть</button>
-    </div>
-  );
+                {searchResults.map((t) => {
+                  const note = notes[getNoteKey(t)];
+                  if (note?.tag === 'skip') return (
+                    <div key={t.id} className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/40 flex justify-between items-center opacity-40 grayscale text-xs">
+                      <div className="flex items-center gap-2"><Ban size={16} className="text-rose-500"/><span className="line-through">{t.name}</span></div>
+                      <button onClick={() => setActiveStats(t)} className="text-xs text-blue-400 font-bold">Вернуть</button>
+                    </div>
+                  );
 
-  const isAdded = grid.some(item => item.id === t.id);
-  const prioStyles = getPriorityStyles(t.priority);
-  
-  return (
-    <div key={t.id} onClick={() => setActiveStats(t)} className={`bg-slate-900 rounded-xl p-4 border border-slate-800 flex items-center justify-between gap-4 border-l-[4px] ${prioStyles.border} cursor-pointer hover:border-slate-700 transition shadow-md`}>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2.5 mb-2">
-          <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
-          <span className="text-[10px] font-bold text-slate-500 uppercase">{t.day_week}</span>
-          <span className="text-xs text-cyan-400 font-mono font-black">{t.time_start}</span>
-          {isOverlay(t) && <Flame size={14} className="text-orange-500 animate-pulse"/>}
-          {getSmartTimer(t.time_start, t.day_week)}
-        </div>
-        <div className="font-bold text-sm text-white truncate mb-1.5">{t.name}</div>
-        <div className="flex items-center gap-4 text-xs">
-          <span className="font-black text-emerald-400 text-sm">{getRoomCurrency(t.room)}{t.buyin}</span>
-          <span className="text-slate-400 font-bold">{t.afs} тел</span>
-          <span className="text-slate-400 font-bold">GTD: ${t.gtd}</span>
-          <span className="text-blue-400 font-bold">EV: {parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
-        </div>
-      </div>
-      
-      <button onClick={(e) => { e.stopPropagation(); toggleGrid(t); }} className={`shrink-0 w-11 h-11 flex items-center justify-center rounded-xl transition active:scale-95 ${isAdded ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-blue-400 hover:bg-slate-700'}`}>
-        {isAdded ? <Check size={18} strokeWidth={3}/> : <Plus size={18} strokeWidth={3}/>}
-      </button>
-    </div>
-  );
-})}
+                  const isAdded = grid.some(item => item.id === t.id);
+                  const prioStyles = getPriorityStyles(t.priority);
+                  
+                  return (
+                    <div key={t.id} onClick={() => setActiveStats(t)} className={`bg-slate-900 rounded-xl p-4 border border-slate-800 flex items-center justify-between gap-4 border-l-[4px] ${prioStyles.border} cursor-pointer hover:border-slate-700 transition shadow-md`}>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2.5 mb-2">
+                          <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
+                          <span className="text-[10px] font-bold text-slate-500 uppercase">{t.day_week}</span>
+                          <span className="text-xs text-cyan-400 font-mono font-black">{t.time_start}</span>
+                          {isOverlay(t) && <Flame size={14} className="text-orange-500 animate-pulse"/>}
+                          {getSmartTimer(t.time_start, t.day_week)}
+                        </div>
+                        <div className="font-bold text-sm text-white truncate mb-1.5">{t.name}</div>
+                        <div className="flex items-center gap-4 text-xs">
+                          <span className="font-black text-emerald-400 text-sm">{getRoomCurrency(t.room)}{t.buyin}</span>
+                          <span className="text-slate-400 font-bold">{t.afs} тел</span>
+                          <span className="text-slate-400 font-bold">GTD: ${t.gtd}</span>
+                          <span className="text-blue-400 font-bold">EV: {parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
+                        </div>
+                      </div>
+                      
+                      <button onClick={(e) => { e.stopPropagation(); toggleGrid(t); }} className={`shrink-0 w-11 h-11 flex items-center justify-center rounded-xl transition active:scale-95 ${isAdded ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-blue-400 hover:bg-slate-700'}`}>
+                        {isAdded ? <Check size={18} strokeWidth={3}/> : <Plus size={18} strokeWidth={3}/>}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Сетка */}
           {activeTab === 'grid' && (
