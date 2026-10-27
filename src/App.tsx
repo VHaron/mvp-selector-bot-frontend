@@ -89,17 +89,17 @@ export default function App() {
     try { WebApp.HapticFeedback.impactOccurred('light'); } catch(e){}
   };
 
+  const isToday = (dayWeekStr?: string) => {
+    if (!dayWeekStr) return true; // Если день не указан, считаем актуальным
+    const cleanDay = dayWeekStr.toLowerCase().replace(/[^а-яё]/g, '');
+    const days = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+    const todayIndex = new Date().getDay();
+    const tourneyIndex = days.findIndex(d => cleanDay.includes(d));
+    return tourneyIndex === -1 || tourneyIndex === todayIndex;
+  };
+
   const getSmartTimer = (timeStr: string, dayWeekStr?: string) => {
-    if (!timeStr) return null;
-    
-    if (dayWeekStr) {
-      const cleanDay = dayWeekStr.toLowerCase().replace(/[^а-я]/g, '');
-      const days = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
-      const todayIndex = new Date().getDay();
-      const tourneyIndex = days.findIndex(d => cleanDay.includes(d));
-      
-      if (tourneyIndex !== -1 && tourneyIndex !== todayIndex) return null;
-    }
+    if (!timeStr || !isToday(dayWeekStr)) return null;
 
     const [hours, mins] = timeStr.split(':').map(Number);
     const now = new Date();
@@ -297,6 +297,7 @@ export default function App() {
   };
 
   const isOverlay = (t: Tournament) => {
+    if (!isToday(t.day_week)) return false; // Турниры другого дня не могут быть оверлеями сего дня
     const buyin = parseNum(t.buyin); const gtd = parseNum(t.gtd); const afs = parseNum(t.afs);
     return (gtd > 0 && buyin > 0 && afs > 0 && (buyin * afs * 0.9) < gtd);
   };
@@ -395,15 +396,17 @@ export default function App() {
     });
   }, [grid, sortOrder]);
 
-  const isPlayed = (timeString: string) => {
+  const isPlayed = (timeString: string, dayWeekStr?: string) => {
     if (!timeString) return false;
   
+    // Если турнир запланирован на другой день (не сегодняшний), он точно НЕ отыгран
+    if (!isToday(dayWeekStr)) return false;
+
     const cleanTime = timeString.trim().slice(0, 5);
     const [hours, minutes] = cleanTime.split(':').map(Number);
     if (isNaN(hours) || isNaN(minutes)) return false;
 
     const now = new Date();
-  
     const tourneyTime = new Date();
     tourneyTime.setHours(hours, minutes, 0, 0);
 
@@ -415,7 +418,7 @@ export default function App() {
   
   const displayGrid = useMemo(() => {
     return sortedGrid
-      .map(t => ({ ...t, played: isPlayed(t.time_start) }))
+      .map(t => ({ ...t, played: isPlayed(t.time_start, t.day_week) }))
       .filter(t => (hidePlayed ? !t.played : true))
       .sort((a, b) => {
         if (a.played && !b.played) return 1;
@@ -564,7 +567,7 @@ export default function App() {
   const renderGridCard = (t: any) => {
     const prioStyles = getPriorityStyles(t.priority);
     const overlay = isOverlay(t);
-    const played = t.played;
+    const played = isPlayed(t.time_start, t.day_week);
 
     return (
       <div 
@@ -574,6 +577,7 @@ export default function App() {
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-1.5">
+            <span className="text-[9px] font-bold text-slate-500 uppercase">{t.day_week}</span>
             <span className="text-[11px] text-cyan-400 font-mono font-black">{t.time_start}</span>
             {overlay && <Flame size={12} className="text-orange-500 animate-pulse"/>}
             {getSmartTimer(t.time_start, t.day_week)}
@@ -768,6 +772,7 @@ export default function App() {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-1.5">
+                      <span className="text-[9px] font-bold text-slate-500 uppercase">{t.day_week}</span>
                       <span className="text-[11px] text-cyan-400 font-mono font-black">{t.time_start}</span>
                       {overlay && <Flame size={12} className="text-orange-500 animate-pulse"/>}
                       {getSmartTimer(t.time_start, t.day_week)}
