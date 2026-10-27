@@ -14,7 +14,7 @@ interface SessionData { id: string; date: string; total_buyin: number; total_cas
 
 const ROOMS: Record<string, string> = {
   '244': '888', '245': 'Chico', '246': 'GGNet', '247': 'iPoker', '248': 'PartyPoker', '249': 'PS(COM)',
-  '250': 'PS(ES)', '251': 'WMX', '252': 'WPN', '264': 'PD', '262': 'RPT', '265': 'Coin'
+  '250': 'PS(ES)', '251': 'WMX', '252': 'WPN', '264': 'PD', '266': 'WPT', '265': 'Coin'
 };
 
 const ROOM_DOMAINS: Record<string, string> = {
@@ -28,7 +28,7 @@ const ROOM_DOMAINS: Record<string, string> = {
   '251': 'winamax.fr',
   '252': 'americascardroom.eu',
   '264': 'pokerdom.com',
-  '262': 'rptbet.com',
+  '266': 'wptglobal.com',
   '265': 'coinpoker.com'
 };
 
@@ -290,7 +290,7 @@ export default function App() {
   const getRoomStyle = (roomName: string) => {
     const name = roomName.toLowerCase();
     if (name.includes('gg') || name.includes('pokerstars') || name.includes('ps')) return 'bg-red-500/10 text-red-400 border-red-500/30';
-    if (name.includes('888') || name.includes('wpn') || name.includes('rpt')) return 'bg-blue-500/10 text-blue-400 border-blue-500/30';
+    if (name.includes('888') || name.includes('wpn') || name.includes('wpt')) return 'bg-blue-500/10 text-blue-400 border-blue-500/30';
     if (name.includes('pokerdom') || name.includes('ipoker') || name.includes('pd')) return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
     if (name.includes('chico') || name.includes('party')) return 'bg-orange-500/10 text-orange-400 border-orange-500/30';
     if (name.includes('coinpoker') || name.includes('coin')) return 'bg-slate-500/20 text-slate-300 border-slate-500/50';
