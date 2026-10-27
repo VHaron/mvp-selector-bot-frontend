@@ -39,11 +39,6 @@ const getRoomCurrency = (roomName: string) => {
   return '$';
 };
 
-const ROOMS: Record<string, string> = {
-  '244': '888', '245': 'Chico', '246': 'GGNet', '247': 'iPoker', '248': 'PartyPoker', '249': 'PS(COM',
-  '250': 'PS(ES)', '251': 'WMX', '252': 'WPN', '264': 'PD', '262': 'RPT', '265': 'Coin'
-};
-
 const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle: (n: string) => string }) => {
   const nameLower = (roomName || '').toLowerCase();
   
