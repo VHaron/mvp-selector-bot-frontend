@@ -453,7 +453,7 @@ export default function App() {
           <div className="font-bold text-sm text-white truncate mb-1.5">{t.name}</div>
           <div className="flex items-center gap-4 text-xs">
             <span className="font-black text-emerald-400 text-sm">{getRoomCurrency(t.room)}{t.buyin}</span>
-            <span className="text-slate-400 font-bold">{t.afs} тел</span>
+            <span className="text-slate-400 font-bold">{t.afs} чел</span>
             <span className="text-slate-400 font-bold">GTD: ${t.gtd}</span>
           </div>
         </div>
