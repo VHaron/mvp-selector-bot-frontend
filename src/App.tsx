@@ -40,9 +40,25 @@ const getRoomCurrency = (roomName: string) => {
 };
 
 const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle: (n: string) => string }) => {
-  // Находим ключ (ID) рума по его отображаемому имени в объекте ROOMS
-  const roomId = Object.keys(ROOMS).find(k => ROOMS[k].toLowerCase() === (roomName || '').toLowerCase());
+  const nameLower = (roomName || '').toLowerCase();
+  
+  // Ищем ID рума по вхождению подстроки (чтобы GGNETWORK соотнесся с GGNet, а 888Poker с 888)
+  let roomId = Object.keys(ROOMS).find(id => {
+    const shortName = ROOMS[id].toLowerCase();
+    return nameLower.includes(shortName) || (shortName === 'ggnet' && nameLower.includes('gg')) || (shortName === 'wmx' && nameLower.includes('winamax'));
+  });
+
+  // Если точного вхождения нет, фолбэк на стандартные ключи
+  if (!roomId) {
+    if (nameLower.includes('gg')) roomId = '246';
+    else if (nameLower.includes('888')) roomId = '244';
+    else if (nameLower.includes('pokerstars') || nameLower.includes('ps')) roomId = '249';
+    else if (nameLower.includes('pokerdom')) roomId = '261';
+  }
+
   const domain = roomId ? ROOM_DOMAINS[roomId] : null;
+  // Берем короткое имя из твоего словаря ROOMS, либо оставляем исходное, если не нашлось
+  const displayName = roomId ? ROOMS[roomId] : roomName;
 
   return (
     <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border font-bold text-[10px] uppercase tracking-wider ${getRoomStyle(roomName)} shadow-sm`}>
@@ -54,7 +70,7 @@ const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle:
           onError={(e) => { e.currentTarget.style.display = 'none'; }} 
         />
       )}
-      <span>{roomName}</span>
+      <span>{displayName}</span>
     </div>
   );
 };
