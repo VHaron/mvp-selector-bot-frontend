@@ -511,7 +511,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Панель форматов и яркая кнопка поиска (без о огонька) */}
+            {/* Панель форматов и кнопка поиска во всю ширину блока */}
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex gap-2 flex-1">
                 <button onClick={() => toggleFormat('isPko')} className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase border transition ${activeFormats.isPko ? 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/40' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>🎯 PKO</button>
@@ -522,11 +522,10 @@ export default function App() {
               <div className="flex gap-2">
                 <button 
                   onClick={fetchTournaments} 
-                  className="flex-1 sm:flex-none px-8 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider flex justify-center items-center gap-2 transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] active:scale-95"
+                  className="w-full sm:w-auto px-8 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider flex justify-center items-center gap-2 transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] active:scale-95"
                 >
                   {loading ? <><Search className="animate-spin" size={16} /> Ищем...</> : <><Search size={16} strokeWidth={3} /> Найти турниры</>}
                 </button>
-                <button onClick={() => setSortOrder(p => p === 'time' ? 'tier' : 'time')} className={`border px-4 rounded-xl flex items-center justify-center transition ${sortOrder === 'tier' ? 'bg-fuchsia-950/40 border-fuchsia-500/60 text-fuchsia-400' : 'bg-slate-900 border-slate-800 text-slate-400'}`} title="Сортировка по Тьер"><Flame size={18} strokeWidth={2.5} /></button>
               </div>
             </div>
 
