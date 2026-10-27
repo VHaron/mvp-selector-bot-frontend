@@ -18,10 +18,18 @@ const ROOMS: Record<string, string> = {
 };
 
 const ROOM_DOMAINS: Record<string, string> = {
-  'GGNet': 'ggpoker.com', 'PS(COM)': 'pokerstars.com', 'PS(ES)': 'pokerstars.es',
-  '888': '888poker.com', 'WMX': 'winamax.fr', 'PD': 'pokerdom.com',
-  'Coin': 'coinpoker.com', 'PartyPoker': 'partypoker.com', 'WPN': 'americascardroom.eu',
-  'iPoker': 'redstarpoker.eu', 'Chico': 'tigergaming.com', 'RPT': 'rptbet.com'
+  '244': '888poker.com',      // 888
+  '245': 'tigergaming.com',   // Chico
+  '246': 'ggpoker.com',       // GGNet
+  '247': 'redstarpoker.eu',   // iPoker
+  '248': 'partypoker.com',    // PartyPoker
+  '249': 'pokerstars.com',    // PS(COM
+  '250': 'pokerstars.es',     // PS(ES)
+  '251': 'winamax.fr',        // WMX
+  '252': 'americascardroom.eu', // WPN
+  '261': 'pokerdom.com',      // PD
+  '262': 'rptbet.com',        // RPT
+  '263': 'coinpoker.com'      // Coin
 };
 
 const getRoomCurrency = (roomName: string) => {
@@ -32,8 +40,9 @@ const getRoomCurrency = (roomName: string) => {
 };
 
 const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle: (n: string) => string }) => {
-  const domainKey = Object.keys(ROOM_DOMAINS).find(k => k.toLowerCase() === (roomName || '').toLowerCase());
-  const domain = domainKey ? ROOM_DOMAINS[domainKey] : null;
+  // Находим ключ рума по его имени в словаре ROOMS
+  const roomId = Object.keys(ROOMS).find(k => ROOMS[k].toLowerCase() === (roomName || '').toLowerCase());
+  const domain = roomId ? ROOM_DOMAINS[roomId] : null;
 
   return (
     <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border font-bold text-[10px] uppercase tracking-wider ${getRoomStyle(roomName)} shadow-sm`}>
