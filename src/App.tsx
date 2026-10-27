@@ -553,22 +553,21 @@ export default function App() {
                   <input type="datetime-local" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 outline-none focus:border-cyan-500 [color-scheme:dark]" />
                 </div>
 
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <button onClick={() => setSelectedRooms(selectedRooms.length === Object.keys(ROOMS).length ? [] : Object.keys(ROOMS))} className="px-3 py-2 rounded-xl text-xs font-black border bg-slate-800 text-slate-300 border-slate-700">
-                    {selectedRooms.length === Object.keys(ROOMS).length ? 'Сбросить' : 'Все румы'}
-                  </button>
-                  {Object.entries(ROOMS).map(([id, name]) => {
-                    const isSel = selectedRooms.includes(id);
-                    const domain = ROOM_DOMAINS[name];
-                    return (
-                      <button key={id} onClick={() => toggleRoom(id)} className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition ${isSel ? 'bg-cyan-950/50 border-cyan-500/60 text-cyan-300 shadow-sm' : 'bg-slate-950/40 border-slate-800/80 text-slate-500 hover:text-slate-300'}`}>
-                        {domain && <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={name} className={`w-3.5 h-3.5 rounded-full ${isSel ? '' : 'opacity-30 grayscale'}`} onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
-                        <span>{name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+<div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-13 gap-1.5 pt-1">
+  <button onClick={() => setSelectedRooms(selectedRooms.length === Object.keys(ROOMS).length ? [] : Object.keys(ROOMS))} className="px-2 py-2 rounded-xl text-[10px] font-black border bg-slate-800 text-slate-300 border-slate-700 flex items-center justify-center">
+    {selectedRooms.length === Object.keys(ROOMS).length ? 'Сброс' : 'Все'}
+  </button>
+  {Object.entries(ROOMS).map(([id, name]) => {
+    const isSel = selectedRooms.includes(id);
+    const domain = ROOM_DOMAINS[name];
+    return (
+      <button key={id} onClick={() => toggleRoom(id)} className={`flex items-center justify-center gap-1 px-2 py-2 rounded-xl text-[10px] font-bold border transition ${isSel ? 'bg-cyan-950/50 border-cyan-500/60 text-cyan-300 shadow-sm' : 'bg-slate-950/40 border-slate-800/80 text-slate-500 hover:text-slate-300'}`}>
+        {domain && <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={name} className={`w-3 h-3 rounded-full shrink-0 ${isSel ? '' : 'opacity-30 grayscale'}`} onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
+        <span className="truncate">{name}</span>
+      </button>
+    );
+  })}
+</div>
 
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex gap-2 flex-1">
