@@ -14,13 +14,13 @@ interface SessionData { id: string; date: string; total_buyin: number; total_cas
 
 const ROOMS: Record<string, string> = {
   '244': '888', '245': 'Chico', '246': 'GGNet', '247': 'iPoker', '248': 'PartyPoker', '249': 'PS(COM)',
-  '250': 'PS(ES)', '251': 'Winamax', '252': 'WPN', '261': 'PD', '262': 'RPT', '263': 'CoinPoker'
+  '250': 'PS(ES)', '251': 'WMX', '252': 'WPN', '261': 'PD', '262': 'RPT', '263': 'Coin'
 };
 
 const ROOM_DOMAINS: Record<string, string> = {
   'GGNet': 'ggpoker.com', 'PS(COM)': 'pokerstars.com', 'PS(ES)': 'pokerstars.es',
-  '888': '888poker.com', 'Winamax': 'winamax.fr', 'PD': 'pokerdom.com',
-  'CoinPoker': 'coinpoker.com', 'PartyPoker': 'partypoker.com', 'WPN': 'americascardroom.eu',
+  '888': '888poker.com', 'WMX': 'winamax.fr', 'PD': 'pokerdom.com',
+  'Coin': 'coinpoker.com', 'PartyPoker': 'partypoker.com', 'WPN': 'americascardroom.eu',
   'iPoker': 'redstarpoker.eu', 'Chico': 'tigergaming.com', 'RPT': 'rptbet.com'
 };
 
