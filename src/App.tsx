@@ -58,12 +58,12 @@ const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle:
   const displayName = roomId ? ROOMS[roomId] : roomName;
 
   return (
-    <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border font-bold text-[9px] uppercase tracking-wider ${getRoomStyle(roomName)}`}>
+    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg border font-bold text-[10px] uppercase tracking-wider ${getRoomStyle(roomName)} shadow-sm`}>
       {domain && (
         <img 
           src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} 
           alt={roomName} 
-          className="w-3 h-3 rounded-full object-cover bg-white p-[0.5px] shrink-0" 
+          className="w-3.5 h-3.5 rounded-full object-cover bg-white p-[0.5px] shadow-sm shrink-0" 
           onError={(e) => { e.currentTarget.style.display = 'none'; }} 
         />
       )}
@@ -91,6 +91,8 @@ export default function App() {
   
   const [groupByRoom, setGroupByRoom] = useState(false);
   const [gridActiveRoom, setGridActiveRoom] = useState<string | null>(null);
+  const [isGridRoomsOpen, setIsGridRoomsOpen] = useState(false);
+  const gridDropdownRef = useRef<HTMLDivElement>(null);
 
   const [activeFormats, setActiveFormats] = useState({ isPko: true, isFreezeout: true, isTurbo: true });
   const [sortOrder, setSortOrder] = useState<'time' | 'buyin' | 'ev' | 'tier'>('time');
@@ -102,6 +104,9 @@ export default function App() {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsRoomsDropdownOpen(false);
+      }
+      if (gridDropdownRef.current && !gridDropdownRef.current.contains(event.target as Node)) {
+        setIsGridRoomsOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -828,23 +833,39 @@ export default function App() {
                 </div>
               ) : groupByRoom ? (
                 <div className="space-y-3">
-                  {/* Аккуратный выпадающий селект румов */}
-                  <div className="relative">
-                    <select
-                      value={gridActiveRoom || activeGridRooms[0] || ''}
-                      onChange={(e) => setGridActiveRoom(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-200 outline-none focus:border-cyan-500 cursor-pointer shadow-sm appearance-none"
+                  {/* Кастомный выпадающий селект румов с иконками */}
+                  <div className="relative" ref={gridDropdownRef}>
+                    <button 
+                      onClick={() => setIsGridRoomsOpen(!isGridRoomsOpen)}
+                      className="w-full bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-200 flex items-center justify-between transition shadow-sm"
                     >
-                      {activeGridRooms.map(room => {
-                        const count = displayGrid.filter(t => t.room === room).length;
-                        return (
-                          <option key={room} value={room} className="bg-slate-900 text-slate-200 py-1">
-                            {room} ({count} турн.)
-                          </option>
-                        );
-                      })}
-                    </select>
-                    <ChevronDown size={14} className="absolute right-3.5 top-3.5 text-slate-400 pointer-events-none" />
+                      <div className="flex items-center gap-2 min-w-0">
+                        <RoomBadge roomName={gridActiveRoom || activeGridRooms[0] || ''} getRoomStyle={getRoomStyle} />
+                        <span className="truncate">({displayGrid.filter(t => t.room === (gridActiveRoom || activeGridRooms[0])).length} турн.)</span>
+                      </div>
+                      <ChevronDown size={14} className={`transition-transform shrink-0 ${isGridRoomsOpen ? 'rotate-180 text-cyan-400' : 'text-slate-400'}`} />
+                    </button>
+
+                    {isGridRoomsOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-1.5 bg-slate-950 border border-slate-800 rounded-2xl p-2 shadow-2xl z-50 space-y-1">
+                        {activeGridRooms.map(room => {
+                          const count = displayGrid.filter(t => t.room === room).length;
+                          const isSel = (gridActiveRoom === room) || (!gridActiveRoom && activeGridRooms[0] === room);
+                          return (
+                            <button
+                              key={room}
+                              onClick={() => { setGridActiveRoom(room); setIsGridRoomsOpen(false); }}
+                              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition ${isSel ? 'bg-cyan-950/50 border border-cyan-500/40 text-cyan-300' : 'hover:bg-slate-900 text-slate-300 border border-transparent'}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <RoomBadge roomName={room} getRoomStyle={getRoomStyle} />
+                              </div>
+                              <span className="text-[11px] text-slate-400">{count} турн.</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">
