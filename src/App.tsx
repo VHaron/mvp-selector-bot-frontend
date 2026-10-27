@@ -461,12 +461,12 @@ export default function App() {
           <div className="flex items-center gap-2 mb-2">
             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
             <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">
-              {t.day_week ? `${t.day_week} ` : ''}BT. {t.time_start}
+              {t.day_week ? `${t.day_week}. ` : ''}{t.time_start}
             </span>
             {isOverlay(t) && <Flame size={12} className="text-orange-500 animate-pulse"/>}
             {getSmartTimer(t.time_start, t.day_week)}
           </div>
-          <div className="font-bold text-sm text-white truncate mb-1.5">{t.name.replace(/\s*\[\d{2}:\d{2}\]/g, '')}</div>
+          <div className="font-bold text-sm text-white truncate mb-1.5">{t.name}</div>
           <div className="flex items-center gap-4 text-xs">
             <span className="font-black text-emerald-400 text-sm">{getRoomCurrency(t.room)}{t.buyin}</span>
             <span className="text-slate-400 font-bold">{t.afs} тел</span>
@@ -724,12 +724,12 @@ export default function App() {
                         <div className="flex items-center gap-2.5 mb-2">
                           <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
                           <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">
-                            {t.day_week ? `${t.day_week} ` : ''}BT. {t.time_start}
+                            {t.day_week ? `${t.day_week}. ` : ''}{t.time_start}
                           </span>
                           {isOverlay(t) && <Flame size={14} className="text-orange-500 animate-pulse"/>}
                           {getSmartTimer(t.time_start, t.day_week)}
                         </div>
-                        <div className="font-bold text-sm text-white truncate mb-1.5">{t.name.replace(/\s*\[\d{2}:\d{2}\]/g, '')}</div>
+                        <div className="font-bold text-sm text-white truncate mb-1.5">{t.name}</div>
                         <div className="flex items-center gap-4 text-xs">
                           <span className="font-black text-emerald-400 text-sm">{getRoomCurrency(t.room)}{t.buyin}</span>
                           <span className="text-slate-400 font-bold">{t.afs} тел</span>
