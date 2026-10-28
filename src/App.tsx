@@ -501,21 +501,21 @@ export default function App() {
     );
   };
 
-  // --- ФУНКЦИЯ ОТРИСОВКИ СЕТКИ (ДЛЯ ПРАВОЙ ПАНЕЛИ И МОБИЛОК) ---
+  // --- ФУНКЦИЯ ОТРИСОВКИ СЕТКИ ---
   const renderGridPanel = () => (
     <div className="space-y-3">
-      {/* Единый блок статистики и шапки сетки */}
+      {/* Блок статистики: поменяли p-3.5 на p-5, а space-y-3 на space-y-4 для точной высоты */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
         
-        {/* Шапка: Индикатор и название */}
+        {/* Шапка: Индикатор, название и счетчик */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
               <ListTodo size={12} strokeWidth={2.5} />
             </div>
-            <span className="text-[11px] font-black tracking-wider text-white uppercase">Текущая сетка</span>
+            <span className="text-xs font-black tracking-wider text-white uppercase">Текущая сетка</span>
           </div>
-          <span className="text-[11px] font-black text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded-md border border-cyan-500/30">
+          <span className="text-[11px] font-black text-cyan-400 bg-cyan-950/40 px-2.5 py-1 rounded-lg border border-cyan-500/30">
             {grid.length} турн.
           </span>
         </div>
