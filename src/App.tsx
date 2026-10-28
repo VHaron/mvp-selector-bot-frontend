@@ -837,7 +837,7 @@ export default function App() {
                     const isAdded = grid.some(item => item.id === t.id);
                     const prioStyles = getPriorityStyles(t.priority);
                     
-                  return (
+                    return (
                       <div 
                         key={t.id} 
                         onClick={() => toggleGrid(t)} 
@@ -847,35 +847,38 @@ export default function App() {
                             : 'bg-slate-900 border-slate-800'
                         }`}
                       >
-  
-                      <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                        <div className="flex items-center gap-1.5 shrink-0 md:w-[150px]">
-                          <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
-                          <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
-                            {formatDayWeek(t.day_week)}{t.time_start}
-                          </span>
-                        {getSmartTimer(t.time_start, t.day_week)}
+                        <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                          {/* Колонка 1: Рум и Время */}
+                          <div className="flex items-center gap-1.5 shrink-0 md:w-[150px]">
+                            <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
+                            <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
+                              {formatDayWeek(t.day_week)}{t.time_start}
+                            </span>
+                            {getSmartTimer(t.time_start, t.day_week)}
+                          </div>
+                          
+                          {/* Колонка 2: Название */}
+                          <div className="font-bold text-xs text-white truncate flex-1">
+                            {t.name}
+                            {isOverlay(t) && <Flame size={12} className="inline-block ml-1.5 text-orange-500 animate-pulse mb-0.5"/>}
+                          </div>
+                          
+                          {/* Колонка 3: Статистика */}
+                          <div className="flex items-center gap-3 text-[11px] shrink-0 md:w-[280px] md:justify-end">
+                            <span className="font-black text-emerald-400 w-12 text-right">{getRoomCurrency(t.room)}{t.buyin}</span>
+                            <span className="text-slate-400 w-14 text-right">{t.afs} рег.</span>
+                            <span className="text-slate-400 w-20 text-right">GTD: ${t.gtd}</span>
+                            <span className={`w-14 text-right font-bold ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
+                          </div>
+                        </div>
+                        
+                        {/* Колонка 4: Кнопка заметки (без галочки) */}
+                        <div className="shrink-0 flex items-center justify-end gap-1.5 md:w-[70px]">
+                          <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"><NotebookPen size={14}/></button>
+                        </div>
                       </div>
-    
-                      <div className="font-bold text-xs text-white truncate flex-1">
-                        {t.name}
-                        {isOverlay(t) && <Flame size={12} className="inline-block ml-1.5 text-orange-500 animate-pulse mb-0.5"/>}
-                      </div>
-    
-                      <div className="flex items-center gap-3 text-[11px] shrink-0 md:w-[280px] md:justify-end">
-                        <span className="font-black text-emerald-400 w-12 text-right">{getRoomCurrency(t.room)}{t.buyin}</span>
-                        <span className="text-slate-400 w-14 text-right">{t.afs} рег.</span>
-                        <span className="text-slate-400 w-20 text-right">GTD: ${t.gtd}</span>
-                        <span className={`w-14 text-right font-bold ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
-                      </div>
-                    </div>
-  
-                    {/* Кнопка заметки */}
-                    <div className="shrink-0 flex items-center justify-end gap-1.5 md:w-[70px]">
-                      <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"><NotebookPen size={14}/></button>
-                    </div>
-                  </div>
                     );
+                  })}
 
           {/* ПРАВАЯ ПАНЕЛЬ: СЕТКА (25% экрана) */}
             <div className="hidden xl:block w-full xl:w-[25%] shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-8 pr-1">
