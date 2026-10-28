@@ -476,22 +476,24 @@ export default function App() {
       <div 
         key={t.id} 
         onClick={() => toggleGrid(t)} 
-        className={`bg-slate-900 rounded-xl px-3 py-2 border transition-all flex items-center justify-between gap-2 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-sm ${played ? 'opacity-40 grayscale bg-slate-900/40' : 'border-slate-800'}`}
+        className={`bg-slate-900 rounded-xl px-3 py-2.5 border transition-all flex items-center justify-between gap-2 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 ${played ? 'opacity-40 grayscale bg-slate-900/40' : 'border-slate-800'}`}
       >
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
-          <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-500/30 shrink-0">
-            {formatDayWeek(t.day_week)}{t.time_start}
-          </span>
-          <span className="font-bold text-xs text-white truncate flex-1">{t.name}</span>
-        </div>
-
-        <div className="flex items-center gap-2.5 shrink-0">
-          <span className="font-black text-emerald-400 text-xs">{getRoomCurrency(t.room)}{t.buyin}</span>
-          <div className="flex items-center gap-1">
-            <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"><NotebookPen size={12}/></button>
-            <button onClick={(e) => { e.stopPropagation(); toggleGrid(t); }} title="Удалить" className="w-7 h-7 flex items-center justify-center rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition active:scale-95"><Trash2 size={12} /></button>
+        <div className="flex-1 min-w-0 space-y-1">
+          <div className="flex items-center gap-1.5">
+            <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
+            <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
+              {formatDayWeek(t.day_week)}{t.time_start}
+            </span>
           </div>
+          <div className="font-bold text-[11px] text-white truncate leading-tight">{t.name}</div>
+          <div className="flex items-center gap-2 text-[10px]">
+            <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
+            <span className="text-slate-500 truncate">GTD: ${t.gtd}</span>
+          </div>
+        </div>
+        <div className="shrink-0 flex flex-col items-center gap-1.5">
+          <button onClick={(e) => { e.stopPropagation(); toggleGrid(t); }} title="Удалить" className="w-7 h-7 flex items-center justify-center rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition active:scale-95"><Trash2 size={12} /></button>
+          <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"><NotebookPen size={12}/></button>
         </div>
       </div>
     );
