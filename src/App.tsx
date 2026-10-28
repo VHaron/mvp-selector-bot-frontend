@@ -724,11 +724,11 @@ export default function App() {
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Фильтр периода и румов</span>
                     <div className="flex gap-2 items-center">
-                      {/* Улучшенные кнопки Сегодня, Завтра, Сброс и Шаблоны */}
                       <button onClick={() => setPresetDate('today')} className="px-3.5 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl transition shadow-sm active:scale-95">Сегодня</button>
                       <button onClick={() => setPresetDate('tomorrow')} className="px-3.5 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl transition shadow-sm active:scale-95">Завтра</button>
                       <button onClick={() => setPresetDate('clear')} title="Сбросить даты" className="w-9 h-9 flex items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:border-rose-500/50 rounded-xl transition shadow-sm active:scale-95"><X size={15} strokeWidth={2.5} /></button>
-                      <button onClick={() => setShowPresetsModal(true)} className="px-3.5 py-2 text-[11px] font-black uppercase bg-slate-950 hover:bg-slate-900 text-slate-200 border border-slate-700 hover:border-slate-600 rounded-xl transition shadow-sm ml-auto active:scale-95">Шаблоны</button>
+                      {/* Зеленая кнопка Шаблоны */}
+                      <button onClick={() => setShowPresetsModal(true)} className="px-3.5 py-2 text-[11px] font-black uppercase bg-emerald-950/50 hover:bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 hover:border-emerald-500/70 rounded-xl transition shadow-sm ml-auto active:scale-95">Шаблоны</button>
                     </div>
                   </div>
                   
