@@ -503,7 +503,7 @@ export default function App() {
 
 // --- ФУНКЦИЯ ОТРИСОВКИ СЕТКИ ---
   const renderGridPanel = () => (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Точный подгон высоты под левый блок фильтров */}
       <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between" style={{ height: '200px' }}>
         
