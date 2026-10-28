@@ -829,7 +829,7 @@ export default function App() {
                         onClick={() => toggleGrid(t)} 
                         className={`rounded-xl px-3 py-2 md:py-2.5 border transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-sm ${
                           isAdded 
-                            ? 'bg-emerald-950/90 border-emerald-500/80 shadow-[0_0_15px_rgba(16,185,129,0.3)]' 
+                            ? 'bg-emerald-950/90 border-transparent shadow-none' // Убрана зелёная рамка, оставлен только плотный фон
                             : 'bg-slate-900 border-slate-800'
                         }`}
                       >
