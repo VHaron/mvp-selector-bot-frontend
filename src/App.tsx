@@ -38,29 +38,23 @@ const getRoomCurrency = (roomName: string) => {
   return '$';
 };
 
-const getRoomIdByName = (roomName: string) => {
-  const nameLower = (roomName || '').toLowerCase();
-  if (nameLower.includes('wmx') || nameLower.includes('winamax')) return '251';
-  if (nameLower.includes('gg')) return '246';
-  if (nameLower.includes('888')) return '244';
-  if (nameLower.includes('pokerstars') || nameLower.includes('ps')) return nameLower.includes('es') ? '250' : '249';
-  if (nameLower.includes('pokerdom') || nameLower.includes('pd')) return '264';
-  if (nameLower.includes('coin')) return '265';
-  if (nameLower.includes('wpn') || nameLower.includes('acardroom')) return '252';
-  if (nameLower.includes('ipoker') || nameLower.includes('redstar')) return '247';
-  if (nameLower.includes('party')) return '248';
-  if (nameLower.includes('chico') || nameLower.includes('betonline')) return '245';
-  if (nameLower.includes('wpt')) return '266';
-
-  let foundId = Object.keys(ROOMS).find(id => {
-    const shortName = ROOMS[id].toLowerCase();
-    return nameLower.includes(shortName);
-  });
-  return foundId || null;
-};
-
 const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle: (n: string) => string }) => {
-  const roomId = getRoomIdByName(roomName);
+  const nameLower = (roomName || '').toLowerCase();
+  
+  let roomId = Object.keys(ROOMS).find(id => {
+    const shortName = ROOMS[id].toLowerCase();
+    return nameLower.includes(shortName) || (shortName === 'ggnet' && nameLower.includes('gg')) || (shortName === 'wmx' && nameLower.includes('winamax'));
+  });
+
+  if (!roomId) {
+    if (nameLower.includes('gg')) roomId = '246';
+    else if (nameLower.includes('888')) roomId = '244';
+    else if (nameLower.includes('es') && nameLower.includes('ps')) roomId = '250';
+    else if (nameLower.includes('pokerstars') || nameLower.includes('ps')) roomId = '249';
+    else if (nameLower.includes('pokerdom') || nameLower.includes('pd')) roomId = '264';
+    else if (nameLower.includes('coin')) roomId = '265';
+  }
+
   const domain = roomId ? ROOM_DOMAINS[roomId] : null;
   const displayName = roomId ? ROOMS[roomId] : roomName;
 
@@ -163,11 +157,21 @@ export default function App() {
     return null;
   };
 
-  // Железобетонная проверка через ID рума
-  const isRoomAllowed = (roomName: string) => {
-    const roomId = getRoomIdByName(roomName);
-    if (!roomId) return true;
-    return selectedRooms.includes(roomId);
+  const getRoomIdByName = (roomName: string) => {
+    const nameLower = (roomName || '').toLowerCase();
+    let roomId = Object.keys(ROOMS).find(id => {
+      const shortName = ROOMS[id].toLowerCase();
+      return nameLower.includes(shortName) || (shortName === 'ggnet' && nameLower.includes('gg')) || (shortName === 'wmx' && nameLower.includes('winamax'));
+    });
+    if (!roomId) {
+      if (nameLower.includes('gg')) roomId = '246';
+      else if (nameLower.includes('888')) roomId = '244';
+      else if (nameLower.includes('es') && nameLower.includes('ps')) roomId = '250';
+      else if (nameLower.includes('pokerstars') || nameLower.includes('ps')) roomId = '249';
+      else if (nameLower.includes('pokerdom') || nameLower.includes('pd')) roomId = '264';
+      else if (nameLower.includes('coin')) roomId = '265';
+    }
+    return roomId;
   };
 
   const bulkAdd = (type: 'top' | 'overlay') => {
@@ -375,7 +379,10 @@ export default function App() {
   const sortedGrid = useMemo(() => {
     const daysOrder: Record<string, number> = { 'пн': 1, 'вт': 2, 'ср': 3, 'чт': 4, 'пт': 5, 'сб': 6, 'вс': 7 };
     return [...grid]
-      .filter(t => isRoomAllowed(t.room))
+      .filter(t => {
+        const rId = getRoomIdByName(t.room);
+        return rId && selectedRooms.includes(rId);
+      })
       .sort((a, b) => {
         if (sortOrder === 'buyin') return parseNum(b.buyin) - parseNum(a.buyin);
         if (sortOrder === 'ev') return parseNum(b.ev_mtt) - parseNum(a.ev_mtt);
@@ -408,7 +415,8 @@ export default function App() {
     return tournaments
       .filter(t => {
         if (isStartedTooLongAgo(t.time_start, t.day_week)) return false;
-        return isRoomAllowed(t.room);
+        const rId = getRoomIdByName(t.room);
+        return rId && selectedRooms.includes(rId);
       })
       .sort((a, b) => sortOrder === 'tier' ? getTier(a).id - getTier(b).id : 0);
   }, [tournaments, sortOrder, selectedRooms]);
