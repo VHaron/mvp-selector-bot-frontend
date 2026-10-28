@@ -503,54 +503,56 @@ export default function App() {
 
 // --- ФУНКЦИЯ ОТРИСОВКИ СЕТКИ ---
   const renderGridPanel = () => (
-    <div className="space-y-5">
-      {/* Убрали justify-between, заменили на space-y-3, чтобы блок не растягивал кнопки до самого низа */}
-      <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-3 h-[200px]">
+    <div className="space-y-3">
+      {/* Главный блок статистики */}
+      <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4 shadow-xl space-y-2.5 h-[200px] flex flex-col justify-between">
         
-        {/* Шапка внутри блока */}
-        <div className="flex items-center justify-between pb-2.5 border-b border-slate-800/80">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <ListTodo size={12} strokeWidth={2.5} />
+        <div className="space-y-2.5">
+          {/* Шапка внутри блока */}
+          <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                <ListTodo size={12} strokeWidth={2.5} />
+              </div>
+              <span className="text-xs font-black tracking-wider text-white uppercase">Текущая сетка</span>
             </div>
-            <span className="text-xs font-black tracking-wider text-white uppercase">Текущая сетка</span>
+            <span className="text-[11px] font-black text-cyan-400 bg-cyan-950/40 px-2.5 py-1 rounded-lg border border-cyan-500/30">
+              {grid.length} турн.
+            </span>
           </div>
-          <span className="text-[11px] font-black text-cyan-400 bg-cyan-950/40 px-2.5 py-1 rounded-lg border border-cyan-500/30">
-            {grid.length} турн.
-          </span>
+
+          {/* Цифры статистики */}
+          <div className="grid grid-cols-3 gap-2 pb-2 border-b border-slate-800/80 text-center">
+            <div><span className="text-[9px] uppercase font-bold text-slate-500 block">Турниров</span><div className="text-base font-black text-white">{grid.length}</div></div>
+            <div className="border-x border-slate-800/80"><span className="text-[9px] uppercase font-bold text-slate-500 block">Ожидание</span><div className={`text-base font-black ${totalEV >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{totalEV > 0 ? '+' : ''}${totalEV.toFixed(1)}</div></div>
+            <div><span className="text-[9px] uppercase font-bold text-slate-500 block">Конец</span><div className="text-base font-black text-cyan-400">~{getSessionEndTime(grid)}</div></div>
+          </div>
+
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 px-1">
+            <span>Дисперсия: <b className={getVariance().color}>{getVariance().label}</b></span>
+            <span>Пик: <b className="text-cyan-400">{getPeakTablesData(grid).max} шт (~{getPeakTablesData(grid).timeStr})</b></span>
+          </div>
         </div>
 
-        {/* Цифры статистики */}
-        <div className="grid grid-cols-3 gap-2 pb-2.5 border-b border-slate-800/80 text-center">
-          <div><span className="text-[9px] uppercase font-bold text-slate-500 block">Турниров</span><div className="text-base font-black text-white">{grid.length}</div></div>
-          <div className="border-x border-slate-800/80"><span className="text-[9px] uppercase font-bold text-slate-500 block">Ожидание</span><div className={`text-base font-black ${totalEV >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{totalEV > 0 ? '+' : ''}${totalEV.toFixed(1)}</div></div>
-          <div><span className="text-[9px] uppercase font-bold text-slate-500 block">Конец</span><div className="text-base font-black text-cyan-400">~{getSessionEndTime(grid)}</div></div>
-        </div>
-
-        <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 px-1">
-          <span>Дисперсия: <b className={getVariance().color}>{getVariance().label}</b></span>
-          <span>Пик: <b className="text-cyan-400">{getPeakTablesData(grid).max} шт (~{getPeakTablesData(grid).timeStr})</b></span>
-        </div>
-
-        {/* Кнопки управления (теперь подтянулись ближе к статистике) */}
+        {/* Кнопки управления внизу блока (компактные и аккуратные) */}
         {grid.length > 0 && (
           <div className="flex items-center gap-1.5 pt-2 border-t border-slate-800/80">
-            <button onClick={() => setShowSessionModal(true)} className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-400 rounded-xl py-2 px-2 flex items-center justify-center gap-1.5 text-[11px] uppercase font-black transition">
+            <button onClick={() => setShowSessionModal(true)} className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-400 rounded-xl py-1.5 px-2 flex items-center justify-center gap-1.5 text-[11px] uppercase font-black transition">
               <Wallet size={14} /> <span className="truncate">Завершить</span>
             </button>
-            <button onClick={() => setSortOrder(prev => prev === 'time' ? 'buyin' : prev === 'buyin' ? 'ev' : 'time')} title="Сортировка" className="px-3 py-2 bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl text-[11px] uppercase font-black text-blue-400 flex items-center gap-1 transition shrink-0">
+            <button onClick={() => setSortOrder(prev => prev === 'time' ? 'buyin' : prev === 'buyin' ? 'ev' : 'time')} title="Сортировка" className="px-3 py-1.5 bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl text-[11px] uppercase font-black text-blue-400 flex items-center gap-1 transition shrink-0">
               <ArrowUpDown size={12} /> <span>{sortOrder}</span>
             </button>
-            <button onClick={() => setGroupByRoom(!groupByRoom)} title="Группировать" className={`w-9 h-9 rounded-xl border flex items-center justify-center transition shrink-0 ${groupByRoom ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}`}>
+            <button onClick={() => setGroupByRoom(!groupByRoom)} title="Группировать" className={`w-8 h-8 rounded-xl border flex items-center justify-center transition shrink-0 ${groupByRoom ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}`}>
               <Layers size={14} />
             </button>
-            <button onClick={clearGrid} title="Очистить" className="w-9 h-9 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl flex items-center justify-center text-rose-400 transition shrink-0">
+            <button onClick={clearGrid} title="Очистить" className="w-8 h-8 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl flex items-center justify-center text-rose-400 transition shrink-0">
               <Trash2 size={14} />
             </button>
           </div>
         )}
       </div>
-      
+
       {/* Список добавленных турниров */}
       {grid.length === 0 ? (
         <div className="text-center py-20 bg-slate-900/40 rounded-2xl border border-slate-800/50">
