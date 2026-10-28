@@ -40,7 +40,7 @@ const getRoomCurrency = (roomName: string) => {
 
 const getRoomIdByName = (roomName: string) => {
   if (!roomName) return null;
-  const nameLower = roomName.toLowerCase().trim(); // Убираем возможные пробелы с бэкенда
+  const nameLower = roomName.toLowerCase().trim();
   
   if (nameLower.includes('wmx') || nameLower.includes('winamax')) return '251';
   if (nameLower.includes('gg')) return '246';
@@ -82,6 +82,10 @@ const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle:
 
 const API_BASE_URL = 'https://selector-backend-production.up.railway.app';
 const parseNum = (str: string) => parseFloat(str?.replace(/[^\d.-]/g, '')) || 0;
+
+// СОЗДАЕМ ЖЕЛЕЗОБЕТОННЫЙ УНИКАЛЬНЫЙ ID ДЛЯ ФРОНТЕНДА
+// Склеиваем всё, чтобы даже при одинаковом t.id от бэкенда турниры различались
+const getUniqueId = (t: Tournament) => `${t.id}_${t.room}_${t.name}_${t.buyin}_${t.time_start}`;
 
 export default function App() {
   const [authStep, setAuthStep] = useState<'login' | 'mfa' | 'app'>('login');
@@ -164,7 +168,6 @@ export default function App() {
     return null;
   };
 
-  // ЖЕСТКАЯ ПРОВЕРКА: Если рум не определен, мы его СКРЫВАЕМ (return false)
   const isRoomAllowed = (roomName: string) => {
     if (!roomName) return false;
     const roomId = getRoomIdByName(roomName);
@@ -172,9 +175,20 @@ export default function App() {
     return selectedRooms.includes(roomId);
   };
 
+  // ОБНОВЛЕННАЯ ФУНКЦИЯ ДОБАВЛЕНИЯ ЧЕРЕЗ УНИКАЛЬНЫЙ ID
+  const toggleGrid = (t: Tournament) => {
+    const targetId = getUniqueId(t);
+    if (grid.some(item => getUniqueId(item) === targetId)) {
+      setGrid(grid.filter(item => getUniqueId(item) !== targetId)); 
+    } else {
+      setGrid([...grid, t]);
+    }
+  };
+
+  // ОБНОВЛЕННАЯ ФУНКЦИЯ МАССОВОГО ДОБАВЛЕНИЯ
   const bulkAdd = (type: 'top' | 'overlay') => {
     const toAdd = type === 'top' ? searchResults.filter(t => t.priority === '1') : searchResults.filter(t => isOverlay(t));
-    const newItems = toAdd.filter(t => !grid.some(g => g.id === t.id));
+    const newItems = toAdd.filter(t => !grid.some(g => getUniqueId(g) === getUniqueId(t)));
     if (newItems.length > 0) setGrid([...grid, ...newItems]);
   };
 
@@ -415,11 +429,6 @@ export default function App() {
       .sort((a, b) => sortOrder === 'tier' ? getTier(a).id - getTier(b).id : 0);
   }, [tournaments, sortOrder, selectedRooms]);
 
-  const toggleGrid = (t: Tournament) => {
-    if (grid.some(item => item.id === t.id)) setGrid(grid.filter(item => item.id !== t.id)); 
-    else setGrid([...grid, t]);
-  };
-
   const clearGrid = () => setGrid([]);
 
   const getNoteKey = (t: Tournament) => `${t.room}_${t.name}`;
@@ -488,13 +497,16 @@ export default function App() {
     return clean ? `${clean}. ` : '';
   };
 
-  const renderGridCard = (t: any, uniqueKey: string) => {
+  const renderGridCard = (t: any, overrideKey?: string) => {
     const prioStyles = getPriorityStyles(t.priority);
     const played = isPlayed(t.time_start, t.day_week);
+    
+    // Используем уникальный ID для ключей, если не передан специальный
+    const elementKey = overrideKey || getUniqueId(t);
 
     return (
       <div 
-        key={uniqueKey} 
+        key={elementKey} 
         onClick={() => toggleGrid(t)} 
         className={`bg-slate-900 rounded-xl px-3 py-2.5 border transition-all flex items-center justify-between gap-2 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 ${played ? 'opacity-40 grayscale bg-slate-900/40' : 'border-slate-800'}`}
       >
@@ -598,12 +610,12 @@ export default function App() {
             )}
           </div>
           <div className="space-y-2">
-            {filteredGridBySelectedRoom.length === 0 ? <div className="text-center py-12 text-slate-500 text-xs">Нет турниров</div> : filteredGridBySelectedRoom.map((t, idx) => renderGridCard(t, `${t.id}_grid_filtered_${idx}`))}
+            {filteredGridBySelectedRoom.length === 0 ? <div className="text-center py-12 text-slate-500 text-xs">Нет турниров</div> : filteredGridBySelectedRoom.map((t, idx) => renderGridCard(t, `${getUniqueId(t)}_grid_filtered_${idx}`))}
           </div>
         </div>
       ) : (
         <div className="space-y-2">
-          {displayGrid.map((t, idx) => renderGridCard(t, `${t.id}_grid_${idx}`))}
+          {displayGrid.map((t, idx) => renderGridCard(t, `${getUniqueId(t)}_grid_${idx}`))}
         </div>
       )}
     </div>
@@ -832,8 +844,7 @@ export default function App() {
                   )}
                   {searchResults.map((t, index) => {
                     const note = notes[getNoteKey(t)];
-                    // Добавляем индекс в ключ, чтобы React 100% не путался, если бэкенд отдает турниры с одинаковым t.id
-                    const uniqueKey = `${t.id}_${t.room}_${index}`; 
+                    const uniqueKey = `${getUniqueId(t)}_${index}`; 
 
                     if (note?.tag === 'skip') return (
                       <div key={uniqueKey} className="bg-slate-900/30 rounded-xl px-3 py-2 border border-slate-800/40 flex justify-between items-center opacity-40 grayscale text-xs">
@@ -842,7 +853,8 @@ export default function App() {
                       </div>
                     );
 
-                    const isAdded = grid.some(item => item.id === t.id);
+                    // ИСПОЛЬЗУЕМ УНИКАЛЬНЫЙ ID ДЛЯ ПРОВЕРКИ, ДОБАВЛЕН ЛИ ТУРНИР
+                    const isAdded = grid.some(item => getUniqueId(item) === getUniqueId(t));
                     const prioStyles = getPriorityStyles(t.priority);
                     
                     return (
@@ -992,8 +1004,8 @@ export default function App() {
                 </div>
                 <input value={note.text} onChange={e => saveNote(activeStats, note.tag, e.target.value)} placeholder="Заметка..." className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-white outline-none" />
               </div>
-              <button onClick={() => { toggleGrid(activeStats); setActiveStats(null); }} className={`w-full py-3 rounded-xl font-black text-xs uppercase tracking-wider ${grid.some(item => item.id === activeStats.id) ? 'bg-rose-500/10 border border-rose-500/40 text-rose-400' : 'bg-cyan-950/30 border border-cyan-500/60 text-cyan-400'}`}>
-                {grid.some(item => item.id === activeStats.id) ? 'Убрать из сетки' : 'Добавить в сетку'}
+              <button onClick={() => { toggleGrid(activeStats); setActiveStats(null); }} className={`w-full py-3 rounded-xl font-black text-xs uppercase tracking-wider ${grid.some(item => getUniqueId(item) === getUniqueId(activeStats)) ? 'bg-rose-500/10 border border-rose-500/40 text-rose-400' : 'bg-cyan-950/30 border border-cyan-500/60 text-cyan-400'}`}>
+                {grid.some(item => getUniqueId(item) === getUniqueId(activeStats)) ? 'Убрать из сетки' : 'Добавить в сетку'}
               </button>
             </div>
           </div>
