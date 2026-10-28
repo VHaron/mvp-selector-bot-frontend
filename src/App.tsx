@@ -883,8 +883,8 @@ export default function App() {
                           
                           <div className="flex items-center gap-3 text-[11px] shrink-0 md:w-[280px] md:justify-end">
                             <span className="font-black text-emerald-400 w-12 text-right">{getRoomCurrency(t.room)}{t.buyin}</span>
-                            <span className="text-slate-400 w-14 text-right">{t.afs} рег.</span>
-                            <span className="text-slate-400 w-20 text-right">GTD: ${t.gtd}</span>
+                            <span className="text-slate-400 w-14 text-right truncate" title={t.afs}>{t.afs} рег.</span>
+                            <span className="text-slate-400 w-20 text-right truncate" title={t.gtd}>GTD: ${t.gtd}</span>
                             <span className={`w-14 text-right font-bold ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
                           </div>
                         </div>
