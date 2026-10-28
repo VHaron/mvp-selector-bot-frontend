@@ -505,7 +505,7 @@ export default function App() {
   const renderGridPanel = () => (
     <div className="space-y-3">
       {/* Точный подгон высоты под левый блок фильтров */}
-      <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between" style={{ height: '242px' }}>
+      <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between" style={{ height: '200px' }}>
         
         <div className="space-y-3">
           {/* Шапка внутри блока */}
