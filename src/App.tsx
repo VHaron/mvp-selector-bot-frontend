@@ -478,27 +478,24 @@ export default function App() {
       <div 
         key={t.id} 
         onClick={() => toggleGrid(t)} 
-        className={`bg-slate-900 rounded-xl px-3 py-2 border transition-all flex items-center justify-between gap-3 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 ${played ? 'opacity-40 grayscale bg-slate-900/40' : ''} ${isAdded ? 'border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.1)]' : 'border-slate-800'}`}
+        className={`bg-slate-900 rounded-xl px-3 py-2.5 border transition-all flex items-center justify-between gap-2 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 ${played ? 'opacity-40 grayscale bg-slate-900/40' : ''} ${isAdded ? 'border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.1)]' : 'border-slate-800'}`}
       >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-1">
+        <div className="flex-1 min-w-0 space-y-1">
+          <div className="flex items-center gap-1.5">
             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
             <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
               {formatDayWeek(t.day_week)}{t.time_start}
             </span>
-            {isOverlay(t) && <Flame size={12} className="text-orange-500 animate-pulse"/>}
-            {getSmartTimer(t.time_start, t.day_week)}
           </div>
-          <div className="font-bold text-xs text-white truncate mb-1">{t.name}</div>
-          <div className="flex items-center gap-3 text-[11px]">
+          <div className="font-bold text-[11px] text-white truncate leading-tight">{t.name}</div>
+          <div className="flex items-center gap-2 text-[10px]">
             <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
-            <span className="text-slate-400">{t.afs} рег.</span>
-            <span className="text-slate-400">GTD: ${t.gtd}</span>
+            <span className="text-slate-500 truncate">GTD: ${t.gtd}</span>
           </div>
         </div>
-        <div className="shrink-0 flex items-center gap-1.5">
-          <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"><NotebookPen size={14}/></button>
-          <button onClick={(e) => { e.stopPropagation(); toggleGrid(t); }} title="Удалить" className="w-8 h-8 flex items-center justify-center rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition active:scale-95"><Trash2 size={14} /></button>
+        <div className="shrink-0 flex flex-col items-center gap-1.5">
+          <button onClick={(e) => { e.stopPropagation(); toggleGrid(t); }} title="Удалить" className="w-7 h-7 flex items-center justify-center rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition active:scale-95"><Trash2 size={12} /></button>
+          <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"><NotebookPen size={12}/></button>
         </div>
       </div>
     );
@@ -710,14 +707,14 @@ export default function App() {
           </div>
         </header>
 
-        <main className="max-w-[1600px] w-full mx-auto px-6 py-8">
+        <main className="max-w-[1800px] w-full mx-auto px-4 md:px-6 py-6 md:py-8">
           
           {/* Поиск */}
-{activeTab === 'search' && (
-            <div className="flex flex-col lg:flex-row gap-6 items-start">
+          {activeTab === 'search' && (
+            <div className="flex flex-col xl:flex-row gap-6 lg:gap-8 items-start">
               
-              {/* ЛЕВАЯ ПАНЕЛЬ: ПОИСК (Занимает 65-70% экрана) */}
-              <div className="w-full lg:w-[65%] xl:w-[70%] shrink-0 space-y-4">
+              {/* ЛЕВАЯ ПАНЕЛЬ: ПОИСК (Занимает 75% экрана на десктопе) */}
+              <div className="w-full xl:w-[75%] shrink-0 space-y-4">
                 
                 {/* БЛОК ФИЛЬТРОВ ИДЕТ СЮДА (вставляй свой текущий блок с кнопками, румами и датами без изменений) */}
                 <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4">
@@ -824,26 +821,35 @@ export default function App() {
                     const prioStyles = getPriorityStyles(t.priority);
                     
                     return (
-                      <div key={t.id} onClick={() => toggleGrid(t)} className={`bg-slate-900 rounded-xl px-3 py-2 border transition-all flex items-center justify-between gap-3 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-sm ${isAdded ? 'border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.1)] bg-slate-900/90' : 'border-slate-800'}`}>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 mb-1">
+                      <div key={t.id} onClick={() => toggleGrid(t)} className={`bg-slate-900 rounded-xl px-3 py-2 md:py-2.5 border transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-sm ${isAdded ? 'border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.1)] bg-slate-900/90' : 'border-slate-800'}`}>
+                        
+                        <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                          {/* Колонка 1: Рум и Время (Фиксированная ширина) */}
+                          <div className="flex items-center gap-1.5 shrink-0 md:w-[150px]">
                             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
                             <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
                               {formatDayWeek(t.day_week)}{t.time_start}
                             </span>
-                            {isOverlay(t) && <Flame size={14} className="text-orange-500 animate-pulse"/>}
                             {getSmartTimer(t.time_start, t.day_week)}
                           </div>
-                          <div className="font-bold text-xs text-white truncate mb-1">{t.name}</div>
-                          <div className="flex items-center gap-3 text-[11px]">
-                            <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
-                            <span className="text-slate-400">{t.afs} рег.</span>
-                            <span className="text-slate-400">GTD: ${t.gtd}</span>
-                            <span className="text-blue-400">EV: {parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
+                          
+                          {/* Колонка 2: Название (Тянется) */}
+                          <div className="font-bold text-xs text-white truncate flex-1">
+                            {t.name}
+                            {isOverlay(t) && <Flame size={12} className="inline-block ml-1.5 text-orange-500 animate-pulse mb-0.5"/>}
+                          </div>
+                          
+                          {/* Колонка 3: Статистика (Выровнена в линию) */}
+                          <div className="flex items-center gap-3 text-[11px] shrink-0 md:w-[280px] md:justify-end">
+                            <span className="font-black text-emerald-400 w-12 text-right">{getRoomCurrency(t.room)}{t.buyin}</span>
+                            <span className="text-slate-400 w-14 text-right">{t.afs} рег.</span>
+                            <span className="text-slate-400 w-20 text-right">GTD: ${t.gtd}</span>
+                            <span className={`w-14 text-right font-bold ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
                           </div>
                         </div>
                         
-                        <div className="shrink-0 flex items-center gap-1.5">
+                        {/* Колонка 4: Кнопки */}
+                        <div className="shrink-0 flex items-center justify-end gap-1.5 md:w-[70px]">
                           <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"><NotebookPen size={14}/></button>
                           {isAdded && (
                             <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
@@ -852,13 +858,9 @@ export default function App() {
                           )}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
 
-              {/* ПРАВАЯ ПАНЕЛЬ: СЕТКА (ВИДНА ТОЛЬКО НА ШИРОКИХ ЭКРАНАХ, ПРОКРУЧИВАЕТСЯ НЕЗАВИСИМО) */}
-              <div className="hidden lg:block w-full lg:w-[35%] xl:w-[30%] shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-8 pr-1">
+              {/* ПРАВАЯ ПАНЕЛЬ: СЕТКА (25% экрана) */}
+              <div className="hidden xl:block w-full xl:w-[25%] shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-8 pr-1">
                 <div className="sticky top-0 bg-slate-950/90 backdrop-blur-md pb-3 mb-2 z-10 border-b border-slate-800/50">
                   <h3 className="text-[11px] font-black tracking-wider text-slate-400 uppercase flex items-center gap-2">
                     <ListTodo size={14} className="text-emerald-500" /> Текущая сетка
