@@ -504,6 +504,84 @@ export default function App() {
     );
   };
 
+  // --- ФУНКЦИЯ ОТРИСОВКИ СЕТКИ (ДЛЯ ПРАВОЙ ПАНЕЛИ И МОБИЛОК) ---
+  const renderGridPanel = () => (
+    <div className="space-y-3">
+      {/* Блок статистики */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-xl space-y-3">
+        <div className="grid grid-cols-3 gap-2 pb-2.5 border-b border-slate-800/80 text-center">
+          <div><span className="text-[9px] uppercase font-bold text-slate-500 block">Турниров</span><div className="text-base font-black text-white">{grid.length}</div></div>
+          <div className="border-x border-slate-800/80"><span className="text-[9px] uppercase font-bold text-slate-500 block">Ожидание</span><div className={`text-base font-black ${totalEV >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{totalEV > 0 ? '+' : ''}${totalEV.toFixed(1)}</div></div>
+          <div><span className="text-[9px] uppercase font-bold text-slate-500 block">Конец</span><div className="text-base font-black text-cyan-400">~{getSessionEndTime(grid)}</div></div>
+        </div>
+
+        <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 px-1">
+          <span>Дисперсия: <b className={getVariance().color}>{getVariance().label}</b></span>
+          <span>Пик: <b className="text-cyan-400">{getPeakTablesData(grid).max} шт (~{getPeakTablesData(grid).timeStr})</b></span>
+        </div>
+
+        {grid.length > 0 && (
+          <div className="flex items-center gap-1.5 pt-1 border-t border-slate-800/80">
+            <button onClick={() => setShowSessionModal(true)} className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-400 rounded-xl py-2 px-2 flex items-center justify-center gap-1.5 text-[11px] uppercase font-black transition">
+              <Wallet size={14} /> <span className="truncate">Завершить</span>
+            </button>
+            <button onClick={() => setSortOrder(prev => prev === 'time' ? 'buyin' : prev === 'buyin' ? 'ev' : 'time')} title="Сортировка" className="px-3 py-2 bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl text-[11px] uppercase font-black text-blue-400 flex items-center gap-1 transition shrink-0">
+              <ArrowUpDown size={12} /> <span>{sortOrder}</span>
+            </button>
+            <button onClick={() => setGroupByRoom(!groupByRoom)} title="Группировать" className={`w-9 h-9 rounded-xl border flex items-center justify-center transition shrink-0 ${groupByRoom ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}`}>
+              <Layers size={14} />
+            </button>
+            <button onClick={clearGrid} title="Очистить" className="w-9 h-9 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl flex items-center justify-center text-rose-400 transition shrink-0">
+              <Trash2 size={14} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Список добавленных турниров */}
+      {grid.length === 0 ? (
+        <div className="text-center py-20 bg-slate-900/40 rounded-2xl border border-slate-800/50">
+          <div className="text-4xl mb-3 opacity-30">📋</div>
+          <h3 className="text-slate-400 font-bold text-xs mb-3">Сетка пуста</h3>
+          <button onClick={() => setActiveTab('search')} className="bg-cyan-950/40 border border-cyan-500/50 text-cyan-400 font-bold text-xs py-2 px-6 rounded-xl lg:hidden">В поиск</button>
+        </div>
+      ) : groupByRoom ? (
+        <div className="space-y-3">
+          <div className="relative" ref={gridDropdownRef}>
+            <button onClick={() => setIsGridRoomsOpen(!isGridRoomsOpen)} className="w-full bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-200 flex items-center justify-between transition shadow-sm">
+              <div className="flex items-center gap-2 min-w-0">
+                <RoomBadge roomName={gridActiveRoom || activeGridRooms[0] || ''} getRoomStyle={getRoomStyle} />
+                <span className="truncate">({displayGrid.filter(t => t.room === (gridActiveRoom || activeGridRooms[0])).length} турн.)</span>
+              </div>
+              <ChevronDown size={14} className={`transition-transform shrink-0 ${isGridRoomsOpen ? 'rotate-180 text-cyan-400' : 'text-slate-400'}`} />
+            </button>
+            {isGridRoomsOpen && (
+              <div className="absolute top-full left-0 right-0 mt-1.5 bg-slate-950 border border-slate-800 rounded-2xl p-2 shadow-2xl z-50 space-y-1">
+                {activeGridRooms.map(room => {
+                  const count = displayGrid.filter(t => t.room === room).length;
+                  const isSel = (gridActiveRoom === room) || (!gridActiveRoom && activeGridRooms[0] === room);
+                  return (
+                    <button key={room} onClick={() => { setGridActiveRoom(room); setIsGridRoomsOpen(false); }} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition ${isSel ? 'bg-cyan-950/50 border border-cyan-500/40 text-cyan-300' : 'hover:bg-slate-900 text-slate-300 border border-transparent'}`}>
+                      <div className="flex items-center gap-2"><RoomBadge roomName={room} getRoomStyle={getRoomStyle} /></div>
+                      <span className="text-[11px] text-slate-400">{count} турн.</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <div className="space-y-2">
+            {filteredGridBySelectedRoom.length === 0 ? <div className="text-center py-12 text-slate-500 text-xs">Нет турниров</div> : filteredGridBySelectedRoom.map(t => renderGridCard(t))}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {displayGrid.map(t => renderGridCard(t))}
+        </div>
+      )}
+    </div>
+  );
+
   if (authStep === 'login' || authStep === 'mfa') {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 text-slate-200">
@@ -632,313 +710,171 @@ export default function App() {
           </div>
         </header>
 
-        <main className="max-w-5xl w-full mx-auto px-6 py-8">
+        <main className="max-w-[1600px] w-full mx-auto px-6 py-8">
           
           {/* Поиск */}
-          {activeTab === 'search' && (
-            <div className="space-y-4">
-              <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Фильтр периода и румов</span>
-  <div className="flex gap-1.5 items-center">
-  <button 
-    onClick={() => setPresetDate('today')} 
-    className="px-3 py-2 text-[11px] font-black uppercase bg-slate-950 hover:bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 rounded-xl transition shadow-sm"
-  >
-    Сегодня
-  </button>
-  
-  <button 
-    onClick={() => setPresetDate('tomorrow')} 
-    className="px-3 py-2 text-[11px] font-black uppercase bg-slate-950 hover:bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 rounded-xl transition shadow-sm"
-  >
-    Завтра
-  </button>
-
-  <button 
-    onClick={() => setPresetDate('clear')} 
-    title="Сбросить даты" 
-    className="w-9 h-9 flex items-center justify-center bg-slate-950 hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 border border-slate-800 hover:border-rose-500/30 rounded-xl transition shadow-sm"
-  >
-    <X size={14} strokeWidth={2.5} />
-  </button>
-
-  <button 
-    onClick={() => setShowPresetsModal(true)} 
-    className="px-3.5 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl transition shadow-sm ml-auto"
-  >
-    Шаблоны
-  </button>
-</div>
-                </div>
+{activeTab === 'search' && (
+            <div className="flex flex-col lg:flex-row gap-6 items-start">
+              
+              {/* ЛЕВАЯ ПАНЕЛЬ: ПОИСК (Занимает 65-70% экрана) */}
+              <div className="w-full lg:w-[65%] xl:w-[70%] shrink-0 space-y-4">
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <input type="datetime-local" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 outline-none focus:border-cyan-500 [color-scheme:dark]" />
-                  <input type="datetime-local" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 outline-none focus:border-cyan-500 [color-scheme:dark]" />
-                </div>
+                {/* БЛОК ФИЛЬТРОВ ИДЕТ СЮДА (вставляй свой текущий блок с кнопками, румами и датами без изменений) */}
+                <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Фильтр периода и румов</span>
+                    <div className="flex gap-1.5 items-center">
+                      <button onClick={() => setPresetDate('today')} className="px-3 py-2 text-[11px] font-black uppercase bg-slate-950 hover:bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 rounded-xl transition shadow-sm">Сегодня</button>
+                      <button onClick={() => setPresetDate('tomorrow')} className="px-3 py-2 text-[11px] font-black uppercase bg-slate-950 hover:bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 rounded-xl transition shadow-sm">Завтра</button>
+                      <button onClick={() => setPresetDate('clear')} title="Сбросить даты" className="w-9 h-9 flex items-center justify-center bg-slate-950 hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 border border-slate-800 hover:border-rose-500/30 rounded-xl transition shadow-sm"><X size={14} strokeWidth={2.5} /></button>
+                      <button onClick={() => setShowPresetsModal(true)} className="px-3.5 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl transition shadow-sm ml-auto">Шаблоны</button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input type="datetime-local" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 outline-none focus:border-cyan-500 [color-scheme:dark]" />
+                    <input type="datetime-local" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 outline-none focus:border-cyan-500 [color-scheme:dark]" />
+                  </div>
 
-                <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center justify-between">
-                  <div className="flex gap-2 flex-1 min-w-0">
-                    <div className="relative flex-1" ref={dropdownRef}>
-                      <button 
-                        onClick={() => setIsRoomsDropdownOpen(!isRoomsDropdownOpen)}
-                        className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-300 flex items-center justify-between transition shadow-sm"
-                      >
-                        <div className="flex items-center gap-2 min-w-0 overflow-hidden">
-                          <span className="text-cyan-400 font-black uppercase text-[10px] tracking-wider bg-cyan-950/50 px-2 py-1 rounded border border-cyan-500/30 shrink-0">Румы</span>
-                          {selectedRooms.length === 0 ? (
-                            <span className="text-slate-500 italic">Выберите румы</span>
-                          ) : (
-                            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 max-h-7">
-                              {selectedRooms.map(id => {
+                  <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center justify-between">
+                    <div className="flex gap-2 flex-1 min-w-0">
+                      <div className="relative flex-1" ref={dropdownRef}>
+                        <button onClick={() => setIsRoomsDropdownOpen(!isRoomsDropdownOpen)} className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-300 flex items-center justify-between transition shadow-sm">
+                          <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+                            <span className="text-cyan-400 font-black uppercase text-[10px] tracking-wider bg-cyan-950/50 px-2 py-1 rounded border border-cyan-500/30 shrink-0">Румы</span>
+                            {selectedRooms.length === 0 ? (
+                              <span className="text-slate-500 italic">Выберите румы</span>
+                            ) : (
+                              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 max-h-7">
+                                {selectedRooms.map(id => {
+                                  const domain = ROOM_DOMAINS[id];
+                                  const name = ROOMS[id];
+                                  return (
+                                    <div key={id} className="w-6 h-6 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0 shadow-sm" title={name}>
+                                      {domain && <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={name} className="w-3.5 h-3.5 rounded-full object-cover bg-white p-[0.5px]" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                          <ChevronDown size={16} className={`transition-transform shrink-0 ml-2 ${isRoomsDropdownOpen ? 'rotate-180 text-cyan-400' : 'text-slate-500'}`} />
+                        </button>
+                        
+                        {isRoomsDropdownOpen && (
+                          <div className="absolute top-full left-0 right-0 mt-2 bg-slate-950 border border-slate-800 rounded-2xl p-3 shadow-2xl z-50 space-y-3">
+                            <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+                              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Выбор румов</span>
+                              <button onClick={() => setSelectedRooms(selectedRooms.length === Object.keys(ROOMS).length ? [] : Object.keys(ROOMS))} className="px-2.5 py-1 text-[10px] font-bold uppercase bg-slate-900 hover:bg-slate-800 text-cyan-400 border border-slate-800 rounded-lg transition">{selectedRooms.length === Object.keys(ROOMS).length ? 'Сбросить все' : 'Выбрать все'}</button>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                              {Object.entries(ROOMS).map(([id, name]) => {
+                                const isSel = selectedRooms.includes(id);
                                 const domain = ROOM_DOMAINS[id];
-                                const name = ROOMS[id];
                                 return (
-                                  <div key={id} className="w-6 h-6 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0 shadow-sm" title={name}>
-                                    {domain && <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={name} className="w-3.5 h-3.5 rounded-full object-cover bg-white p-[0.5px]" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
-                                  </div>
+                                  <button key={id} onClick={() => toggleRoom(id)} className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold border transition ${isSel ? 'bg-cyan-950/40 border-cyan-500/50 text-cyan-300 shadow-sm' : 'bg-slate-900/50 border-slate-800/60 text-slate-500 hover:text-slate-300'}`}>
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      {domain && <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={name} className={`w-3.5 h-3.5 rounded-full shrink-0 ${isSel ? '' : 'opacity-30 grayscale'}`} onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
+                                      <span className="truncate">{name}</span>
+                                    </div>
+                                    <div className={`w-4 h-4 rounded flex items-center justify-center text-[10px] border shrink-0 ${isSel ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-black' : 'border-slate-700 text-transparent'}`}>✓</div>
+                                  </button>
                                 );
                               })}
                             </div>
-                          )}
-                        </div>
-                        <ChevronDown size={16} className={`transition-transform shrink-0 ml-2 ${isRoomsDropdownOpen ? 'rotate-180 text-cyan-400' : 'text-slate-500'}`} />
-                      </button>
-                      
-                      {isRoomsDropdownOpen && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-slate-950 border border-slate-800 rounded-2xl p-3 shadow-2xl z-50 space-y-3">
-                          <div className="flex justify-between items-center pb-2 border-b border-slate-800">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Выбор румов</span>
-                            <button 
-                              onClick={() => setSelectedRooms(selectedRooms.length === Object.keys(ROOMS).length ? [] : Object.keys(ROOMS))} 
-                              className="px-2.5 py-1 text-[10px] font-bold uppercase bg-slate-900 hover:bg-slate-800 text-cyan-400 border border-slate-800 rounded-lg transition"
-                            >
-                              {selectedRooms.length === Object.keys(ROOMS).length ? 'Сбросить все' : 'Выбрать все'}
-                            </button>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                            {Object.entries(ROOMS).map(([id, name]) => {
-                              const isSel = selectedRooms.includes(id);
-                              const domain = ROOM_DOMAINS[id];
-                              return (
-                                <button 
-                                  key={id} 
-                                  onClick={() => toggleRoom(id)} 
-                                  className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold border transition ${isSel ? 'bg-cyan-950/40 border-cyan-500/50 text-cyan-300 shadow-sm' : 'bg-slate-900/50 border-slate-800/60 text-slate-500 hover:text-slate-300'}`}
-                                >
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    {domain && <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={name} className={`w-3.5 h-3.5 rounded-full shrink-0 ${isSel ? '' : 'opacity-30 grayscale'}`} onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
-                                    <span className="truncate">{name}</span>
-                                  </div>
-                                  <div className={`w-4 h-4 rounded flex items-center justify-center text-[10px] border shrink-0 ${isSel ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-black' : 'border-slate-700 text-transparent'}`}>✓</div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Компактные иконки-кнопки быстрого добавления */}
-                  {!loading && searchResults.length > 0 && (
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button 
-                        onClick={() => bulkAdd('top')} 
-                        title="Добавить все зеленые турниры"
-                        className="w-11 h-11 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl flex items-center justify-center transition active:scale-95 shadow-sm"
-                      >
-                        <Check size={18} strokeWidth={3} />
-                      </button>
-                      <button 
-                        onClick={() => bulkAdd('overlay')} 
-                        title="Добавить все оверлеи"
-                        className="w-11 h-11 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-xl flex items-center justify-center transition active:scale-95 shadow-sm"
-                      >
-                        <Flame size={18} className="text-orange-500 animate-pulse" />
-                      </button>
-                    </div>
-                  )}
-
-                  <button 
-                    onClick={fetchTournaments} 
-                    className="px-6 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] active:scale-95 shrink-0"
-                  >
-                    {loading ? <Search className="animate-spin" size={16} /> : <Search size={16} strokeWidth={3} />}
-                    <span className="hidden sm:inline">Найти</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-2 pt-1">
-                {loading && [1, 2, 3, 4].map(i => <div key={i} className="h-16 bg-slate-900/40 rounded-xl border border-slate-800/40 animate-pulse"></div>)}
-                
-                {searchResults.length === 0 && !loading && (
-                  <div className="text-center py-24 bg-slate-900/30 rounded-2xl border border-slate-800/50">
-                    <div className="text-4xl mb-3 opacity-30">🎲</div>
-                    <h3 className="text-slate-300 font-bold text-base">Расписание пусто</h3>
-                    <p className="text-slate-500 text-xs mt-1">Нажмите «Найти» для загрузки расписания</p>
-                  </div>
-                )}
-                
-                {searchResults.map((t) => {
-                  const note = notes[getNoteKey(t)];
-                  if (note?.tag === 'skip') return (
-                    <div key={t.id} className="bg-slate-900/30 rounded-xl px-3 py-2 border border-slate-800/40 flex justify-between items-center opacity-40 grayscale text-xs">
-                      <div className="flex items-center gap-2"><Ban size={14} className="text-rose-500"/><span className="line-through">{t.name}</span></div>
-                      <button onClick={() => setActiveStats(t)} className="text-xs text-blue-400 font-bold">Вернуть</button>
-                    </div>
-                  );
-
-                  const isAdded = grid.some(item => item.id === t.id);
-                  const prioStyles = getPriorityStyles(t.priority);
-                  
-                  return (
-                    <div 
-                      key={t.id} 
-                      onClick={() => toggleGrid(t)} 
-                      className={`bg-slate-900 rounded-xl px-3 py-2 border transition-all flex items-center justify-between gap-3 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-sm ${isAdded ? 'border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.1)] bg-slate-900/90' : 'border-slate-800'}`}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
-                          <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
-                            {formatDayWeek(t.day_week)}{t.time_start}
-                          </span>
-                          {isOverlay(t) && <Flame size={14} className="text-orange-500 animate-pulse"/>}
-                          {getSmartTimer(t.time_start, t.day_week)}
-                        </div>
-                        <div className="font-bold text-xs text-white truncate mb-1">{t.name}</div>
-                        <div className="flex items-center gap-3 text-[11px]">
-                          <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
-                          <span className="text-slate-400">{t.afs} рег.</span>
-                          <span className="text-slate-400">GTD: ${t.gtd}</span>
-                          <span className="text-blue-400">EV: {parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="shrink-0 flex items-center gap-1.5">
-                        <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"><NotebookPen size={14}/></button>
-                        {isAdded && (
-                          <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                            <Check size={14} strokeWidth={3}/>
                           </div>
                         )}
                       </div>
                     </div>
-                  );
-                })}
+
+                    {!loading && searchResults.length > 0 && (
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button onClick={() => bulkAdd('top')} title="Добавить все зеленые турниры" className="w-11 h-11 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl flex items-center justify-center transition active:scale-95 shadow-sm"><Check size={18} strokeWidth={3} /></button>
+                        <button onClick={() => bulkAdd('overlay')} title="Добавить все оверлеи" className="w-11 h-11 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-xl flex items-center justify-center transition active:scale-95 shadow-sm"><Flame size={18} className="text-orange-500 animate-pulse" /></button>
+                      </div>
+                    )}
+
+                    <button onClick={fetchTournaments} className="px-6 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] active:scale-95 shrink-0">
+                      {loading ? <Search className="animate-spin" size={16} /> : <Search size={16} strokeWidth={3} />}
+                      <span className="hidden sm:inline">Найти</span>
+                    </button>
+                  </div>
+                </div>
+                
+                {/* СПИСОК РЕЗУЛЬТАТОВ ПОИСКА */}
+                <div className="space-y-2 pt-1">
+                  {loading && [1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-16 bg-slate-900/40 rounded-xl border border-slate-800/40 animate-pulse"></div>)}
+                  {searchResults.length === 0 && !loading && (
+                    <div className="text-center py-24 bg-slate-900/30 rounded-2xl border border-slate-800/50">
+                      <div className="text-4xl mb-3 opacity-30">🎲</div>
+                      <h3 className="text-slate-300 font-bold text-base">Расписание пусто</h3>
+                      <p className="text-slate-500 text-xs mt-1">Нажмите «Найти» для загрузки расписания</p>
+                    </div>
+                  )}
+                  {searchResults.map((t) => {
+                    const note = notes[getNoteKey(t)];
+                    if (note?.tag === 'skip') return (
+                      <div key={t.id} className="bg-slate-900/30 rounded-xl px-3 py-2 border border-slate-800/40 flex justify-between items-center opacity-40 grayscale text-xs">
+                        <div className="flex items-center gap-2"><Ban size={14} className="text-rose-500"/><span className="line-through">{t.name}</span></div>
+                        <button onClick={() => setActiveStats(t)} className="text-xs text-blue-400 font-bold">Вернуть</button>
+                      </div>
+                    );
+
+                    const isAdded = grid.some(item => item.id === t.id);
+                    const prioStyles = getPriorityStyles(t.priority);
+                    
+                    return (
+                      <div key={t.id} onClick={() => toggleGrid(t)} className={`bg-slate-900 rounded-xl px-3 py-2 border transition-all flex items-center justify-between gap-3 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-sm ${isAdded ? 'border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.1)] bg-slate-900/90' : 'border-slate-800'}`}>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
+                            <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
+                              {formatDayWeek(t.day_week)}{t.time_start}
+                            </span>
+                            {isOverlay(t) && <Flame size={14} className="text-orange-500 animate-pulse"/>}
+                            {getSmartTimer(t.time_start, t.day_week)}
+                          </div>
+                          <div className="font-bold text-xs text-white truncate mb-1">{t.name}</div>
+                          <div className="flex items-center gap-3 text-[11px]">
+                            <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
+                            <span className="text-slate-400">{t.afs} рег.</span>
+                            <span className="text-slate-400">GTD: ${t.gtd}</span>
+                            <span className="text-blue-400">EV: {parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="shrink-0 flex items-center gap-1.5">
+                          <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"><NotebookPen size={14}/></button>
+                          {isAdded && (
+                            <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                              <Check size={14} strokeWidth={3}/>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
+
+              {/* ПРАВАЯ ПАНЕЛЬ: СЕТКА (ВИДНА ТОЛЬКО НА ШИРОКИХ ЭКРАНАХ, ПРОКРУЧИВАЕТСЯ НЕЗАВИСИМО) */}
+              <div className="hidden lg:block w-full lg:w-[35%] xl:w-[30%] shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-8 pr-1">
+                <div className="sticky top-0 bg-slate-950/90 backdrop-blur-md pb-3 mb-2 z-10 border-b border-slate-800/50">
+                  <h3 className="text-[11px] font-black tracking-wider text-slate-400 uppercase flex items-center gap-2">
+                    <ListTodo size={14} className="text-emerald-500" /> Текущая сетка
+                  </h3>
+                </div>
+                {renderGridPanel()}
+              </div>
+
             </div>
           )}
 
           {/* Сетка */}
+{/* Сетка (Для мобильных устройств или если хочется открыть её по центру) */}
           {activeTab === 'grid' && (
-            <div className="space-y-3">
-              {/* Компактный блок статистики и управления сеткой */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-xl space-y-3">
-                <div className="grid grid-cols-3 gap-2 pb-2.5 border-b border-slate-800/80 text-center">
-                  <div><span className="text-[9px] uppercase font-bold text-slate-500 block">Турниров</span><div className="text-base font-black text-white">{grid.length}</div></div>
-                  <div className="border-x border-slate-800/80"><span className="text-[9px] uppercase font-bold text-slate-500 block">Ожидание</span><div className={`text-base font-black ${totalEV >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{totalEV > 0 ? '+' : ''}${totalEV.toFixed(1)}</div></div>
-                  <div><span className="text-[9px] uppercase font-bold text-slate-500 block">Конец</span><div className="text-base font-black text-cyan-400">~{getSessionEndTime(grid)}</div></div>
-                </div>
-
-                <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 px-1">
-                  <span>Дисперсия: <b className={getVariance().color}>{getVariance().label}</b></span>
-                  <span>Пик: <b className="text-cyan-400">{getPeakTablesData(grid).max} шт (~{getPeakTablesData(grid).timeStr})</b></span>
-                </div>
-
-                {grid.length > 0 && (
-                  <div className="flex items-center gap-1.5 pt-1 border-t border-slate-800/80">
-                    <button 
-                      onClick={() => setShowSessionModal(true)} 
-                      className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-400 rounded-xl py-2 px-2 flex items-center justify-center gap-1.5 text-[11px] uppercase font-black transition"
-                    >
-                      <Wallet size={14} /> 
-                      <span className="truncate">Завершить сессию</span>
-                    </button>
-                    
-                    <button 
-                      onClick={() => setSortOrder(prev => prev === 'time' ? 'buyin' : prev === 'buyin' ? 'ev' : 'time')} 
-                      title="Сортировка"
-                      className="px-3 py-2 bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl text-[11px] uppercase font-black text-blue-400 flex items-center gap-1 transition shrink-0"
-                    >
-                      <ArrowUpDown size={12} /> 
-                      <span>{sortOrder}</span>
-                    </button>
-                    
-                    <button 
-                      onClick={() => setGroupByRoom(!groupByRoom)} 
-                      title="Группировать по румам"
-                      className={`w-9 h-9 rounded-xl border flex items-center justify-center transition shrink-0 ${groupByRoom ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}`}
-                    >
-                      <Layers size={14} />
-                    </button>
-
-                    <button 
-                      onClick={clearGrid} 
-                      title="Очистить сетку"
-                      className="w-9 h-9 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl flex items-center justify-center text-rose-400 transition shrink-0"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {grid.length === 0 ? (
-                <div className="text-center py-24 bg-slate-900/40 rounded-2xl border border-slate-800/50">
-                  <div className="text-5xl mb-3 opacity-30">📋</div>
-                  <h3 className="text-slate-200 font-bold text-base">Сетка пуста</h3>
-                  <button onClick={() => setActiveTab('search')} className="mt-4 bg-cyan-950/40 border border-cyan-500/50 text-cyan-400 font-bold text-xs py-3 px-8 rounded-xl">Искать турниры</button>
-                </div>
-              ) : groupByRoom ? (
-                <div className="space-y-3">
-                  {/* Кастомный выпадающий селект румов с иконками */}
-                  <div className="relative" ref={gridDropdownRef}>
-                    <button 
-                      onClick={() => setIsGridRoomsOpen(!isGridRoomsOpen)}
-                      className="w-full bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-200 flex items-center justify-between transition shadow-sm"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <RoomBadge roomName={gridActiveRoom || activeGridRooms[0] || ''} getRoomStyle={getRoomStyle} />
-                        <span className="truncate">({displayGrid.filter(t => t.room === (gridActiveRoom || activeGridRooms[0])).length} турн.)</span>
-                      </div>
-                      <ChevronDown size={14} className={`transition-transform shrink-0 ${isGridRoomsOpen ? 'rotate-180 text-cyan-400' : 'text-slate-400'}`} />
-                    </button>
-
-                    {isGridRoomsOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-1.5 bg-slate-950 border border-slate-800 rounded-2xl p-2 shadow-2xl z-50 space-y-1">
-                        {activeGridRooms.map(room => {
-                          const count = displayGrid.filter(t => t.room === room).length;
-                          const isSel = (gridActiveRoom === room) || (!gridActiveRoom && activeGridRooms[0] === room);
-                          return (
-                            <button
-                              key={room}
-                              onClick={() => { setGridActiveRoom(room); setIsGridRoomsOpen(false); }}
-                              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition ${isSel ? 'bg-cyan-950/50 border border-cyan-500/40 text-cyan-300' : 'hover:bg-slate-900 text-slate-300 border border-transparent'}`}
-                            >
-                              <div className="flex items-center gap-2">
-                                <RoomBadge roomName={room} getRoomStyle={getRoomStyle} />
-                              </div>
-                              <span className="text-[11px] text-slate-400">{count} турн.</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    {filteredGridBySelectedRoom.length === 0 ? <div className="text-center py-12 text-slate-500 text-xs">Нет турниров</div> : filteredGridBySelectedRoom.map(t => renderGridCard(t))}
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {displayGrid.map(t => renderGridCard(t))}
-                </div>
-              )}
+            <div className="w-full max-w-2xl mx-auto">
+              {renderGridPanel()}
             </div>
           )}
 
