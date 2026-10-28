@@ -157,6 +157,23 @@ export default function App() {
     return null;
   };
 
+  const getRoomIdByName = (roomName: string) => {
+    const nameLower = (roomName || '').toLowerCase();
+    let roomId = Object.keys(ROOMS).find(id => {
+      const shortName = ROOMS[id].toLowerCase();
+      return nameLower.includes(shortName) || (shortName === 'ggnet' && nameLower.includes('gg')) || (shortName === 'wmx' && nameLower.includes('winamax'));
+    });
+    if (!roomId) {
+      if (nameLower.includes('gg')) roomId = '246';
+      else if (nameLower.includes('888')) roomId = '244';
+      else if (nameLower.includes('es') && nameLower.includes('ps')) roomId = '250';
+      else if (nameLower.includes('pokerstars') || nameLower.includes('ps')) roomId = '249';
+      else if (nameLower.includes('pokerdom') || nameLower.includes('pd')) roomId = '264';
+      else if (nameLower.includes('coin')) roomId = '265';
+    }
+    return roomId;
+  };
+
   const bulkAdd = (type: 'top' | 'overlay') => {
     const toAdd = type === 'top' ? searchResults.filter(t => t.priority === '1') : searchResults.filter(t => isOverlay(t));
     const newItems = toAdd.filter(t => !grid.some(g => g.id === t.id));
@@ -361,16 +378,21 @@ export default function App() {
 
   const sortedGrid = useMemo(() => {
     const daysOrder: Record<string, number> = { 'пн': 1, 'вт': 2, 'ср': 3, 'чт': 4, 'пт': 5, 'сб': 6, 'вс': 7 };
-    return [...grid].sort((a, b) => {
-      if (sortOrder === 'buyin') return parseNum(b.buyin) - parseNum(a.buyin);
-      if (sortOrder === 'ev') return parseNum(b.ev_mtt) - parseNum(a.ev_mtt);
-      if (sortOrder === 'tier') return getTier(a).id - getTier(b).id;
-      const indexA = daysOrder[(a.day_week || '').toLowerCase().replace(/[^а-я]/g, '')] || 0;
-      const indexB = daysOrder[(b.day_week || '').toLowerCase().replace(/[^а-я]/g, '')] || 0;
-      if (indexA !== indexB) return indexA - indexB;
-      return a.time_start.localeCompare(b.time_start);
-    });
-  }, [grid, sortOrder]);
+    return [...grid]
+      .filter(t => {
+        const rId = getRoomIdByName(t.room);
+        return rId && selectedRooms.includes(rId);
+      })
+      .sort((a, b) => {
+        if (sortOrder === 'buyin') return parseNum(b.buyin) - parseNum(a.buyin);
+        if (sortOrder === 'ev') return parseNum(b.ev_mtt) - parseNum(a.ev_mtt);
+        if (sortOrder === 'tier') return getTier(a).id - getTier(b).id;
+        const indexA = daysOrder[(a.day_week || '').toLowerCase().replace(/[^а-я]/g, '')] || 0;
+        const indexB = daysOrder[(b.day_week || '').toLowerCase().replace(/[^а-я]/g, '')] || 0;
+        if (indexA !== indexB) return indexA - indexB;
+        return a.time_start.localeCompare(b.time_start);
+      });
+  }, [grid, sortOrder, selectedRooms]);
 
   const displayGrid = useMemo(() => {
     return sortedGrid
@@ -391,9 +413,13 @@ export default function App() {
 
   const searchResults = useMemo(() => {
     return tournaments
-      .filter(t => !isStartedTooLongAgo(t.time_start, t.day_week)) 
+      .filter(t => {
+        if (isStartedTooLongAgo(t.time_start, t.day_week)) return false;
+        const rId = getRoomIdByName(t.room);
+        return rId && selectedRooms.includes(rId);
+      })
       .sort((a, b) => sortOrder === 'tier' ? getTier(a).id - getTier(b).id : 0);
-  }, [tournaments, sortOrder]);
+  }, [tournaments, sortOrder, selectedRooms]);
 
   const toggleGrid = (t: Tournament) => {
     if (grid.some(item => item.id === t.id)) setGrid(grid.filter(item => item.id !== t.id)); 
@@ -727,7 +753,6 @@ export default function App() {
                       <button onClick={() => setPresetDate('today')} className="px-3.5 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl transition shadow-sm active:scale-95">Сегодня</button>
                       <button onClick={() => setPresetDate('tomorrow')} className="px-3.5 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl transition shadow-sm active:scale-95">Завтра</button>
                       <button onClick={() => setPresetDate('clear')} title="Сбросить даты" className="w-9 h-9 flex items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:border-rose-500/50 rounded-xl transition shadow-sm active:scale-95"><X size={15} strokeWidth={2.5} /></button>
-                      {/* Зеленая кнопка Шаблоны */}
                       <button onClick={() => setShowPresetsModal(true)} className="px-3.5 py-2 text-[11px] font-black uppercase bg-emerald-950/50 hover:bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 hover:border-emerald-500/70 rounded-xl transition shadow-sm ml-auto active:scale-95">Шаблоны</button>
                     </div>
                   </div>
