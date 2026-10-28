@@ -389,7 +389,6 @@ export default function App() {
     return displayGrid.filter(t => t.room === gridActiveRoom);
   }, [displayGrid, groupByRoom, gridActiveRoom, activeGridRooms]);
 
-  // Мгновенная фильтрация убрана, список зависит только от того, что вернул сервер
   const searchResults = useMemo(() => {
     return tournaments
       .filter(t => !isStartedTooLongAgo(t.time_start, t.day_week)) 
@@ -501,14 +500,11 @@ export default function App() {
     );
   };
 
-// --- ФУНКЦИЯ ОТРИСОВКИ СЕТКИ ---
   const renderGridPanel = () => (
     <div className="space-y-5">
-      {/* Главный блок статистики */}
       <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4 shadow-xl space-y-2.5 h-[200px] flex flex-col justify-between">
         
         <div className="space-y-2.5">
-          {/* Шапка внутри блока */}
           <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
@@ -521,7 +517,6 @@ export default function App() {
             </span>
           </div>
 
-          {/* Цифры статистики */}
           <div className="grid grid-cols-3 gap-2 pb-2 border-b border-slate-800/80 text-center">
             <div><span className="text-[9px] uppercase font-bold text-slate-500 block">Турниров</span><div className="text-base font-black text-white">{grid.length}</div></div>
             <div className="border-x border-slate-800/80"><span className="text-[9px] uppercase font-bold text-slate-500 block">Ожидание</span><div className={`text-base font-black ${totalEV >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{totalEV > 0 ? '+' : ''}${totalEV.toFixed(1)}</div></div>
@@ -534,7 +529,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Кнопки управления внизу блока (компактные и аккуратные) */}
         {grid.length > 0 && (
           <div className="flex items-center gap-1.5 pt-2 border-t border-slate-800/80">
             <button onClick={() => setShowSessionModal(true)} className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-400 rounded-xl py-1.5 px-2 flex items-center justify-center gap-1.5 text-[11px] uppercase font-black transition">
@@ -553,7 +547,6 @@ export default function App() {
         )}
       </div>
 
-      {/* Список добавленных турниров */}
       {grid.length === 0 ? (
         <div className="text-center py-20 bg-slate-900/40 rounded-2xl border border-slate-800/50">
           <div className="text-4xl mb-3 opacity-30">📋</div>
@@ -628,7 +621,6 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans antialiased flex">
       
-      {/* Левый десктопный сайдбар с навигацией и тогглами форматов */}
       <aside className="w-20 bg-slate-950 border-r border-slate-800/80 flex flex-col items-center justify-between py-6 shrink-0 sticky top-0 h-screen z-40">
         <div className="flex flex-col items-center gap-6">
           <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/40 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.2)]">
@@ -666,10 +658,8 @@ export default function App() {
             </button>
           </div>
 
-          {/* Разделитель */}
           <div className="w-8 h-[1px] bg-slate-800 my-1"></div>
 
-          {/* Фильтры форматов в сайдбаре */}
           <div className="flex flex-col gap-2">
             <button 
               onClick={() => toggleFormat('isPko')} 
@@ -709,7 +699,6 @@ export default function App() {
         </button>
       </aside>
 
-      {/* Основная рабочая область */}
       <div className="flex-1 flex flex-col min-w-0">
         
         <header className="h-16 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 px-8 flex justify-between items-center sticky top-0 z-30">
@@ -727,11 +716,9 @@ export default function App() {
 
         <main className="max-w-[1800px] w-full mx-auto px-4 md:px-6 py-6 md:py-8">
           
-          {/* Поиск */}
           {activeTab === 'search' && (
-            <div className="flex flex-col xl:flex-row gap-5 items-start">
+            <div className="flex flex-col xl:flex-row gap-4 items-start">
               
-              {/* ЛЕВАЯ ПАНЕЛЬ: ПОИСК (Занимает 75% экрана на десктопе) */}
               <div className="w-full xl:w-[75%] shrink-0 space-y-4">
                 
                 <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4">
@@ -815,7 +802,6 @@ export default function App() {
                   </div>
                 </div>
                 
-                {/* СПИСОК РЕЗУЛЬТАТОВ ПОИСКА */}
                 <div className="space-y-2 pt-1">
                   {loading && [1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-16 bg-slate-900/40 rounded-xl border border-slate-800/40 animate-pulse"></div>)}
                   {searchResults.length === 0 && !loading && (
@@ -825,7 +811,7 @@ export default function App() {
                       <p className="text-slate-500 text-xs mt-1">Нажмите «Найти» для загрузки расписания</p>
                     </div>
                   )}
-{searchResults.map((t) => {
+                  {searchResults.map((t) => {
                     const note = notes[getNoteKey(t)];
                     if (note?.tag === 'skip') return (
                       <div key={t.id} className="bg-slate-900/30 rounded-xl px-3 py-2 border border-slate-800/40 flex justify-between items-center opacity-40 grayscale text-xs">
@@ -847,9 +833,7 @@ export default function App() {
                             : 'bg-slate-900 border-slate-800'
                         }`}
                       >
-                        
                         <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                          {/* Колонка 1: Рум и Время */}
                           <div className="flex items-center gap-1.5 shrink-0 md:w-[150px]">
                             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
                             <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
@@ -858,13 +842,11 @@ export default function App() {
                             {getSmartTimer(t.time_start, t.day_week)}
                           </div>
                           
-                          {/* Колонка 2: Название */}
                           <div className="font-bold text-xs text-white truncate flex-1">
                             {t.name}
                             {isOverlay(t) && <Flame size={12} className="inline-block ml-1.5 text-orange-500 animate-pulse mb-0.5"/>}
                           </div>
                           
-                          {/* Колонка 3: Статистика */}
                           <div className="flex items-center gap-3 text-[11px] shrink-0 md:w-[280px] md:justify-end">
                             <span className="font-black text-emerald-400 w-12 text-right">{getRoomCurrency(t.room)}{t.buyin}</span>
                             <span className="text-slate-400 w-14 text-right">{t.afs} рег.</span>
@@ -873,7 +855,6 @@ export default function App() {
                           </div>
                         </div>
                         
-                        {/* Колонка 4: Кнопка заметки */}
                         <div className="shrink-0 flex items-center justify-end gap-1.5 md:w-[70px]">
                           <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"><NotebookPen size={14}/></button>
                         </div>
@@ -882,23 +863,20 @@ export default function App() {
                   })}
                 </div>
               </div>
-            </div>
 
-          {/* ПРАВАЯ ПАНЕЛЬ: СЕТКА (25% экрана) */}
-            <div className="hidden xl:block w-full xl:w-[25%] shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-8 pr-1">
+              <div className="hidden xl:block w-full xl:w-[25%] shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-8 pr-1">
                 {renderGridPanel()}
               </div>
+
             </div>
           )}
 
-          {/* Сетка (Для мобильных устройств или если хочется открыть её по центру) */}
           {activeTab === 'grid' && (
             <div className="w-full max-w-2xl mx-auto">
               {renderGridPanel()}
             </div>
           )}
 
-          {/* Дневник */}
           {activeTab === 'diary' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="md:col-span-1 space-y-4">
@@ -968,7 +946,6 @@ export default function App() {
         </main>
       </div>
 
-      {/* Модалки */}
       {activeStats && (() => {
         const key = getNoteKey(activeStats);
         const note = notes[key] || { tag: 'none', text: '' };
