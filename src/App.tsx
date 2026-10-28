@@ -503,7 +503,7 @@ export default function App() {
 
 // --- ФУНКЦИЯ ОТРИСОВКИ СЕТКИ ---
   const renderGridPanel = () => (
-    <div className="space-y-3">
+    <div className="space-y-5">
       {/* Главный блок статистики */}
       <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4 shadow-xl space-y-2.5 h-[200px] flex flex-col justify-between">
         
