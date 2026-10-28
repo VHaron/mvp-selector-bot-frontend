@@ -38,23 +38,30 @@ const getRoomCurrency = (roomName: string) => {
   return '$';
 };
 
-const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle: (n: string) => string }) => {
-  const nameLower = (roomName || '').toLowerCase();
+const getRoomIdByName = (roomName: string) => {
+  if (!roomName) return null;
+  const nameLower = roomName.toLowerCase().trim(); // Убираем возможные пробелы с бэкенда
   
-  let roomId = Object.keys(ROOMS).find(id => {
-    const shortName = ROOMS[id].toLowerCase();
-    return nameLower.includes(shortName) || (shortName === 'ggnet' && nameLower.includes('gg')) || (shortName === 'wmx' && nameLower.includes('winamax'));
+  if (nameLower.includes('wmx') || nameLower.includes('winamax')) return '251';
+  if (nameLower.includes('gg')) return '246';
+  if (nameLower.includes('888')) return '244';
+  if (nameLower.includes('pokerstars') || nameLower.includes('ps')) return nameLower.includes('es') ? '250' : '249';
+  if (nameLower.includes('pokerdom') || nameLower.includes('pd')) return '264';
+  if (nameLower.includes('coin')) return '265';
+  if (nameLower.includes('wpn') || nameLower.includes('acardroom') || nameLower.includes('americas')) return '252';
+  if (nameLower.includes('ipoker') || nameLower.includes('redstar')) return '247';
+  if (nameLower.includes('party')) return '248';
+  if (nameLower.includes('chico') || nameLower.includes('betonline')) return '245';
+  if (nameLower.includes('wpt')) return '266';
+
+  let foundId = Object.keys(ROOMS).find(id => {
+    return nameLower.includes(ROOMS[id].toLowerCase());
   });
+  return foundId || null;
+};
 
-  if (!roomId) {
-    if (nameLower.includes('gg')) roomId = '246';
-    else if (nameLower.includes('888')) roomId = '244';
-    else if (nameLower.includes('es') && nameLower.includes('ps')) roomId = '250';
-    else if (nameLower.includes('pokerstars') || nameLower.includes('ps')) roomId = '249';
-    else if (nameLower.includes('pokerdom') || nameLower.includes('pd')) roomId = '264';
-    else if (nameLower.includes('coin')) roomId = '265';
-  }
-
+const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle: (n: string) => string }) => {
+  const roomId = getRoomIdByName(roomName);
   const domain = roomId ? ROOM_DOMAINS[roomId] : null;
   const displayName = roomId ? ROOMS[roomId] : roomName;
 
@@ -157,21 +164,12 @@ export default function App() {
     return null;
   };
 
-  const getRoomIdByName = (roomName: string) => {
-    const nameLower = (roomName || '').toLowerCase();
-    let roomId = Object.keys(ROOMS).find(id => {
-      const shortName = ROOMS[id].toLowerCase();
-      return nameLower.includes(shortName) || (shortName === 'ggnet' && nameLower.includes('gg')) || (shortName === 'wmx' && nameLower.includes('winamax'));
-    });
-    if (!roomId) {
-      if (nameLower.includes('gg')) roomId = '246';
-      else if (nameLower.includes('888')) roomId = '244';
-      else if (nameLower.includes('es') && nameLower.includes('ps')) roomId = '250';
-      else if (nameLower.includes('pokerstars') || nameLower.includes('ps')) roomId = '249';
-      else if (nameLower.includes('pokerdom') || nameLower.includes('pd')) roomId = '264';
-      else if (nameLower.includes('coin')) roomId = '265';
-    }
-    return roomId;
+  // ЖЕСТКАЯ ПРОВЕРКА: Если рум не определен, мы его СКРЫВАЕМ (return false)
+  const isRoomAllowed = (roomName: string) => {
+    if (!roomName) return false;
+    const roomId = getRoomIdByName(roomName);
+    if (!roomId) return false; 
+    return selectedRooms.includes(roomId);
   };
 
   const bulkAdd = (type: 'top' | 'overlay') => {
@@ -379,10 +377,7 @@ export default function App() {
   const sortedGrid = useMemo(() => {
     const daysOrder: Record<string, number> = { 'пн': 1, 'вт': 2, 'ср': 3, 'чт': 4, 'пт': 5, 'сб': 6, 'вс': 7 };
     return [...grid]
-      .filter(t => {
-        const rId = getRoomIdByName(t.room);
-        return rId && selectedRooms.includes(rId);
-      })
+      .filter(t => isRoomAllowed(t.room))
       .sort((a, b) => {
         if (sortOrder === 'buyin') return parseNum(b.buyin) - parseNum(a.buyin);
         if (sortOrder === 'ev') return parseNum(b.ev_mtt) - parseNum(a.ev_mtt);
@@ -415,8 +410,7 @@ export default function App() {
     return tournaments
       .filter(t => {
         if (isStartedTooLongAgo(t.time_start, t.day_week)) return false;
-        const rId = getRoomIdByName(t.room);
-        return rId && selectedRooms.includes(rId);
+        return isRoomAllowed(t.room);
       })
       .sort((a, b) => sortOrder === 'tier' ? getTier(a).id - getTier(b).id : 0);
   }, [tournaments, sortOrder, selectedRooms]);
@@ -494,13 +488,13 @@ export default function App() {
     return clean ? `${clean}. ` : '';
   };
 
-  const renderGridCard = (t: any) => {
+  const renderGridCard = (t: any, uniqueKey: string) => {
     const prioStyles = getPriorityStyles(t.priority);
     const played = isPlayed(t.time_start, t.day_week);
 
     return (
       <div 
-        key={t.id} 
+        key={uniqueKey} 
         onClick={() => toggleGrid(t)} 
         className={`bg-slate-900 rounded-xl px-3 py-2.5 border transition-all flex items-center justify-between gap-2 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 ${played ? 'opacity-40 grayscale bg-slate-900/40' : 'border-slate-800'}`}
       >
@@ -604,12 +598,12 @@ export default function App() {
             )}
           </div>
           <div className="space-y-2">
-            {filteredGridBySelectedRoom.length === 0 ? <div className="text-center py-12 text-slate-500 text-xs">Нет турниров</div> : filteredGridBySelectedRoom.map(t => renderGridCard(t))}
+            {filteredGridBySelectedRoom.length === 0 ? <div className="text-center py-12 text-slate-500 text-xs">Нет турниров</div> : filteredGridBySelectedRoom.map((t, idx) => renderGridCard(t, `${t.id}_grid_filtered_${idx}`))}
           </div>
         </div>
       ) : (
         <div className="space-y-2">
-          {displayGrid.map(t => renderGridCard(t))}
+          {displayGrid.map((t, idx) => renderGridCard(t, `${t.id}_grid_${idx}`))}
         </div>
       )}
     </div>
@@ -836,10 +830,13 @@ export default function App() {
                       <p className="text-slate-500 text-xs mt-1">Нажмите «Найти» для загрузки расписания</p>
                     </div>
                   )}
-                  {searchResults.map((t) => {
+                  {searchResults.map((t, index) => {
                     const note = notes[getNoteKey(t)];
+                    // Добавляем индекс в ключ, чтобы React 100% не путался, если бэкенд отдает турниры с одинаковым t.id
+                    const uniqueKey = `${t.id}_${t.room}_${index}`; 
+
                     if (note?.tag === 'skip') return (
-                      <div key={t.id} className="bg-slate-900/30 rounded-xl px-3 py-2 border border-slate-800/40 flex justify-between items-center opacity-40 grayscale text-xs">
+                      <div key={uniqueKey} className="bg-slate-900/30 rounded-xl px-3 py-2 border border-slate-800/40 flex justify-between items-center opacity-40 grayscale text-xs">
                         <div className="flex items-center gap-2"><Ban size={14} className="text-rose-500"/><span className="line-through">{t.name}</span></div>
                         <button onClick={() => setActiveStats(t)} className="text-xs text-blue-400 font-bold">Вернуть</button>
                       </div>
@@ -850,7 +847,7 @@ export default function App() {
                     
                     return (
                       <div 
-                        key={t.id} 
+                        key={uniqueKey} 
                         onClick={() => toggleGrid(t)} 
                         className={`rounded-xl px-3 py-2 md:py-2.5 border transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-sm ${
                           isAdded 
