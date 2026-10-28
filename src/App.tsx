@@ -501,16 +501,15 @@ export default function App() {
     );
   };
 
-// --- ФУНКЦИЯ ОТРИСОВКИ СЕТКИ (ЕДИНЫЙ ПРАВЫЙ БЛОК СТАТИСТИКИ) ---
+// --- ФУНКЦИЯ ОТРИСОВКИ СЕТКИ ---
   const renderGridPanel = () => (
     <div className="space-y-3">
-      {/* Единый блок: и шапка «Текущая сетка», и цифры, и кнопки внутри. 
-          Задаем статичный min-height, чтобы он по высоте идеально совпадал с левым блоком фильтров */}
-      <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between" style={{ minHeight: '235px' }}>
+      {/* Точный подгон высоты под левый блок фильтров */}
+      <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-[18px] shadow-xl flex flex-col justify-between" style={{ minHeight: '142px' }}>
         
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* Шапка внутри блока */}
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-800/80">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
                 <ListTodo size={12} strokeWidth={2.5} />
@@ -523,7 +522,7 @@ export default function App() {
           </div>
 
           {/* Цифры статистики */}
-          <div className="grid grid-cols-3 gap-2 pb-3 border-b border-slate-800/80 text-center">
+          <div className="grid grid-cols-3 gap-2 pb-2.5 border-b border-slate-800/80 text-center">
             <div><span className="text-[9px] uppercase font-bold text-slate-500 block">Турниров</span><div className="text-base font-black text-white">{grid.length}</div></div>
             <div className="border-x border-slate-800/80"><span className="text-[9px] uppercase font-bold text-slate-500 block">Ожидание</span><div className={`text-base font-black ${totalEV >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{totalEV > 0 ? '+' : ''}${totalEV.toFixed(1)}</div></div>
             <div><span className="text-[9px] uppercase font-bold text-slate-500 block">Конец</span><div className="text-base font-black text-cyan-400">~{getSessionEndTime(grid)}</div></div>
@@ -537,7 +536,7 @@ export default function App() {
 
         {/* Кнопки управления внизу блока */}
         {grid.length > 0 && (
-          <div className="flex items-center gap-1.5 pt-3 mt-3 border-t border-slate-800/80">
+          <div className="flex items-center gap-1.5 pt-2.5 mt-2.5 border-t border-slate-800/80">
             <button onClick={() => setShowSessionModal(true)} className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-400 rounded-xl py-2 px-2 flex items-center justify-center gap-1.5 text-[11px] uppercase font-black transition">
               <Wallet size={14} /> <span className="truncate">Завершить</span>
             </button>
