@@ -504,8 +504,23 @@ export default function App() {
   // --- ФУНКЦИЯ ОТРИСОВКИ СЕТКИ (ДЛЯ ПРАВОЙ ПАНЕЛИ И МОБИЛОК) ---
   const renderGridPanel = () => (
     <div className="space-y-3">
-      {/* Блок статистики */}
+      {/* Единый блок статистики и шапки сетки */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-xl space-y-3">
+        
+        {/* Шапка: Индикатор и название */}
+        <div className="flex items-center justify-between pb-2.5 border-b border-slate-800/80">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <ListTodo size={12} strokeWidth={2.5} />
+            </div>
+            <span className="text-[11px] font-black tracking-wider text-white uppercase">Текущая сетка</span>
+          </div>
+          <span className="text-[11px] font-black text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded-md border border-cyan-500/30">
+            {grid.length} турн.
+          </span>
+        </div>
+
+        {/* Цифры статистики */}
         <div className="grid grid-cols-3 gap-2 pb-2.5 border-b border-slate-800/80 text-center">
           <div><span className="text-[9px] uppercase font-bold text-slate-500 block">Турниров</span><div className="text-base font-black text-white">{grid.length}</div></div>
           <div className="border-x border-slate-800/80"><span className="text-[9px] uppercase font-bold text-slate-500 block">Ожидание</span><div className={`text-base font-black ${totalEV >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{totalEV > 0 ? '+' : ''}${totalEV.toFixed(1)}</div></div>
