@@ -881,6 +881,7 @@ export default function App() {
               <div className="hidden xl:block w-full xl:w-[25%] shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-8 pr-1">
                 {renderGridPanel()}
               </div>
+            </div>
           )}
 
           {/* Сетка (Для мобильных устройств или если хочется открыть её по центру) */}
