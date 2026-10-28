@@ -879,17 +879,6 @@ export default function App() {
 
               {/* ПРАВАЯ ПАНЕЛЬ: СЕТКА (25% экрана) */}
               <div className="hidden xl:block w-full xl:w-[25%] shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-8 pr-1">
-                <div className="sticky top-0 bg-slate-950/90 backdrop-blur-md pb-3 mb-2 z-10 border-b border-slate-800/50 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                      <ListTodo size={12} strokeWidth={2.5} />
-                    </div>
-                    <span className="text-[11px] font-black tracking-wider text-white uppercase">Текущая сетка</span>
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase bg-slate-900 px-2 py-0.5 rounded-md border border-slate-800">
-                    Live
-                  </span>
-                </div>
                 {renderGridPanel()}
               </div>
             </div>
