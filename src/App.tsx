@@ -729,7 +729,7 @@ export default function App() {
           
           {/* Поиск */}
           {activeTab === 'search' && (
-            <div className="flex flex-col xl:flex-row gap-6 lg:gap-8 items-start">
+            <div className="flex flex-col xl:flex-row gap-4 items-start">
               
               {/* ЛЕВАЯ ПАНЕЛЬ: ПОИСК (Занимает 75% экрана на десктопе) */}
               <div className="w-full xl:w-[75%] shrink-0 space-y-4">
