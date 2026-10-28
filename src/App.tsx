@@ -877,8 +877,9 @@ export default function App() {
                 </div>
               </div>
 
-              {/* ПРАВАЯ ПАНЕЛЬ: СЕТКА (25% экрана) */}
-              <div className="hidden xl:block w-full xl:w-[25%] shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-8 pr-1">
+          {/* ПРАВАЯ ПАНЕЛЬ: СЕТКА (25% экрана) */}
+            <div className="hidden xl:flex xl:flex-col w-full xl:w-[25%] shrink-0 sticky top-24 h-[calc(100vh-7rem)] pb-8 pr-1">
+              <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {renderGridPanel()}
               </div>
             </div>
