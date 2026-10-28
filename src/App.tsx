@@ -825,7 +825,7 @@ export default function App() {
                       <p className="text-slate-500 text-xs mt-1">Нажмите «Найти» для загрузки расписания</p>
                     </div>
                   )}
-                  {searchResults.map((t) => {
+{searchResults.map((t) => {
                     const note = notes[getNoteKey(t)];
                     if (note?.tag === 'skip') return (
                       <div key={t.id} className="bg-slate-900/30 rounded-xl px-3 py-2 border border-slate-800/40 flex justify-between items-center opacity-40 grayscale text-xs">
@@ -873,13 +873,16 @@ export default function App() {
                           </div>
                         </div>
                         
-                        {/* Колонка 4: Кнопка заметки (без галочки) */}
+                        {/* Колонка 4: Кнопка заметки */}
                         <div className="shrink-0 flex items-center justify-end gap-1.5 md:w-[70px]">
                           <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"><NotebookPen size={14}/></button>
                         </div>
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            </div>
 
           {/* ПРАВАЯ ПАНЕЛЬ: СЕТКА (25% экрана) */}
             <div className="hidden xl:block w-full xl:w-[25%] shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-8 pr-1">
