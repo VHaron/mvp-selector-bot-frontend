@@ -49,7 +49,6 @@ const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle:
   if (!roomId) {
     if (nameLower.includes('gg')) roomId = '246';
     else if (nameLower.includes('888')) roomId = '244';
-    // Если в названии турнира фигурирует es или сессия испанская
     else if (nameLower.includes('es') && nameLower.includes('ps')) roomId = '250';
     else if (nameLower.includes('pokerstars') || nameLower.includes('ps')) roomId = '249';
     else if (nameLower.includes('pokerdom') || nameLower.includes('pd')) roomId = '264';
@@ -390,6 +389,7 @@ export default function App() {
     return displayGrid.filter(t => t.room === gridActiveRoom);
   }, [displayGrid, groupByRoom, gridActiveRoom, activeGridRooms]);
 
+  // Мгновенная фильтрация убрана, список зависит только от того, что вернул сервер
   const searchResults = useMemo(() => {
     return tournaments
       .filter(t => !isStartedTooLongAgo(t.time_start, t.day_week)) 
@@ -540,7 +540,7 @@ export default function App() {
         <div className="text-center py-20 bg-slate-900/40 rounded-2xl border border-slate-800/50">
           <div className="text-4xl mb-3 opacity-30">📋</div>
           <h3 className="text-slate-400 font-bold text-xs mb-3">Сетка пуста</h3>
-          <button onClick={() => setActiveTab('search')} className="bg-cyan-950/40 border border-cyan-500/50 text-cyan-400 font-bold text-xs py-2 px-6 rounded-xl lg:hidden">В поиск</button>
+          <button onClick={() => setActiveTab('search')} className="bg-cyan-950/40 border border-cyan-500/50 text-cyan-400 font-bold text-xs py-2 px-6 rounded-xl xl:hidden">В поиск</button>
         </div>
       ) : groupByRoom ? (
         <div className="space-y-3">
@@ -716,7 +716,6 @@ export default function App() {
               {/* ЛЕВАЯ ПАНЕЛЬ: ПОИСК (Занимает 75% экрана на десктопе) */}
               <div className="w-full xl:w-[75%] shrink-0 space-y-4">
                 
-                {/* БЛОК ФИЛЬТРОВ ИДЕТ СЮДА (вставляй свой текущий блок с кнопками, румами и датами без изменений) */}
                 <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Фильтр периода и румов</span>
@@ -824,7 +823,7 @@ export default function App() {
                       <div key={t.id} onClick={() => toggleGrid(t)} className={`bg-slate-900 rounded-xl px-3 py-2 md:py-2.5 border transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-sm ${isAdded ? 'border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.1)] bg-slate-900/90' : 'border-slate-800'}`}>
                         
                         <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                          {/* Колонка 1: Рум и Время (Фиксированная ширина) */}
+                          {/* Колонка 1: Рум и Время */}
                           <div className="flex items-center gap-1.5 shrink-0 md:w-[150px]">
                             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
                             <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
@@ -833,13 +832,13 @@ export default function App() {
                             {getSmartTimer(t.time_start, t.day_week)}
                           </div>
                           
-                          {/* Колонка 2: Название (Тянется) */}
+                          {/* Колонка 2: Название */}
                           <div className="font-bold text-xs text-white truncate flex-1">
                             {t.name}
                             {isOverlay(t) && <Flame size={12} className="inline-block ml-1.5 text-orange-500 animate-pulse mb-0.5"/>}
                           </div>
                           
-                          {/* Колонка 3: Статистика (Выровнена в линию) */}
+                          {/* Колонка 3: Статистика */}
                           <div className="flex items-center gap-3 text-[11px] shrink-0 md:w-[280px] md:justify-end">
                             <span className="font-black text-emerald-400 w-12 text-right">{getRoomCurrency(t.room)}{t.buyin}</span>
                             <span className="text-slate-400 w-14 text-right">{t.afs} рег.</span>
@@ -858,6 +857,10 @@ export default function App() {
                           )}
                         </div>
                       </div>
+                    );
+                  })}
+                </div>
+              </div>
 
               {/* ПРАВАЯ ПАНЕЛЬ: СЕТКА (25% экрана) */}
               <div className="hidden xl:block w-full xl:w-[25%] shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-8 pr-1">
@@ -872,8 +875,7 @@ export default function App() {
             </div>
           )}
 
-          {/* Сетка */}
-{/* Сетка (Для мобильных устройств или если хочется открыть её по центру) */}
+          {/* Сетка (Для мобильных устройств или если хочется открыть её по центру) */}
           {activeTab === 'grid' && (
             <div className="w-full max-w-2xl mx-auto">
               {renderGridPanel()}
