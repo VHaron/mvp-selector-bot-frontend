@@ -294,7 +294,7 @@ export default function App() {
         session_token: sessionToken, 
         date_from: formatApiDate(dateFrom), 
         date_to: formatApiDate(dateTo), 
-        rooms: selectedRooms, 
+        rooms: selectedRooms, // Теперь передаем актуальные выбранные румы
         structs: { isFreezeout: activeFormats.isFreezeout ? '1' : '0', isPko: activeFormats.isPko ? '1' : '0', isTurbo: activeFormats.isTurbo ? '1' : '0', isHyperTurbo: activeFormats.isTurbo ? '1' : '0', is6MaxTurboPko: activeFormats.isPko ? '1' : '0', isSeries: '1' },
         priorities: { priority1: '1', priority2: '1', priority3: '1' } 
       });
