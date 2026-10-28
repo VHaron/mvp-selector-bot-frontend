@@ -38,23 +38,29 @@ const getRoomCurrency = (roomName: string) => {
   return '$';
 };
 
-const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle: (n: string) => string }) => {
+const getRoomIdByName = (roomName: string) => {
   const nameLower = (roomName || '').toLowerCase();
-  
-  let roomId = Object.keys(ROOMS).find(id => {
+  if (nameLower.includes('wmx') || nameLower.includes('winamax')) return '251';
+  if (nameLower.includes('gg')) return '246';
+  if (nameLower.includes('888')) return '244';
+  if (nameLower.includes('pokerstars') || nameLower.includes('ps')) return nameLower.includes('es') ? '250' : '249';
+  if (nameLower.includes('pokerdom') || nameLower.includes('pd')) return '264';
+  if (nameLower.includes('coin')) return '265';
+  if (nameLower.includes('wpn') || nameLower.includes('acardroom')) return '252';
+  if (nameLower.includes('ipoker') || nameLower.includes('redstar')) return '247';
+  if (nameLower.includes('party')) return '248';
+  if (nameLower.includes('chico') || nameLower.includes('betonline')) return '245';
+  if (nameLower.includes('wpt')) return '266';
+
+  let foundId = Object.keys(ROOMS).find(id => {
     const shortName = ROOMS[id].toLowerCase();
-    return nameLower.includes(shortName) || (shortName === 'ggnet' && nameLower.includes('gg')) || (shortName === 'wmx' && (nameLower.includes('winamax') || nameLower.includes('wmx')));
+    return nameLower.includes(shortName);
   });
+  return foundId || null;
+};
 
-  if (!roomId) {
-    if (nameLower.includes('gg')) roomId = '246';
-    else if (nameLower.includes('888')) roomId = '244';
-    else if (nameLower.includes('es') && nameLower.includes('ps')) roomId = '250';
-    else if (nameLower.includes('pokerstars') || nameLower.includes('ps')) roomId = '249';
-    else if (nameLower.includes('pokerdom') || nameLower.includes('pd')) roomId = '264';
-    else if (nameLower.includes('coin')) roomId = '265';
-  }
-
+const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle: (n: string) => string }) => {
+  const roomId = getRoomIdByName(roomName);
   const domain = roomId ? ROOM_DOMAINS[roomId] : null;
   const displayName = roomId ? ROOMS[roomId] : roomName;
 
@@ -157,30 +163,11 @@ export default function App() {
     return null;
   };
 
-  // Улучшенная железная проверка: точно сопоставляет название рума с выбранными ID
+  // Железобетонная проверка через ID рума
   const isRoomAllowed = (roomName: string) => {
-    const nameLower = (roomName || '').toLowerCase();
-    return selectedRooms.some(id => {
-      if (id === '251') { // WMX / Winamax
-        return nameLower.includes('wmx') || nameLower.includes('winamax');
-      }
-      if (id === '246') { // GGNet
-        return nameLower.includes('gg') || nameLower.includes('ggnet');
-      }
-      if (id === '249' || id === '250') { // PokerStars
-        return nameLower.includes('ps') || nameLower.includes('pokerstars');
-      }
-      if (id === '244') return nameLower.includes('888');
-      if (id === '245') return nameLower.includes('chico');
-      if (id === '247') return nameLower.includes('ipoker') || nameLower.includes('redstar');
-      if (id === '248') return nameLower.includes('party');
-      if (id === '252') return nameLower.includes('wpn');
-      if (id === '264') return nameLower.includes('pd') || nameLower.includes('pokerdom');
-      if (id === '266') return nameLower.includes('wpt');
-      if (id === '265') return nameLower.includes('coin');
-      const targetName = (ROOMS[id] || '').toLowerCase();
-      return nameLower.includes(targetName);
-    });
+    const roomId = getRoomIdByName(roomName);
+    if (!roomId) return true;
+    return selectedRooms.includes(roomId);
   };
 
   const bulkAdd = (type: 'top' | 'overlay') => {
