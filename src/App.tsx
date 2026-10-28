@@ -847,6 +847,7 @@ export default function App() {
                             : 'bg-slate-900 border-slate-800'
                         }`}
                       >
+                        
                         <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
                           {/* Колонка 1: Рум и Время */}
                           <div className="flex items-center gap-1.5 shrink-0 md:w-[150px]">
