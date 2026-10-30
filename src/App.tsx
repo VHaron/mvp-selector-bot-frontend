@@ -220,6 +220,7 @@ export default function App() {
   };
 
   const [balances, setBalances] = useState<Record<string, number>>({});
+  const [modalBalances, setModalBalances] = useState<Record<string, string>>({});
   const totalBankroll = Object.values(balances).reduce((sum, val) => sum + (val || 0), 0);
 
   const updateBalance = (roomName: string, value: string) => {
@@ -240,6 +241,17 @@ export default function App() {
   const [sessionsHistory, setSessionsHistory] = useState<SessionData[]>([]);
   const [showSessionModal, setShowSessionModal] = useState(false);
 
+  const openFinishModal = () => {
+    // Подставляем текущие балансы в модалку при открытии
+    const initialModalState: Record<string, string> = {};
+    selectedRooms.forEach(id => {
+      const roomName = ROOMS[id];
+      initialModalState[roomName] = balances[roomName] !== undefined ? String(balances[roomName]) : '';
+    });
+    setModalBalances(initialModalState);
+    setShowSessionModal(true);
+  };
+
   const setPresetDate = (type: 'today' | 'tomorrow' | 'clear') => {
     if (type === 'clear') { setDateFrom(''); setDateTo(''); return; }
     const now = new Date();
@@ -249,7 +261,7 @@ export default function App() {
       setDateTo(formatLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 5, 0)));
     } else if (type === 'tomorrow') {
       setDateFrom(formatLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 12, 0)));
-      setDateTo(formatLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 5, 0)));
+      setDateTo(formatLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 5, 0)))
     }
   };
 
@@ -476,15 +488,20 @@ export default function App() {
     setPresets(newPresets); apiCall('save_presets', { session_token: sessionToken, presets: newPresets });
   };
 
-  // АВТОМАТИЧЕСКОЕ ЗАВЕРШЕНИЕ СЕССИИ БЕЗ ВВОДА ПОЛЕЙ
+  // ФИНАЛИЗАЦИЯ СЕССИИ ИЗ МОДАЛКИ С АВТОМАТИЧЕСКИМ СОХРАНЕНИЕМ БАНКРОЛЛА И РАСЧЕТОМ ПРОФИТА
   const finishSession = async () => {
-    const currentTotalBankroll = totalBankroll;
-    // Примерный авто-расчет профита сессии по вгрузке и общим изменениям банкролла
-    const previousTotalBankroll = sessionsHistory.length > 0 
-      ? (sessionsHistory[0].total_cashes - sessionsHistory[0].total_buyin + currentTotalBankroll * 0) 
-      : currentTotalBankroll;
+    // 1. Считаем новый общий банкролл по введенным в модалке данным
+    const newBalances: Record<string, number> = {};
+    let newTotalBankroll = 0;
+    
+    Object.entries(modalBalances).forEach(([roomName, valStr]) => {
+      const val = parseFloat(valStr) || 0;
+      newBalances[roomName] = val;
+      newTotalBankroll += val;
+    });
 
-    const profit = currentTotalBankroll - previousTotalBankroll;
+    // 2. Вычисляем профит сессии (Разница между новым и старым общим банкроллом)
+    const profit = newTotalBankroll - totalBankroll;
     const cashes = totalBuyin + profit;
 
     const s: SessionData = { 
@@ -496,9 +513,16 @@ export default function App() {
       tournaments_count: grid.length 
     };
 
+    // 3. Обновляем стейты и отправляем на бэкенд
+    setBalances(newBalances);
+    if (sessionToken) {
+      apiCall('save_balances', { session_token: sessionToken, balances: newBalances });
+      apiCall('save_session_history', { session_token: sessionToken, session_data: s });
+    }
+
     setSessionsHistory([s, ...sessionsHistory]);
-    await apiCall('save_session_history', { session_token: sessionToken, session_data: s });
-    setGrid([]); setShowSessionModal(false); setActiveTab('diary');
+    setGrid([]); 
+    setShowSessionModal(false); 
   };
 
   const clearHistory = async () => {
@@ -584,7 +608,7 @@ export default function App() {
 
         {grid.length > 0 && (
           <div className="flex items-center gap-1.5 pt-2 border-t border-slate-800/80">
-            <button onClick={() => setShowSessionModal(true)} className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-400 rounded-xl py-1.5 px-2 flex items-center justify-center gap-1.5 text-[11px] uppercase font-black transition"><Wallet size={14} /> <span className="truncate">Завершить</span></button>
+            <button onClick={openFinishModal} className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-400 rounded-xl py-1.5 px-2 flex items-center justify-center gap-1.5 text-[11px] uppercase font-black transition"><Wallet size={14} /> <span className="truncate">Завершить</span></button>
             <button onClick={() => setSortOrder(prev => prev === 'time' ? 'buyin' : prev === 'buyin' ? 'ev' : 'time')} title="Сортировка" className="px-3 py-1.5 bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl text-[11px] uppercase font-black text-blue-400 flex items-center gap-1 transition shrink-0"><ArrowUpDown size={12} /> <span>{sortOrder}</span></button>
             <button onClick={() => setGroupByRoom(!groupByRoom)} title="Группировать" className={`w-8 h-8 rounded-xl border flex items-center justify-center transition shrink-0 ${groupByRoom ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}`}><Layers size={14} /></button>
             <button onClick={clearGrid} title="Очистить" className="w-8 h-8 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl flex items-center justify-center text-rose-400 transition shrink-0"><Trash2 size={14} /></button>
@@ -1055,17 +1079,48 @@ export default function App() {
         );
       })()}
 
+      {/* МОДАЛКА ВВОДА АКТУАЛЬНЫХ БАНКРОЛЛОВ ПРИ ЗАВЕРШЕНИИ */}
       {showSessionModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative text-center space-y-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl relative space-y-4">
             <button onClick={() => setShowSessionModal(false)} className="absolute top-4 right-4 p-2 bg-slate-800 rounded-full text-slate-400"><X size={18}/></button>
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto"><Wallet size={24} /></div>
-            <div>
-              <h2 className="text-base font-black text-white">Завершение сессии</h2>
-              <p className="text-xs text-slate-400 mt-1">Турниров в сетке: <b className="text-white">{grid.length}</b> • Вгрузка: <b className="text-emerald-400">${totalBuyin.toFixed(1)}</b></p>
+            
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400"><Wallet size={20} /></div>
+              <div>
+                <h2 className="text-sm font-black text-white uppercase tracking-wider">Завершение сессии</h2>
+                <p className="text-[11px] text-slate-400">Вгружено: <b className="text-emerald-400">${totalBuyin.toFixed(1)}</b> • Турниров: <b className="text-white">{grid.length}</b></p>
+              </div>
             </div>
-            <p className="text-[11px] text-slate-500 bg-slate-950 p-3 rounded-xl border border-slate-800">Профит рассчитается автоматически по обновленному балансу румов.</p>
-            <button onClick={finishSession} className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs uppercase tracking-wider transition">Подтвердить и завершить</button>
+
+            <p className="text-[11px] text-slate-400 bg-slate-950 p-3 rounded-xl border border-slate-800">
+              Впиши актуальные остатки по румам на текущий момент. Профит посчитается автоматически!
+            </p>
+
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+              {selectedRooms.map(roomId => {
+                const roomName = ROOMS[roomId];
+                return (
+                  <div key={roomId} className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2">
+                    <RoomBadge roomName={roomName} getRoomStyle={getRoomStyle} />
+                    <div className="flex items-center gap-1">
+                      <span className="text-slate-500 text-xs font-black">{getRoomCurrency(roomName)}</span>
+                      <input 
+                        type="number" 
+                        value={modalBalances[roomName] !== undefined ? modalBalances[roomName] : ''} 
+                        onChange={(e) => setModalBalances({ ...modalBalances, [roomName]: e.target.value })} 
+                        placeholder="0" 
+                        className="w-24 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-right text-white font-bold text-xs outline-none focus:border-cyan-500 [appearance:textfield]" 
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <button onClick={finishSession} className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs uppercase tracking-wider transition shadow-lg active:scale-95">
+              Сохранить и записать в дневник
+            </button>
           </div>
         </div>
       )}
