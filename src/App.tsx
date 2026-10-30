@@ -83,9 +83,26 @@ const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle:
 const API_BASE_URL = 'https://selector-backend-production.up.railway.app';
 const parseNum = (str: string) => parseFloat(str?.replace(/[^\d.-]/g, '')) || 0;
 
-// СОЗДАЕМ ЖЕЛЕЗОБЕТОННЫЙ УНИКАЛЬНЫЙ ID ДЛЯ ФРОНТЕНДА
-// Склеиваем всё, чтобы даже при одинаковом t.id от бэкенда турниры различались
 const getUniqueId = (t: Tournament) => `${t.id}_${t.room}_${t.name}_${t.buyin}_${t.time_start}`;
+
+// ЧЕСТНЫЙ РАСЧЕТ ВРЕМЕНИ ОТНОСИТЕЛЬНО МСК (UTC+3)
+const getMskDiffMins = (timeStr: string) => {
+  if (!timeStr) return 0;
+  const [tHours, tMins] = timeStr.trim().slice(0, 5).split(':').map(Number);
+  if (isNaN(tHours) || isNaN(tMins)) return 0;
+  
+  const now = new Date();
+  const mskHours = (now.getUTCHours() + 3) % 24; // Жестко берем UTC и делаем +3 (МСК)
+  const mskMins = now.getUTCMinutes();
+  
+  let diff = (tHours * 60 + tMins) - (mskHours * 60 + mskMins);
+  
+  // Корректировка на стыке суток (например, турнир в 00:10, а сейчас 23:50)
+  if (diff > 12 * 60) diff -= 24 * 60;
+  else if (diff < -12 * 60) diff += 24 * 60;
+  
+  return diff;
+};
 
 export default function App() {
   const [authStep, setAuthStep] = useState<'login' | 'mfa' | 'app'>('login');
@@ -133,32 +150,30 @@ export default function App() {
     if (!dayWeekStr) return true;
     const cleanDay = dayWeekStr.toLowerCase().replace(/[^а-яё]/g, '');
     const days = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
-    const todayIndex = new Date().getDay();
+    
+    // Получаем текущий день по МСК
+    const now = new Date();
+    const mskHours = now.getUTCHours() + 3;
+    const isNextDayInMsk = mskHours >= 24;
+    const todayIndex = (now.getUTCDay() + (isNextDayInMsk ? 1 : 0)) % 7;
+    
     const tourneyIndex = days.findIndex(d => cleanDay.includes(d));
     return tourneyIndex === -1 || tourneyIndex === todayIndex;
   };
 
   const isPlayed = (timeString: string, dayWeekStr?: string) => {
     if (!timeString || !isToday(dayWeekStr)) return false;
-    const [hours, minutes] = timeString.trim().slice(0, 5).split(':').map(Number);
-    if (isNaN(hours) || isNaN(minutes)) return false;
-    const tourneyTime = new Date(); tourneyTime.setHours(hours, minutes, 0, 0);
-    return (new Date().getTime() - tourneyTime.getTime()) / (1000 * 60) > 120;
+    return getMskDiffMins(timeString) < -120; // Прошло больше 2 часов (от МСК времени)
   };
 
   const isStartedTooLongAgo = (timeString: string, dayWeekStr?: string) => {
     if (!timeString || !isToday(dayWeekStr)) return false;
-    const [hours, minutes] = timeString.trim().slice(0, 5).split(':').map(Number);
-    if (isNaN(hours) || isNaN(minutes)) return false;
-    const tourneyTime = new Date(); tourneyTime.setHours(hours, minutes, 0, 0);
-    return (new Date().getTime() - tourneyTime.getTime()) / (1000 * 60) > 15;
+    return getMskDiffMins(timeString) < -15; // Прошло больше 15 минут (от МСК времени)
   };
 
   const getSmartTimer = (timeStr: string, dayWeekStr?: string) => {
     if (!timeStr || !isToday(dayWeekStr)) return null;
-    const [hours, mins] = timeStr.split(':').map(Number);
-    const now = new Date();
-    const diffMins = (hours * 60 + mins) - (now.getHours() * 60 + now.getMinutes());
+    const diffMins = getMskDiffMins(timeStr);
 
     if (diffMins > 0 && diffMins <= 60) {
       return <span className="text-[8px] font-black uppercase tracking-wider text-amber-400 animate-pulse bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/30">⏳ {diffMins}м</span>;
@@ -175,7 +190,6 @@ export default function App() {
     return selectedRooms.includes(roomId);
   };
 
-  // ОБНОВЛЕННАЯ ФУНКЦИЯ ДОБАВЛЕНИЯ ЧЕРЕЗ УНИКАЛЬНЫЙ ID
   const toggleGrid = (t: Tournament) => {
     const targetId = getUniqueId(t);
     if (grid.some(item => getUniqueId(item) === targetId)) {
@@ -185,7 +199,6 @@ export default function App() {
     }
   };
 
-  // ОБНОВЛЕННАЯ ФУНКЦИЯ МАССОВОГО ДОБАВЛЕНИЯ
   const bulkAdd = (type: 'top' | 'overlay') => {
     const toAdd = type === 'top' ? searchResults.filter(t => t.priority === '1') : searchResults.filter(t => isOverlay(t));
     const newItems = toAdd.filter(t => !grid.some(g => getUniqueId(g) === getUniqueId(t)));
@@ -423,7 +436,7 @@ export default function App() {
   const searchResults = useMemo(() => {
     return tournaments
       .filter(t => {
-        if (isStartedTooLongAgo(t.time_start, t.day_week)) return false;
+        if (isStartedTooLongAgo(t.time_start, t.day_week)) return false; // Теперь работает по МСК
         return isRoomAllowed(t.room);
       })
       .sort((a, b) => sortOrder === 'tier' ? getTier(a).id - getTier(b).id : 0);
@@ -501,7 +514,6 @@ export default function App() {
     const prioStyles = getPriorityStyles(t.priority);
     const played = isPlayed(t.time_start, t.day_week);
     
-    // Используем уникальный ID для ключей, если не передан специальный
     const elementKey = overrideKey || getUniqueId(t);
 
     return (
@@ -853,7 +865,6 @@ export default function App() {
                       </div>
                     );
 
-                    // ИСПОЛЬЗУЕМ УНИКАЛЬНЫЙ ID ДЛЯ ПРОВЕРКИ, ДОБАВЛЕН ЛИ ТУРНИР
                     const isAdded = grid.some(item => getUniqueId(item) === getUniqueId(t));
                     const prioStyles = getPriorityStyles(t.priority);
                     
@@ -881,10 +892,11 @@ export default function App() {
                             {isOverlay(t) && <Flame size={12} className="inline-block ml-1.5 text-orange-500 animate-pulse mb-0.5"/>}
                           </div>
                           
+                          {/* Здесь добавлены классы truncate для afs и gtd */}
                           <div className="flex items-center gap-3 text-[11px] shrink-0 md:w-[280px] md:justify-end">
                             <span className="font-black text-emerald-400 w-12 text-right">{getRoomCurrency(t.room)}{t.buyin}</span>
-                            <span className="text-slate-400 w-14 text-right truncate" title={t.afs}>{t.afs} рег.</span>
-                            <span className="text-slate-400 w-20 text-right truncate" title={t.gtd}>GTD: ${t.gtd}</span>
+                            <span className="text-slate-400 w-14 text-right truncate" title={t.afs}>{t.afs} {t.afs.includes('не задано') ? '' : 'рег.'}</span>
+                            <span className="text-slate-400 w-20 text-right truncate" title={t.gtd}>GTD: {t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
                             <span className={`w-14 text-right font-bold ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
                           </div>
                         </div>
