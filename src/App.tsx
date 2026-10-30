@@ -110,7 +110,12 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false); 
   const [authError, setAuthError] = useState('');
 
-  const [activeTab, setActiveTab] = useState<'search' | 'grid' | 'diary'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'grid' | 'diary'>(() => {
+    return (localStorage.getItem('mvp_active_tab') as 'search' | 'grid' | 'diary') || 'search';
+  });
+  useEffect(() => {
+    localStorage.setItem('mvp_active_tab', activeTab);
+  }, [activeTab]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [grid, setGrid] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(false);
