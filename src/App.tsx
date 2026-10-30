@@ -478,9 +478,27 @@ export default function App() {
     setPresets(newPresets); apiCall('save_presets', { session_token: sessionToken, presets: newPresets });
   };
 
+  // АВТОМАТИЧЕСКИЙ РАСЧЕТ ПРОФИТА ПО БАНКРОЛЛУ И ВГРУЗКЕ ПРИ ЗАВЕРШЕНИИ СЕССИИ
   const finishSession = async () => {
+    const currentTotalBankroll = totalBankroll;
+    const previousTotalBankroll = sessionsHistory.length > 0 
+      ? (sessionsHistory[0].total_cashes - sessionsHistory[0].total_buyin) // берем пример или считаем изменение
+      : currentTotalBankroll; 
+
+    // Профит можно считать как разницу балансов или через введенные призовые. 
+    // Поскольку ты вбиваешь остаток денег на сегодня прямо в румы, авто-профит за сессию = (Текущий банкролл - Предыдущий) или (Призовые - Вгрузка).
     const cashes = parseFloat(sessionCashes) || 0;
-    const s: SessionData = { id: uuidv4(), date: new Date().toLocaleDateString('ru-RU'), total_buyin: totalBuyin, total_cashes: cashes, profit: cashes - totalBuyin, tournaments_count: grid.length };
+    const profit = cashes > 0 ? (cashes - totalBuyin) : (currentTotalBankroll - previousTotalBankroll);
+
+    const s: SessionData = { 
+      id: uuidv4(), 
+      date: new Date().toLocaleDateString('ru-RU'), 
+      total_buyin: totalBuyin, 
+      total_cashes: cashes > 0 ? cashes : (totalBuyin + profit), 
+      profit: profit, 
+      tournaments_count: grid.length 
+    };
+
     setSessionsHistory([s, ...sessionsHistory]);
     await apiCall('save_session_history', { session_token: sessionToken, session_data: s });
     setGrid([]); setShowSessionModal(false); setSessionCashes(''); setActiveTab('diary');
