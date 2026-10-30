@@ -162,11 +162,13 @@ export default function App() {
     return getDiffMins(timeString) < -120; // Прошло больше 2 часов
   };
 
+// Для поиска слева: скрываем турнир, если прошло больше 15 минут после старта
   const isStartedTooLongAgo = (timeString: string, dayWeekStr?: string) => {
     if (!timeString || !isToday(dayWeekStr)) return false;
-    return getDiffMins(timeString) < -15; // Прошло больше 15 минут
+    return getDiffMins(timeString) < -15; 
   };
 
+  // Для плашек и таймеров (и в поиске, и в сетке)
   const getSmartTimer = (timeStr: string, dayWeekStr?: string) => {
     if (!timeStr || !isToday(dayWeekStr)) return null;
     const diffMins = getDiffMins(timeStr);
@@ -174,7 +176,11 @@ export default function App() {
     if (diffMins > 0 && diffMins <= 60) {
       return <span className="text-[8px] font-black uppercase tracking-wider text-amber-400 animate-pulse bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/30">⏳ {diffMins}м</span>;
     } else if (diffMins <= 0 && diffMins >= -15) {
+      // Первые 15 минут после старта горит плашка Late
       return <span className="text-[8px] font-black uppercase tracking-wider text-rose-400 animate-pulse bg-rose-500/10 px-1 py-0.5 rounded border border-rose-500/30">🔥 Late</span>;
+    } else if (diffMins < -15 && diffMins >= -120) {
+      // А если прошло от 15 до 120 минут, показываем статус, что турнир идет (удобно для сетки)
+      return <span className="text-[8px] font-black uppercase tracking-wider text-slate-400 bg-slate-800/60 px-1 py-0.5 rounded border border-slate-700/50">🛡️ In Game</span>;
     }
     return null;
   };
