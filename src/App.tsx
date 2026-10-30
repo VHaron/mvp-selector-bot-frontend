@@ -54,9 +54,7 @@ const getRoomIdByName = (roomName: string) => {
   if (nameLower.includes('chico') || nameLower.includes('betonline')) return '245';
   if (nameLower.includes('wpt')) return '266';
 
-  let foundId = Object.keys(ROOMS).find(id => {
-    return nameLower.includes(ROOMS[id].toLowerCase());
-  });
+  let foundId = Object.keys(ROOMS).find(id => nameLower.includes(ROOMS[id].toLowerCase()));
   return foundId || null;
 };
 
@@ -68,12 +66,7 @@ const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle:
   return (
     <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg border font-bold text-[10px] uppercase tracking-wider ${getRoomStyle(roomName)} shadow-sm`}>
       {domain && (
-        <img 
-          src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} 
-          alt={roomName} 
-          className="w-3.5 h-3.5 rounded-full object-cover bg-white p-[0.5px] shadow-sm shrink-0" 
-          onError={(e) => { e.currentTarget.style.display = 'none'; }} 
-        />
+        <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={roomName} className="w-3.5 h-3.5 rounded-full object-cover bg-white p-[0.5px] shadow-sm shrink-0" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
       )}
       <span>{displayName}</span>
     </div>
@@ -82,27 +75,41 @@ const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle:
 
 const API_BASE_URL = 'https://selector-backend-production.up.railway.app';
 const parseNum = (str: string) => parseFloat(str?.replace(/[^\d.-]/g, '')) || 0;
-
 const getUniqueId = (t: Tournament) => `${t.id}_${t.room}_${t.name}_${t.buyin}_${t.time_start}`;
 
-// ЧЕСТНЫЙ РАСЧЕТ ВРЕМЕНИ ОТНОСИТЕЛЬНО МСК (UTC+3)
-const getMskDiffMins = (timeStr: string) => {
-  if (!timeStr) return 0;
-  const [tHours, tMins] = timeStr.trim().slice(0, 5).split(':').map(Number);
-  if (isNaN(tHours) || isNaN(tMins)) return 0;
-  
+// --- НОВАЯ СИСТЕМА ЛОКАЛЬНОГО ВРЕМЕНИ ---
+
+// 1. Превращаем "13:30" (МСК) в настоящий объект Date с твоим локальным временем
+const getLocalTimeDate = (mskTimeStr: string) => {
+  if (!mskTimeStr) return new Date();
+  const [hours, mins] = mskTimeStr.slice(0, 5).split(':').map(Number);
+  const date = new Date();
+  // Говорим: это время по UTC+3 (МСК), значит чистое UTC = hours - 3
+  date.setUTCHours(hours - 3, mins || 0, 0, 0);
+  return date;
+};
+
+// 2. Форматируем для отрисовки на карточке (например, отдаст "12:30" для Египта)
+const formatLocalTime = (mskTimeStr: string) => {
+  if (!mskTimeStr) return '';
+  const date = getLocalTimeDate(mskTimeStr);
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+};
+
+// 3. Высчитываем разницу в минутах между локальным началом и локальным "сейчас"
+const getDiffMins = (mskTimeStr: string) => {
+  if (!mskTimeStr) return 0;
+  const tDate = getLocalTimeDate(mskTimeStr);
   const now = new Date();
-  const mskHours = (now.getUTCHours() + 3) % 24; // Жестко берем UTC и делаем +3 (МСК)
-  const mskMins = now.getUTCMinutes();
   
-  let diff = (tHours * 60 + tMins) - (mskHours * 60 + mskMins);
+  let diff = (tDate.getHours() * 60 + tDate.getMinutes()) - (now.getHours() * 60 + now.getMinutes());
   
-  // Корректировка на стыке суток (например, турнир в 00:10, а сейчас 23:50)
   if (diff > 12 * 60) diff -= 24 * 60;
   else if (diff < -12 * 60) diff += 24 * 60;
   
   return diff;
 };
+
 
 export default function App() {
   const [authStep, setAuthStep] = useState<'login' | 'mfa' | 'app'>('login');
@@ -131,49 +138,38 @@ export default function App() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsRoomsDropdownOpen(false);
-      }
-      if (gridDropdownRef.current && !gridDropdownRef.current.contains(event.target as Node)) {
-        setIsGridRoomsOpen(false);
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) setIsRoomsDropdownOpen(false);
+      if (gridDropdownRef.current && !gridDropdownRef.current.contains(event.target as Node)) setIsGridRoomsOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const toggleFormat = (key: 'isPko' | 'isFreezeout' | 'isTurbo') => {
-    setActiveFormats(prev => ({ ...prev, [key]: !prev[key] }));
-  };
+  const toggleFormat = (key: 'isPko' | 'isFreezeout' | 'isTurbo') => setActiveFormats(prev => ({ ...prev, [key]: !prev[key] }));
 
+  // Используем обычный локальный день недели для проверок
   const isToday = (dayWeekStr?: string) => {
     if (!dayWeekStr) return true;
     const cleanDay = dayWeekStr.toLowerCase().replace(/[^а-яё]/g, '');
     const days = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
-    
-    // Получаем текущий день по МСК
-    const now = new Date();
-    const mskHours = now.getUTCHours() + 3;
-    const isNextDayInMsk = mskHours >= 24;
-    const todayIndex = (now.getUTCDay() + (isNextDayInMsk ? 1 : 0)) % 7;
-    
+    const todayIndex = new Date().getDay();
     const tourneyIndex = days.findIndex(d => cleanDay.includes(d));
     return tourneyIndex === -1 || tourneyIndex === todayIndex;
   };
 
   const isPlayed = (timeString: string, dayWeekStr?: string) => {
     if (!timeString || !isToday(dayWeekStr)) return false;
-    return getMskDiffMins(timeString) < -120; // Прошло больше 2 часов (от МСК времени)
+    return getDiffMins(timeString) < -120; // Прошло больше 2 часов
   };
 
   const isStartedTooLongAgo = (timeString: string, dayWeekStr?: string) => {
     if (!timeString || !isToday(dayWeekStr)) return false;
-    return getMskDiffMins(timeString) < -15; // Прошло больше 15 минут (от МСК времени)
+    return getDiffMins(timeString) < -15; // Прошло больше 15 минут
   };
 
   const getSmartTimer = (timeStr: string, dayWeekStr?: string) => {
     if (!timeStr || !isToday(dayWeekStr)) return null;
-    const diffMins = getMskDiffMins(timeStr);
+    const diffMins = getDiffMins(timeStr);
 
     if (diffMins > 0 && diffMins <= 60) {
       return <span className="text-[8px] font-black uppercase tracking-wider text-amber-400 animate-pulse bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/30">⏳ {diffMins}м</span>;
@@ -192,11 +188,8 @@ export default function App() {
 
   const toggleGrid = (t: Tournament) => {
     const targetId = getUniqueId(t);
-    if (grid.some(item => getUniqueId(item) === targetId)) {
-      setGrid(grid.filter(item => getUniqueId(item) !== targetId)); 
-    } else {
-      setGrid([...grid, t]);
-    }
+    if (grid.some(item => getUniqueId(item) === targetId)) setGrid(grid.filter(item => getUniqueId(item) !== targetId)); 
+    else setGrid([...grid, t]);
   };
 
   const bulkAdd = (type: 'top' | 'overlay') => {
@@ -219,11 +212,9 @@ export default function App() {
   const [dateTo, setDateTo] = useState('');
   const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
   const [activeStats, setActiveStats] = useState<Tournament | null>(null);
-
   const [showPresetsModal, setShowPresetsModal] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
   const [presets, setPresets] = useState<{name: string, items: any[]}[]>([]);
-  
   const [notes, setNotes] = useState<Record<string, NoteData>>({});
   const [sessionsHistory, setSessionsHistory] = useState<SessionData[]>([]);
   const [showSessionModal, setShowSessionModal] = useState(false);
@@ -243,21 +234,15 @@ export default function App() {
   };
 
   const apiCall = async (endpoint: string, body: any) => {
-    const res = await fetch(`${API_BASE_URL}/api/${endpoint}`, { 
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) 
-    });
+    const res = await fetch(`${API_BASE_URL}/api/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     return res.json();
   };
 
   const loadAllUserData = async (token: string) => {
     try {
       const [presRes, setRes, notRes, histRes, gridRes, balRes] = await Promise.all([
-        apiCall('get_presets', { session_token: token }),
-        apiCall('get_settings', { session_token: token }),
-        apiCall('get_notes', { session_token: token }),
-        apiCall('get_sessions_history', { session_token: token }),
-        apiCall('get_grid', { session_token: token }),
-        apiCall('get_balances', { session_token: token })
+        apiCall('get_presets', { session_token: token }), apiCall('get_settings', { session_token: token }), apiCall('get_notes', { session_token: token }),
+        apiCall('get_sessions_history', { session_token: token }), apiCall('get_grid', { session_token: token }), apiCall('get_balances', { session_token: token })
       ]);
       if (presRes.status === 'success') setPresets(presRes.presets);
       if (setRes.status === 'success') {
@@ -273,9 +258,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (isSettingsLoaded && sessionToken) {
-      apiCall('save_settings', { session_token: sessionToken, selected_rooms: selectedRooms, active_formats: activeFormats, sort_order: sortOrder });
-    }
+    if (isSettingsLoaded && sessionToken) apiCall('save_settings', { session_token: sessionToken, selected_rooms: selectedRooms, active_formats: activeFormats, sort_order: sortOrder });
   }, [selectedRooms, activeFormats, sortOrder, isSettingsLoaded, sessionToken]);
 
   useEffect(() => {
@@ -316,10 +299,7 @@ export default function App() {
     try {
       const formatApiDate = (dateStr: string) => dateStr ? dateStr.replace('T', ' ') + ':00' : '';
       const data = await apiCall('tournaments', { 
-        session_token: sessionToken, 
-        date_from: formatApiDate(dateFrom), 
-        date_to: formatApiDate(dateTo), 
-        rooms: selectedRooms, 
+        session_token: sessionToken, date_from: formatApiDate(dateFrom), date_to: formatApiDate(dateTo), rooms: selectedRooms, 
         structs: { isFreezeout: activeFormats.isFreezeout ? '1' : '0', isPko: activeFormats.isPko ? '1' : '0', isTurbo: activeFormats.isTurbo ? '1' : '0', isHyperTurbo: activeFormats.isTurbo ? '1' : '0', is6MaxTurboPko: activeFormats.isPko ? '1' : '0', isSeries: '1' },
         priorities: { priority1: '1', priority2: '1', priority3: '1' } 
       });
@@ -369,26 +349,29 @@ export default function App() {
     return { label: 'Высокая', color: 'text-rose-400' };
   };
 
+  // Расчет конца сессии теперь идет строго по локальному времени
   const getSessionEndTime = (items: Tournament[]) => {
     if (!items || items.length === 0) return "--:--";
     let maxEndTimeMins = 0;
     items.forEach(t => {
       if (!t.time_start || !t.duration) return;
-      const [hours, minutes] = t.time_start.split(':').map(Number);
-      const endMins = (hours * 60) + (minutes || 0) + (parseFloat(t.duration.replace(',', '.')) * 60);
+      const tDate = getLocalTimeDate(t.time_start);
+      const endMins = (tDate.getHours() * 60) + tDate.getMinutes() + (parseFloat(t.duration.replace(',', '.')) * 60);
       if (endMins > maxEndTimeMins) maxEndTimeMins = endMins;
     });
     return `${String(Math.floor(maxEndTimeMins / 60) % 24).padStart(2, '0')}:${String(Math.round(maxEndTimeMins % 60)).padStart(2, '0')}`;
   };
 
+  // Пиковые столы теперь тоже учитывают локальные часы
   const getPeakTablesData = (items: Tournament[]) => {
     if (!items || items.length === 0) return { max: 0, timeStr: '--:--' };
     let events: { time: number, type: number }[] = [];
     items.forEach(t => {
       if (!t.time_start || !t.duration) return;
-      const [hours, mins] = t.time_start.split(':').map(Number);
-      let startMins = hours * 60 + (mins || 0);
-      if (hours < 10) startMins += 24 * 60;
+      const tDate = getLocalTimeDate(t.time_start);
+      const hours = tDate.getHours();
+      let startMins = hours * 60 + tDate.getMinutes();
+      if (hours < 10) startMins += 24 * 60; // Ночные сдвигаем
       events.push({ time: startMins, type: 1 });  
       events.push({ time: startMins + (parseFloat(t.duration.replace(',', '.')) * 60), type: -1 });   
     });
@@ -436,7 +419,7 @@ export default function App() {
   const searchResults = useMemo(() => {
     return tournaments
       .filter(t => {
-        if (isStartedTooLongAgo(t.time_start, t.day_week)) return false; // Теперь работает по МСК
+        if (isStartedTooLongAgo(t.time_start, t.day_week)) return false; 
         return isRoomAllowed(t.room);
       })
       .sort((a, b) => sortOrder === 'tier' ? getTier(a).id - getTier(b).id : 0);
@@ -513,20 +496,15 @@ export default function App() {
   const renderGridCard = (t: any, overrideKey?: string) => {
     const prioStyles = getPriorityStyles(t.priority);
     const played = isPlayed(t.time_start, t.day_week);
-    
     const elementKey = overrideKey || getUniqueId(t);
 
     return (
-      <div 
-        key={elementKey} 
-        onClick={() => toggleGrid(t)} 
-        className={`bg-slate-900 rounded-xl px-3 py-2.5 border transition-all flex items-center justify-between gap-2 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 ${played ? 'opacity-40 grayscale bg-slate-900/40' : 'border-slate-800'}`}
-      >
+      <div key={elementKey} onClick={() => toggleGrid(t)} className={`bg-slate-900 rounded-xl px-3 py-2.5 border transition-all flex items-center justify-between gap-2 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 ${played ? 'opacity-40 grayscale bg-slate-900/40' : 'border-slate-800'}`}>
         <div className="flex-1 min-w-0 space-y-1">
           <div className="flex items-center gap-1.5">
             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
             <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
-              {formatDayWeek(t.day_week)}{t.time_start}
+              {formatDayWeek(t.day_week)}{formatLocalTime(t.time_start)}
             </span>
           </div>
           <div className="font-bold text-[11px] text-white truncate leading-tight">{t.name}</div>
@@ -550,14 +528,10 @@ export default function App() {
         <div className="space-y-2.5">
           <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                <ListTodo size={12} strokeWidth={2.5} />
-              </div>
+              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400"><ListTodo size={12} strokeWidth={2.5} /></div>
               <span className="text-xs font-black tracking-wider text-white uppercase">Текущая сетка</span>
             </div>
-            <span className="text-[11px] font-black text-cyan-400 bg-cyan-950/40 px-2.5 py-1 rounded-lg border border-cyan-500/30">
-              {grid.length} турн.
-            </span>
+            <span className="text-[11px] font-black text-cyan-400 bg-cyan-950/40 px-2.5 py-1 rounded-lg border border-cyan-500/30">{grid.length} турн.</span>
           </div>
 
           <div className="grid grid-cols-3 gap-2 pb-2 border-b border-slate-800/80 text-center">
@@ -574,18 +548,10 @@ export default function App() {
 
         {grid.length > 0 && (
           <div className="flex items-center gap-1.5 pt-2 border-t border-slate-800/80">
-            <button onClick={() => setShowSessionModal(true)} className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-400 rounded-xl py-1.5 px-2 flex items-center justify-center gap-1.5 text-[11px] uppercase font-black transition">
-              <Wallet size={14} /> <span className="truncate">Завершить</span>
-            </button>
-            <button onClick={() => setSortOrder(prev => prev === 'time' ? 'buyin' : prev === 'buyin' ? 'ev' : 'time')} title="Сортировка" className="px-3 py-1.5 bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl text-[11px] uppercase font-black text-blue-400 flex items-center gap-1 transition shrink-0">
-              <ArrowUpDown size={12} /> <span>{sortOrder}</span>
-            </button>
-            <button onClick={() => setGroupByRoom(!groupByRoom)} title="Группировать" className={`w-8 h-8 rounded-xl border flex items-center justify-center transition shrink-0 ${groupByRoom ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}`}>
-              <Layers size={14} />
-            </button>
-            <button onClick={clearGrid} title="Очистить" className="w-8 h-8 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl flex items-center justify-center text-rose-400 transition shrink-0">
-              <Trash2 size={14} />
-            </button>
+            <button onClick={() => setShowSessionModal(true)} className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-400 rounded-xl py-1.5 px-2 flex items-center justify-center gap-1.5 text-[11px] uppercase font-black transition"><Wallet size={14} /> <span className="truncate">Завершить</span></button>
+            <button onClick={() => setSortOrder(prev => prev === 'time' ? 'buyin' : prev === 'buyin' ? 'ev' : 'time')} title="Сортировка" className="px-3 py-1.5 bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl text-[11px] uppercase font-black text-blue-400 flex items-center gap-1 transition shrink-0"><ArrowUpDown size={12} /> <span>{sortOrder}</span></button>
+            <button onClick={() => setGroupByRoom(!groupByRoom)} title="Группировать" className={`w-8 h-8 rounded-xl border flex items-center justify-center transition shrink-0 ${groupByRoom ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}`}><Layers size={14} /></button>
+            <button onClick={clearGrid} title="Очистить" className="w-8 h-8 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl flex items-center justify-center text-rose-400 transition shrink-0"><Trash2 size={14} /></button>
           </div>
         )}
       </div>
@@ -669,77 +635,22 @@ export default function App() {
           <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/40 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.2)]">
             <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse"></div>
           </div>
-
           <div className="flex flex-col gap-2">
-            <button 
-              onClick={() => setActiveTab('search')} 
-              title="Поиск турниров"
-              className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${activeTab === 'search' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}
-            >
-              <Search size={20} />
-            </button>
-            
-            <button 
-              onClick={() => setActiveTab('grid')} 
-              title="Сетка"
-              className={`w-12 h-12 rounded-2xl flex items-center justify-center transition relative ${activeTab === 'grid' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}
-            >
+            <button onClick={() => setActiveTab('search')} title="Поиск турниров" className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${activeTab === 'search' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}><Search size={20} /></button>
+            <button onClick={() => setActiveTab('grid')} title="Сетка" className={`w-12 h-12 rounded-2xl flex items-center justify-center transition relative ${activeTab === 'grid' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}>
               <ListTodo size={20} />
-              {grid.length > 0 && (
-                <span className="absolute top-2 right-2 bg-emerald-500 text-slate-950 text-[9px] font-black h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center">
-                  {grid.length}
-                </span>
-              )}
+              {grid.length > 0 && <span className="absolute top-2 right-2 bg-emerald-500 text-slate-950 text-[9px] font-black h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center">{grid.length}</span>}
             </button>
-
-            <button 
-              onClick={() => setActiveTab('diary')} 
-              title="Дневник и банкролл"
-              className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${activeTab === 'diary' ? 'bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}
-            >
-              <TrendingUp size={20} />
-            </button>
+            <button onClick={() => setActiveTab('diary')} title="Дневник и банкролл" className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${activeTab === 'diary' ? 'bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}><TrendingUp size={20} /></button>
           </div>
-
           <div className="w-8 h-[1px] bg-slate-800 my-1"></div>
-
           <div className="flex flex-col gap-2">
-            <button 
-              onClick={() => toggleFormat('isPko')} 
-              title="Формат: PKO"
-              className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition border ${activeFormats.isPko ? 'bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/40 shadow-sm' : 'bg-slate-900/40 text-slate-600 border-slate-800/80 hover:text-slate-400'}`}
-            >
-              <ShieldAlert size={16} />
-              <span className="text-[9px] font-black">PKO</span>
-            </button>
-            
-            <button 
-              onClick={() => toggleFormat('isTurbo')} 
-              title="Формат: Turbo"
-              className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition border ${activeFormats.isTurbo ? 'bg-amber-500/15 text-amber-400 border-amber-500/40 shadow-sm' : 'bg-slate-900/40 text-slate-600 border-slate-800/80 hover:text-slate-400'}`}
-            >
-              <Zap size={16} />
-              <span className="text-[9px] font-black">TURB</span>
-            </button>
-
-            <button 
-              onClick={() => toggleFormat('isFreezeout')} 
-              title="Формат: Freezeout"
-              className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition border ${activeFormats.isFreezeout ? 'bg-blue-500/15 text-blue-400 border-blue-500/40 shadow-sm' : 'bg-slate-900/40 text-slate-600 border-slate-800/80 hover:text-slate-400'}`}
-            >
-              <Disc size={16} />
-              <span className="text-[9px] font-black">FRZ</span>
-            </button>
+            <button onClick={() => toggleFormat('isPko')} title="Формат: PKO" className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition border ${activeFormats.isPko ? 'bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/40 shadow-sm' : 'bg-slate-900/40 text-slate-600 border-slate-800/80 hover:text-slate-400'}`}><ShieldAlert size={16} /><span className="text-[9px] font-black">PKO</span></button>
+            <button onClick={() => toggleFormat('isTurbo')} title="Формат: Turbo" className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition border ${activeFormats.isTurbo ? 'bg-amber-500/15 text-amber-400 border-amber-500/40 shadow-sm' : 'bg-slate-900/40 text-slate-600 border-slate-800/80 hover:text-slate-400'}`}><Zap size={16} /><span className="text-[9px] font-black">TURB</span></button>
+            <button onClick={() => toggleFormat('isFreezeout')} title="Формат: Freezeout" className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition border ${activeFormats.isFreezeout ? 'bg-blue-500/15 text-blue-400 border-blue-500/40 shadow-sm' : 'bg-slate-900/40 text-slate-600 border-slate-800/80 hover:text-slate-400'}`}><Disc size={16} /><span className="text-[9px] font-black">FRZ</span></button>
           </div>
         </div>
-
-        <button 
-          onClick={logout} 
-          title="Выйти из системы"
-          className="w-12 h-12 rounded-2xl flex items-center justify-center text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/30 transition"
-        >
-          <LogOut size={18} />
-        </button>
+        <button onClick={logout} title="Выйти из системы" className="w-12 h-12 rounded-2xl flex items-center justify-center text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/30 transition"><LogOut size={18} /></button>
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
@@ -750,7 +661,6 @@ export default function App() {
             {activeTab === 'grid' && 'Текущая сетка сессии'}
             {activeTab === 'diary' && 'Дневник сессий и банкролл'}
           </div>
-
           <div className="bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-6 shadow-sm">
             <div>Загрузка: <b className="text-emerald-400">${totalBuyin.toFixed(1)}</b></div>
             <div>EV: <b className={totalEV >= 0 ? 'text-blue-400' : 'text-rose-400'}>{totalEV > 0 ? '+' : ''}${totalEV.toFixed(1)}</b></div>
@@ -761,7 +671,6 @@ export default function App() {
           
           {activeTab === 'search' && (
             <div className="flex flex-col xl:flex-row gap-4 items-start">
-              
               <div className="w-full xl:w-[75%] shrink-0 space-y-4">
                 
                 <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4">
@@ -873,16 +782,15 @@ export default function App() {
                         key={uniqueKey} 
                         onClick={() => toggleGrid(t)} 
                         className={`rounded-xl px-3 py-2 md:py-2.5 border transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-sm ${
-                          isAdded 
-                            ? 'bg-emerald-950/90 border-transparent shadow-none' 
-                            : 'bg-slate-900 border-slate-800'
+                          isAdded ? 'bg-emerald-950/90 border-transparent shadow-none' : 'bg-slate-900 border-slate-800'
                         }`}
                       >
                         <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
                           <div className="flex items-center gap-1.5 shrink-0 md:w-[150px]">
                             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
+                            {/* ВОТ ТУТ РЕНДЕРИТСЯ ТВОЕ ЛОКАЛЬНОЕ ВРЕМЯ */}
                             <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
-                              {formatDayWeek(t.day_week)}{t.time_start}
+                              {formatDayWeek(t.day_week)}{formatLocalTime(t.time_start)}
                             </span>
                             {getSmartTimer(t.time_start, t.day_week)}
                           </div>
@@ -892,7 +800,6 @@ export default function App() {
                             {isOverlay(t) && <Flame size={12} className="inline-block ml-1.5 text-orange-500 animate-pulse mb-0.5"/>}
                           </div>
                           
-                          {/* Здесь добавлены классы truncate для afs и gtd */}
                           <div className="flex items-center gap-3 text-[11px] shrink-0 md:w-[280px] md:justify-end">
                             <span className="font-black text-emerald-400 w-12 text-right">{getRoomCurrency(t.room)}{t.buyin}</span>
                             <span className="text-slate-400 w-14 text-right truncate" title={t.afs}>{t.afs} {t.afs.includes('не задано') ? '' : 'рег.'}</span>
@@ -909,19 +816,13 @@ export default function App() {
                   })}
                 </div>
               </div>
-
               <div className="hidden xl:block w-full xl:w-[25%] shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-8 pr-1">
                 {renderGridPanel()}
               </div>
-
             </div>
           )}
 
-          {activeTab === 'grid' && (
-            <div className="w-full max-w-2xl mx-auto">
-              {renderGridPanel()}
-            </div>
-          )}
+          {activeTab === 'grid' && <div className="w-full max-w-2xl mx-auto">{renderGridPanel()}</div>}
 
           {activeTab === 'diary' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
