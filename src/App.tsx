@@ -831,7 +831,7 @@ const renderGridCard = (t: any, overrideKey?: string) => {
 
           {activeTab === 'grid' && <div className="w-full max-w-2xl mx-auto">{renderGridPanel()}</div>}
 
-          {activeTab === 'diary' && (
+{activeTab === 'diary' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="md:col-span-1 space-y-4">
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
@@ -853,6 +853,53 @@ const renderGridCard = (t: any, overrideKey?: string) => {
                       );
                     })}
                   </div>
+                </div>
+
+                {/* КАЛЕНДАРЬ АКТИВНОСТИ ПОД БАНКРОЛЛОМ СЛЕВА */}
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-slate-400 font-bold uppercase text-xs tracking-wider">Календарь активности</h3>
+                    <span className="text-[10px] text-cyan-400 font-bold">Октябрь 2026</span>
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1.5 text-center">
+                    {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d => (
+                      <span key={d} className="text-[10px] font-bold text-slate-500 py-1">{d}</span>
+                    ))}
+                    
+                    {Array.from({ length: 31 }, (_, i) => {
+                      const dayNum = i + 1;
+                      const dateStr = `${String(dayNum).padStart(2, '0')}.10.2026`;
+                      
+                      const daySessions = sessionsHistory.filter(s => s.date === dateStr);
+                      const hasPlayed = daySessions.length > 0;
+                      
+                      const dayCashes = daySessions.reduce((sum, s) => sum + s.total_cashes, 0);
+                      const dayBuyin = daySessions.reduce((sum, s) => sum + s.total_buyin, 0);
+                      const dayProfit = dayCashes - dayBuyin;
+                      const dayTournaments = daySessions.reduce((sum, s) => sum + s.tournaments_count, 0);
+
+                      let bgClass = "bg-slate-950 text-slate-600 border-slate-800/80";
+                      if (hasPlayed) {
+                        if (dayProfit >= 0) bgClass = "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30";
+                        else bgClass = "bg-rose-500/20 text-rose-400 border-rose-500/40 hover:bg-rose-500/30";
+                      }
+
+                      return (
+                        <div 
+                          key={dayNum}
+                          title={hasPlayed ? `Дата: ${dateStr}\nТурниров: ${dayTournaments}\nПрофит: ${dayProfit >= 0 ? '+' : ''}$${dayProfit.toFixed(1)}` : `Дата: ${dateStr}\nНет игр`}
+                          className={`h-9 rounded-xl border flex flex-col items-center justify-center text-xs font-bold transition cursor-pointer relative group ${bgClass}`}
+                        >
+                          <span>{dayNum}</span>
+                          {hasPlayed && (
+                            <span className={`w-1 h-1 rounded-full ${dayProfit >= 0 ? 'bg-emerald-400' : 'bg-rose-400'}`}></span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="text-[10px] text-slate-500 text-center pt-1">💡 Наведи на день для статистики</div>
                 </div>
               </div>
 
