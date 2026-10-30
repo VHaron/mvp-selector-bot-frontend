@@ -878,27 +878,60 @@ const renderGridCard = (t: any, overrideKey?: string) => {
                   </div>
                 </div>
 
-                <h3 className="font-bold text-sm text-white pt-2">История сессий</h3>
-                <div className="space-y-2.5">
+                {/* ИСТОРИЯ СЕССИЙ ПО ДНЯМ */}
+                <h3 className="font-bold text-sm text-white pt-2">История сессий по дням</h3>
+                <div className="space-y-4">
                   {sessionsHistory.length === 0 && <div className="text-center py-10 text-slate-500 text-xs">Дневник пуст</div>}
-                  {sessionsHistory.map(h => (
-                    <div key={h.id} className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex justify-between items-center text-xs shadow-sm">
-                      <div>
-                        <div className="text-[10px] text-slate-500 mb-1">{h.date} • <span className="text-cyan-400 font-bold">{h.tournaments_count} турн.</span></div>
-                        <div className="font-bold text-white">Вгружено: <span className="text-emerald-400">${h.total_buyin.toFixed(1)}</span></div>
+                  
+                  {Object.entries(
+                    sessionsHistory.reduce((acc: Record<string, SessionData[]>, h) => {
+                      if (!acc[h.date]) acc[h.date] = [];
+                      acc[h.date].push(h);
+                      return acc;
+                    }, {})
+                  ).map(([date, daySessions]) => {
+                    const dayTotalCashes = daySessions.reduce((sum, s) => sum + s.total_cashes, 0);
+                    const dayTotalBuyin = daySessions.reduce((sum, s) => sum + s.total_buyin, 0);
+                    const dayProfit = dayTotalCashes - dayTotalBuyin;
+                    const dayTournamentsCount = daySessions.reduce((sum, s) => sum + s.tournaments_count, 0);
+
+                    return (
+                      <div key={date} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-xl">
+                        <div className="flex justify-between items-center pb-2.5 border-b border-slate-800/80 text-xs">
+                          <div className="font-bold text-cyan-400 flex items-center gap-2">
+                            <span>📅 {date}</span>
+                            <span className="text-[10px] text-slate-500 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                              {dayTournamentsCount} турн.
+                            </span>
+                          </div>
+                          <div className={`font-black text-sm ${dayProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {dayProfit > 0 ? '+' : ''}${dayProfit.toFixed(1)}
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          {daySessions.map((h, idx) => (
+                            <div key={h.id || idx} className="bg-slate-950/60 border border-slate-800/60 rounded-xl p-3 flex justify-between items-center text-xs">
+                              <div>
+                                <div className="text-[10px] text-slate-400 mb-0.5">Сессия #{daySessions.length - idx} • <span className="text-cyan-400 font-bold">{h.tournaments_count} турн.</span></div>
+                                <div className="font-bold text-slate-300">Вгружено: <span className="text-emerald-400">${h.total_buyin.toFixed(1)}</span></div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-[10px] text-slate-400 mb-0.5">Призовые: ${h.total_cashes.toFixed(1)}</div>
+                                <div className={`font-black text-xs ${h.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                  {h.profit > 0 ? '+' : ''}${h.profit.toFixed(1)}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-[10px] text-slate-500 mb-1">Призовые: ${h.total_cashes.toFixed(1)}</div>
-                        <div className={`font-black text-sm ${h.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{h.profit > 0 ? '+' : ''}${h.profit.toFixed(1)}</div>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
           )}
-        </main>
-      </div>
 
       {activeStats && (() => {
         const key = getNoteKey(activeStats);
