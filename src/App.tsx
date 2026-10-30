@@ -493,7 +493,7 @@ export default function App() {
     return clean ? `${clean}. ` : '';
   };
 
-  const renderGridCard = (t: any, overrideKey?: string) => {
+const renderGridCard = (t: any, overrideKey?: string) => {
     const prioStyles = getPriorityStyles(t.priority);
     const played = isPlayed(t.time_start, t.day_week);
     const elementKey = overrideKey || getUniqueId(t);
@@ -506,11 +506,13 @@ export default function App() {
             <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
               {formatDayWeek(t.day_week)}{formatLocalTime(t.time_start)}
             </span>
+            {/* ВОТ ЗДЕСЬ ДОБАВЛЕН УМНЫЙ ТАЙМЕР ДЛЯ СЕТКИ */}
+            {getSmartTimer(t.time_start, t.day_week)}
           </div>
           <div className="font-bold text-[11px] text-white truncate leading-tight">{t.name}</div>
           <div className="flex items-center gap-2 text-[10px]">
             <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
-            <span className="text-slate-500 truncate">GTD: ${t.gtd}</span>
+            <span className="text-slate-500 truncate">GTD: {t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
           </div>
         </div>
         <div className="shrink-0 flex flex-col items-center gap-1.5">
