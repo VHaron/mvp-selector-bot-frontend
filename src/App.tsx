@@ -878,7 +878,6 @@ const renderGridCard = (t: any, overrideKey?: string) => {
                   </div>
                 </div>
 
-                {/* ИСТОРИЯ СЕССИЙ ПО ДНЯМ */}
                 <h3 className="font-bold text-sm text-white pt-2">История сессий по дням</h3>
                 <div className="space-y-4">
                   {sessionsHistory.length === 0 && <div className="text-center py-10 text-slate-500 text-xs">Дневник пуст</div>}
@@ -932,6 +931,8 @@ const renderGridCard = (t: any, overrideKey?: string) => {
               </div>
             </div>
           )}
+        </main>
+      </div>
 
       {activeStats && (() => {
         const key = getNoteKey(activeStats);
