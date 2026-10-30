@@ -126,7 +126,6 @@ export default function App() {
   const [isRoomsDropdownOpen, setIsRoomsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Стейты для календаря активности (переключение месяцев)
   const [calendarYear, setCalendarYear] = useState(2026);
   const [calendarMonth, setCalendarMonth] = useState(9); // 9 = октябрь
 
@@ -240,7 +239,6 @@ export default function App() {
   const [notes, setNotes] = useState<Record<string, NoteData>>({});
   const [sessionsHistory, setSessionsHistory] = useState<SessionData[]>([]);
   const [showSessionModal, setShowSessionModal] = useState(false);
-  const [sessionCashes, setSessionCashes] = useState('');
 
   const setPresetDate = (type: 'today' | 'tomorrow' | 'clear') => {
     if (type === 'clear') { setDateFrom(''); setDateTo(''); return; }
@@ -478,30 +476,29 @@ export default function App() {
     setPresets(newPresets); apiCall('save_presets', { session_token: sessionToken, presets: newPresets });
   };
 
-  // АВТОМАТИЧЕСКИЙ РАСЧЕТ ПРОФИТА ПО БАНКРОЛЛУ И ВГРУЗКЕ ПРИ ЗАВЕРШЕНИИ СЕССИИ
+  // АВТОМАТИЧЕСКОЕ ЗАВЕРШЕНИЕ СЕССИИ БЕЗ ВВОДА ПОЛЕЙ
   const finishSession = async () => {
     const currentTotalBankroll = totalBankroll;
+    // Примерный авто-расчет профита сессии по вгрузке и общим изменениям банкролла
     const previousTotalBankroll = sessionsHistory.length > 0 
-      ? (sessionsHistory[0].total_cashes - sessionsHistory[0].total_buyin) // берем пример или считаем изменение
-      : currentTotalBankroll; 
+      ? (sessionsHistory[0].total_cashes - sessionsHistory[0].total_buyin + currentTotalBankroll * 0) 
+      : currentTotalBankroll;
 
-    // Профит можно считать как разницу балансов или через введенные призовые. 
-    // Поскольку ты вбиваешь остаток денег на сегодня прямо в румы, авто-профит за сессию = (Текущий банкролл - Предыдущий) или (Призовые - Вгрузка).
-    const cashes = parseFloat(sessionCashes) || 0;
-    const profit = cashes > 0 ? (cashes - totalBuyin) : (currentTotalBankroll - previousTotalBankroll);
+    const profit = currentTotalBankroll - previousTotalBankroll;
+    const cashes = totalBuyin + profit;
 
     const s: SessionData = { 
       id: uuidv4(), 
       date: new Date().toLocaleDateString('ru-RU'), 
       total_buyin: totalBuyin, 
-      total_cashes: cashes > 0 ? cashes : (totalBuyin + profit), 
+      total_cashes: cashes >= 0 ? cashes : 0, 
       profit: profit, 
       tournaments_count: grid.length 
     };
 
     setSessionsHistory([s, ...sessionsHistory]);
     await apiCall('save_session_history', { session_token: sessionToken, session_data: s });
-    setGrid([]); setShowSessionModal(false); setSessionCashes(''); setActiveTab('diary');
+    setGrid([]); setShowSessionModal(false); setActiveTab('diary');
   };
 
   const clearHistory = async () => {
@@ -886,7 +883,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* КАЛЕНДАРЬ АКТИВНОСТИ С ПЕРЕКЛЮЧЕНИЕМ И ЦВЕТОМ ПО ТУРНИРАМ */}
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
                   <div className="flex justify-between items-center">
                     <h3 className="text-slate-400 font-bold uppercase text-xs tracking-wider">Календарь активности</h3>
@@ -1061,12 +1057,15 @@ export default function App() {
 
       {showSessionModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative text-center space-y-4">
             <button onClick={() => setShowSessionModal(false)} className="absolute top-4 right-4 p-2 bg-slate-800 rounded-full text-slate-400"><X size={18}/></button>
-            <h2 className="text-base font-black text-white mb-1">Завершение сессии</h2>
-            <p className="text-xs text-slate-400 mb-4">Вгружено: <b className="text-white">${totalBuyin.toFixed(1)}</b></p>
-            <input type="number" placeholder="Сумма призовых ($)" value={sessionCashes} onChange={e => setSessionCashes(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3.5 text-xl font-black text-white outline-none mb-4 [appearance:textfield]" />
-            <button onClick={finishSession} disabled={!sessionCashes} className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl disabled:opacity-50 text-xs uppercase tracking-wider">Сохранить результат</button>
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto"><Wallet size={24} /></div>
+            <div>
+              <h2 className="text-base font-black text-white">Завершение сессии</h2>
+              <p className="text-xs text-slate-400 mt-1">Турниров в сетке: <b className="text-white">{grid.length}</b> • Вгрузка: <b className="text-emerald-400">${totalBuyin.toFixed(1)}</b></p>
+            </div>
+            <p className="text-[11px] text-slate-500 bg-slate-950 p-3 rounded-xl border border-slate-800">Профит рассчитается автоматически по обновленному балансу румов.</p>
+            <button onClick={finishSession} className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs uppercase tracking-wider transition">Подтвердить и завершить</button>
           </div>
         </div>
       )}
