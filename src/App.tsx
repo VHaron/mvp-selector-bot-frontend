@@ -77,39 +77,29 @@ const API_BASE_URL = 'https://selector-backend-production.up.railway.app';
 const parseNum = (str: string) => parseFloat(str?.replace(/[^\d.-]/g, '')) || 0;
 const getUniqueId = (t: Tournament) => `${t.id}_${t.room}_${t.name}_${t.buyin}_${t.time_start}`;
 
-// --- НОВАЯ СИСТЕМА ЛОКАЛЬНОГО ВРЕМЕНИ ---
-
-// 1. Превращаем "13:30" (МСК) в настоящий объект Date с твоим локальным временем
 const getLocalTimeDate = (mskTimeStr: string) => {
   if (!mskTimeStr) return new Date();
   const [hours, mins] = mskTimeStr.slice(0, 5).split(':').map(Number);
   const date = new Date();
-  // Говорим: это время по UTC+3 (МСК), значит чистое UTC = hours - 3
   date.setUTCHours(hours - 3, mins || 0, 0, 0);
   return date;
 };
 
-// 2. Форматируем для отрисовки на карточке (например, отдаст "12:30" для Египта)
 const formatLocalTime = (mskTimeStr: string) => {
   if (!mskTimeStr) return '';
   const date = getLocalTimeDate(mskTimeStr);
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 };
 
-// 3. Высчитываем разницу в минутах между локальным началом и локальным "сейчас"
 const getDiffMins = (mskTimeStr: string) => {
   if (!mskTimeStr) return 0;
   const tDate = getLocalTimeDate(mskTimeStr);
   const now = new Date();
-  
   let diff = (tDate.getHours() * 60 + tDate.getMinutes()) - (now.getHours() * 60 + now.getMinutes());
-  
   if (diff > 12 * 60) diff -= 24 * 60;
   else if (diff < -12 * 60) diff += 24 * 60;
-  
   return diff;
 };
-
 
 export default function App() {
   const [authStep, setAuthStep] = useState<'login' | 'mfa' | 'app'>('login');
@@ -136,6 +126,37 @@ export default function App() {
   const [isRoomsDropdownOpen, setIsRoomsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Стейты для календаря активности (переключение месяцев)
+  const [calendarYear, setCalendarYear] = useState(2026);
+  const [calendarMonth, setCalendarMonth] = useState(9); // 9 = октябрь
+
+  const monthsNames = [
+    "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", 
+    "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
+  ];
+
+  const handlePrevMonth = () => {
+    if (calendarMonth === 0) {
+      setCalendarYear(prev => prev - 1);
+      setCalendarMonth(11);
+    } else {
+      setCalendarMonth(prev => prev - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (calendarMonth === 11) {
+      setCalendarYear(prev => prev + 1);
+      setCalendarMonth(0);
+    } else {
+      setCalendarMonth(prev => prev + 1);
+    }
+  };
+
+  const getDaysInMonth = (year: number, month: number) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) setIsRoomsDropdownOpen(false);
@@ -147,7 +168,6 @@ export default function App() {
 
   const toggleFormat = (key: 'isPko' | 'isFreezeout' | 'isTurbo') => setActiveFormats(prev => ({ ...prev, [key]: !prev[key] }));
 
-  // Используем обычный локальный день недели для проверок
   const isToday = (dayWeekStr?: string) => {
     if (!dayWeekStr) return true;
     const cleanDay = dayWeekStr.toLowerCase().replace(/[^а-яё]/g, '');
@@ -159,16 +179,14 @@ export default function App() {
 
   const isPlayed = (timeString: string, dayWeekStr?: string) => {
     if (!timeString || !isToday(dayWeekStr)) return false;
-    return getDiffMins(timeString) < -120; // Прошло больше 2 часов
+    return getDiffMins(timeString) < -120;
   };
 
-// Для поиска слева: скрываем турнир, если прошло больше 15 минут после старта
   const isStartedTooLongAgo = (timeString: string, dayWeekStr?: string) => {
     if (!timeString || !isToday(dayWeekStr)) return false;
     return getDiffMins(timeString) < -15; 
   };
 
-  // Для плашек и таймеров (и в поиске, и в сетке)
   const getSmartTimer = (timeStr: string, dayWeekStr?: string) => {
     if (!timeStr || !isToday(dayWeekStr)) return null;
     const diffMins = getDiffMins(timeStr);
@@ -178,7 +196,6 @@ export default function App() {
     } else if (diffMins <= 0 && diffMins >= -15) {
       return <span className="text-[8px] font-black uppercase tracking-wider text-rose-400 animate-pulse bg-rose-500/10 px-1 py-0.5 rounded border border-rose-500/30">🔥 Late</span>;
     } else if (diffMins < -15 && diffMins >= -120) {
-      // Яркая, мигающая зеленым плашка для идущих турниров (от 15 до 120 минут)
       return <span className="text-[8px] font-black uppercase tracking-wider text-emerald-400 animate-pulse bg-emerald-500/20 px-1.5 py-0.5 rounded border border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.3)]">🟢 IN GAME</span>;
     }
     return null;
@@ -354,7 +371,6 @@ export default function App() {
     return { label: 'Высокая', color: 'text-rose-400' };
   };
 
-  // Расчет конца сессии теперь идет строго по локальному времени
   const getSessionEndTime = (items: Tournament[]) => {
     if (!items || items.length === 0) return "--:--";
     let maxEndTimeMins = 0;
@@ -367,7 +383,6 @@ export default function App() {
     return `${String(Math.floor(maxEndTimeMins / 60) % 24).padStart(2, '0')}:${String(Math.round(maxEndTimeMins % 60)).padStart(2, '0')}`;
   };
 
-  // Пиковые столы теперь тоже учитывают локальные часы
   const getPeakTablesData = (items: Tournament[]) => {
     if (!items || items.length === 0) return { max: 0, timeStr: '--:--' };
     let events: { time: number, type: number }[] = [];
@@ -376,7 +391,7 @@ export default function App() {
       const tDate = getLocalTimeDate(t.time_start);
       const hours = tDate.getHours();
       let startMins = hours * 60 + tDate.getMinutes();
-      if (hours < 10) startMins += 24 * 60; // Ночные сдвигаем
+      if (hours < 10) startMins += 24 * 60;
       events.push({ time: startMins, type: 1 });  
       events.push({ time: startMins + (parseFloat(t.duration.replace(',', '.')) * 60), type: -1 });   
     });
@@ -498,7 +513,7 @@ export default function App() {
     return clean ? `${clean}. ` : '';
   };
 
-const renderGridCard = (t: any, overrideKey?: string) => {
+  const renderGridCard = (t: any, overrideKey?: string) => {
     const prioStyles = getPriorityStyles(t.priority);
     const played = isPlayed(t.time_start, t.day_week);
     const elementKey = overrideKey || getUniqueId(t);
@@ -511,7 +526,6 @@ const renderGridCard = (t: any, overrideKey?: string) => {
             <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
               {formatDayWeek(t.day_week)}{formatLocalTime(t.time_start)}
             </span>
-            {/* ВОТ ЗДЕСЬ ДОБАВЛЕН УМНЫЙ ТАЙМЕР ДЛЯ СЕТКИ */}
             {getSmartTimer(t.time_start, t.day_week)}
           </div>
           <div className="font-bold text-[11px] text-white truncate leading-tight">{t.name}</div>
@@ -795,7 +809,6 @@ const renderGridCard = (t: any, overrideKey?: string) => {
                         <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
                           <div className="flex items-center gap-1.5 shrink-0 md:w-[150px]">
                             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
-                            {/* ВОТ ТУТ РЕНДЕРИТСЯ ТВОЕ ЛОКАЛЬНОЕ ВРЕМЯ */}
                             <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
                               {formatDayWeek(t.day_week)}{formatLocalTime(t.time_start)}
                             </span>
@@ -831,197 +844,168 @@ const renderGridCard = (t: any, overrideKey?: string) => {
 
           {activeTab === 'grid' && <div className="w-full max-w-2xl mx-auto">{renderGridPanel()}</div>}
 
-          {activeTab === 'diary' && (() => {
-            const [calendarDate, setCalendarDate] = React.useState({ year: 2026, month: 9 }); // 9 = октябрь
-
-            const monthsNames = [
-              "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", 
-              "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
-            ];
-
-            const handlePrevMonth = () => {
-              setCalendarDate(prev => {
-                if (prev.month === 0) return { year: prev.year - 1, month: 11 };
-                return { ...prev, month: prev.month - 1 };
-              });
-            };
-
-            const handleNextMonth = () => {
-              setCalendarDate(prev => {
-                if (prev.month === 11) return { year: prev.year + 1, month: 0 };
-                return { ...prev, month: prev.month + 1 };
-              });
-            };
-
-            const getDaysInMonth = (year: number, month: number) => {
-              return new Date(year, month + 1, 0).getDate();
-            };
-
-            const daysCount = getDaysInMonth(calendarDate.year, calendarDate.month);
-
-            return (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="md:col-span-1 space-y-4">
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-slate-400 font-bold uppercase text-xs tracking-wider flex items-center gap-2"><Wallet size={16} className="text-emerald-500" /> Банкролл</h2>
-                      <div className="text-emerald-400 font-black text-xl">${totalBankroll.toFixed(1)}</div>
-                    </div>
-                    <div className="space-y-2.5">
-                      {selectedRooms.map(roomId => {
-                        const roomName = ROOMS[roomId];
-                        return (
-                          <div key={roomId} className="bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center justify-between gap-2">
-                            <RoomBadge roomName={roomName} getRoomStyle={getRoomStyle} />
-                            <div className="flex items-center gap-1">
-                              <span className="text-slate-500 text-xs font-black">{getRoomCurrency(roomName)}</span>
-                              <input type="number" value={balances[roomName] || ''} onChange={(e) => updateBalance(roomName, e.target.value)} placeholder="0" className="w-20 bg-transparent text-right text-white font-bold text-sm outline-none [appearance:textfield]" />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+          {activeTab === 'diary' && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-1 space-y-4">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-slate-400 font-bold uppercase text-xs tracking-wider flex items-center gap-2"><Wallet size={16} className="text-emerald-500" /> Банкролл</h2>
+                    <div className="text-emerald-400 font-black text-xl">${totalBankroll.toFixed(1)}</div>
                   </div>
-
-                  {/* КАЛЕНДАРЬ АКТИВНОСТИ С ПЕРЕКЛЮЧЕНИЕМ И ЦВЕТОМ ПО ТУРНИРАМ */}
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-slate-400 font-bold uppercase text-xs tracking-wider">Календарь активности</h3>
-                      <div className="flex items-center gap-1.5">
-                        <button onClick={handlePrevMonth} className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"><ChevronLeft size={14} /></button>
-                        <span className="text-[10px] text-cyan-400 font-bold min-w-[75px] text-center">{monthsNames[calendarDate.month]} {calendarDate.year}</span>
-                        <button onClick={handleNextMonth} className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"><ChevronRight size={14} /></button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-7 gap-1.5 text-center">
-                      {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d => (
-                        <span key={d} className="text-[10px] font-bold text-slate-500 py-1">{d}</span>
-                      ))}
-                      
-                      {Array.from({ length: daysCount }, (_, i) => {
-                        const dayNum = i + 1;
-                        const formattedDay = String(dayNum).padStart(2, '0');
-                        const formattedMonth = String(calendarDate.month + 1).padStart(2, '0');
-                        const dateStr = `${formattedDay}.${formattedMonth}.${calendarDate.year}`;
-                        
-                        const daySessions = sessionsHistory.filter(s => s.date === dateStr);
-                        const hasPlayed = daySessions.length > 0;
-                        
-                        const dayCashes = daySessions.reduce((sum, s) => sum + s.total_cashes, 0);
-                        const dayBuyin = daySessions.reduce((sum, s) => sum + s.total_buyin, 0);
-                        const dayProfit = dayCashes - dayBuyin;
-                        const dayTournaments = daySessions.reduce((sum, s) => sum + s.tournaments_count, 0);
-
-                        let bgClass = "bg-slate-950 text-slate-600 border-slate-800/80";
-                        let dotColor = "";
-                        if (hasPlayed) {
-                          if (dayTournaments >= 1 && dayTournaments <= 10) {
-                            bgClass = "bg-rose-500/20 text-rose-400 border-rose-500/40 hover:bg-rose-500/30";
-                            dotColor = "bg-rose-400";
-                          } else if (dayTournaments >= 11 && dayTournaments <= 20) {
-                            bgClass = "bg-amber-500/20 text-amber-400 border-amber-500/40 hover:bg-amber-500/30";
-                            dotColor = "bg-amber-400";
-                          } else {
-                            bgClass = "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30";
-                            dotColor = "bg-emerald-400";
-                          }
-                        }
-
-                        return (
-                          <div 
-                            key={dayNum}
-                            title={hasPlayed ? `Дата: ${dateStr}\nТурниров: ${dayTournaments}\nПрофит: ${dayProfit >= 0 ? '+' : ''}$${dayProfit.toFixed(1)}` : `Дата: ${dateStr}\nНет игр`}
-                            className={`h-9 rounded-xl border flex flex-col items-center justify-center text-xs font-bold transition cursor-pointer relative group ${bgClass}`}
-                          >
-                            <span>{dayNum}</span>
-                            {hasPlayed && (
-                              <span className={`w-1 h-1 rounded-full ${dotColor}`}></span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className="text-[10px] text-slate-500 text-center pt-1">💡 Наведи на день для статистики</div>
-                  </div>
-                </div>
-
-                <div className="md:col-span-2 space-y-4">
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-slate-400 font-bold uppercase text-xs tracking-wider">График профита</h2>
-                      <button onClick={clearHistory} className="bg-rose-500/10 text-rose-400 p-2 rounded-xl"><Trash2 size={14} /></button>
-                    </div>
-                    <div className="relative h-48 w-full bg-slate-950/50 rounded-xl border border-slate-800/80 overflow-hidden">
-                      {sessionsHistory.length === 0 ? (
-                        <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-500 font-bold">Нет сыгранных сессий</div>
-                      ) : (
-                        <svg className="absolute inset-0 w-full h-full" viewBox="-2 -2 104 104" preserveAspectRatio="none">
-                          <line x1="0" y1={chartData.zeroY} x2="100" y2={chartData.zeroY} stroke="#334155" strokeWidth="0.5" strokeDasharray="2 2" />
-                          <polyline points={chartData.points} fill="none" stroke={chartData.current >= 0 ? '#34d399' : '#fb7185'} strokeWidth="2" strokeLinejoin="round" />
-                        </svg>
-                      )}
-                    </div>
-                    <div className="mt-4 pt-3 border-t border-slate-800/50 flex justify-between items-end text-sm">
-                      <span className="text-slate-500 font-bold uppercase text-xs">Итог профита</span>
-                      <div className={`font-black text-lg ${chartData.current >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>${chartData.current.toFixed(1)}</div>
-                    </div>
-                  </div>
-
-                  <h3 className="font-bold text-sm text-white pt-2">История сессий по дням</h3>
-                  <div className="space-y-4">
-                    {sessionsHistory.length === 0 && <div className="text-center py-10 text-slate-500 text-xs">Дневник пуст</div>}
-                    
-                    {Object.entries(
-                      sessionsHistory.reduce((acc: Record<string, SessionData[]>, h) => {
-                        if (!acc[h.date]) acc[h.date] = [];
-                        acc[h.date].push(h);
-                        return acc;
-                      }, {})
-                    ).map(([date, daySessions]) => {
-                      const dayTotalCashes = daySessions.reduce((sum, s) => sum + s.total_cashes, 0);
-                      const dayTotalBuyin = daySessions.reduce((sum, s) => sum + s.total_buyin, 0);
-                      const dayProfit = dayTotalCashes - dayTotalBuyin;
-                      const dayTournamentsCount = daySessions.reduce((sum, s) => sum + s.tournaments_count, 0);
-
+                  <div className="space-y-2.5">
+                    {selectedRooms.map(roomId => {
+                      const roomName = ROOMS[roomId];
                       return (
-                        <div key={date} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-xl">
-                          <div className="flex justify-between items-center pb-2.5 border-b border-slate-800/80 text-xs">
-                            <div className="font-bold text-cyan-400 flex items-center gap-2">
-                              <span>📅 {date}</span>
-                              <span className="text-[10px] text-slate-500 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-                                {dayTournamentsCount} турн.
-                              </span>
-                            </div>
-                            <div className={`font-black text-sm ${dayProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                              {dayProfit > 0 ? '+' : ''}${dayProfit.toFixed(1)}
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            {daySessions.map((h, idx) => (
-                              <div key={h.id || idx} className="bg-slate-950/60 border border-slate-800/60 rounded-xl p-3 flex justify-between items-center text-xs">
-                                <div>
-                                  <div className="text-[10px] text-slate-400 mb-0.5">Сессия #{daySessions.length - idx} • <span className="text-cyan-400 font-bold">{h.tournaments_count} турн.</span></div>
-                                  <div className="font-bold text-slate-300">Вгружено: <span className="text-emerald-400">${h.total_buyin.toFixed(1)}</span></div>
-                                </div>
-                                <div className="text-right">
-                                  <div className="text-[10px] text-slate-400 mb-0.5">Призовые: ${h.total_cashes.toFixed(1)}</div>
-                                  <div className={`font-black text-xs ${h.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                    {h.profit > 0 ? '+' : ''}${h.profit.toFixed(1)}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
+                        <div key={roomId} className="bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center justify-between gap-2">
+                          <RoomBadge roomName={roomName} getRoomStyle={getRoomStyle} />
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-500 text-xs font-black">{getRoomCurrency(roomName)}</span>
+                            <input type="number" value={balances[roomName] || ''} onChange={(e) => updateBalance(roomName, e.target.value)} placeholder="0" className="w-20 bg-transparent text-right text-white font-bold text-sm outline-none [appearance:textfield]" />
                           </div>
                         </div>
                       );
                     })}
                   </div>
                 </div>
+
+                {/* КАЛЕНДАРЬ АКТИВНОСТИ С ПЕРЕКЛЮЧЕНИЕМ И ЦВЕТОМ ПО ТУРНИРАМ */}
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-slate-400 font-bold uppercase text-xs tracking-wider">Календарь активности</h3>
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={handlePrevMonth} className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"><span className="text-xs font-black px-1">‹</span></button>
+                      <span className="text-[10px] text-cyan-400 font-bold min-w-[75px] text-center">{monthsNames[calendarMonth]} {calendarYear}</span>
+                      <button onClick={handleNextMonth} className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"><span className="text-xs font-black px-1">›</span></button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1.5 text-center">
+                    {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d => (
+                      <span key={d} className="text-[10px] font-bold text-slate-500 py-1">{d}</span>
+                    ))}
+                    
+                    {Array.from({ length: getDaysInMonth(calendarYear, calendarMonth) }, (_, i) => {
+                      const dayNum = i + 1;
+                      const formattedDay = String(dayNum).padStart(2, '0');
+                      const formattedMonth = String(calendarMonth + 1).padStart(2, '0');
+                      const dateStr = `${formattedDay}.${formattedMonth}.${calendarYear}`;
+                      
+                      const daySessions = sessionsHistory.filter(s => s.date === dateStr);
+                      const hasPlayed = daySessions.length > 0;
+                      
+                      const dayCashes = daySessions.reduce((sum, s) => sum + s.total_cashes, 0);
+                      const dayBuyin = daySessions.reduce((sum, s) => sum + s.total_buyin, 0);
+                      const dayProfit = dayCashes - dayBuyin;
+                      const dayTournaments = daySessions.reduce((sum, s) => sum + s.tournaments_count, 0);
+
+                      let bgClass = "bg-slate-950 text-slate-600 border-slate-800/80";
+                      let dotColor = "";
+                      if (hasPlayed) {
+                        if (dayTournaments >= 1 && dayTournaments <= 10) {
+                          bgClass = "bg-rose-500/20 text-rose-400 border-rose-500/40 hover:bg-rose-500/30";
+                          dotColor = "bg-rose-400";
+                        } else if (dayTournaments >= 11 && dayTournaments <= 20) {
+                          bgClass = "bg-amber-500/20 text-amber-400 border-amber-500/40 hover:bg-amber-500/30";
+                          dotColor = "bg-amber-400";
+                        } else {
+                          bgClass = "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30";
+                          dotColor = "bg-emerald-400";
+                        }
+                      }
+
+                      return (
+                        <div 
+                          key={dayNum}
+                          title={hasPlayed ? `Дата: ${dateStr}\nТурниров: ${dayTournaments}\nПрофит: ${dayProfit >= 0 ? '+' : ''}$${dayProfit.toFixed(1)}` : `Дата: ${dateStr}\nНет игр`}
+                          className={`h-9 rounded-xl border flex flex-col items-center justify-center text-xs font-bold transition cursor-pointer relative group ${bgClass}`}
+                        >
+                          <span>{dayNum}</span>
+                          {hasPlayed && (
+                            <span className={`w-1 h-1 rounded-full ${dotColor}`}></span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="text-[10px] text-slate-500 text-center pt-1">💡 Наведи на день для статистики</div>
+                </div>
               </div>
-            );
-          })()}
+
+              <div className="md:col-span-2 space-y-4">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-slate-400 font-bold uppercase text-xs tracking-wider">График профита</h2>
+                    <button onClick={clearHistory} className="bg-rose-500/10 text-rose-400 p-2 rounded-xl"><Trash2 size={14} /></button>
+                  </div>
+                  <div className="relative h-48 w-full bg-slate-950/50 rounded-xl border border-slate-800/80 overflow-hidden">
+                    {sessionsHistory.length === 0 ? (
+                      <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-500 font-bold">Нет сыгранных сессий</div>
+                    ) : (
+                      <svg className="absolute inset-0 w-full h-full" viewBox="-2 -2 104 104" preserveAspectRatio="none">
+                        <line x1="0" y1={chartData.zeroY} x2="100" y2={chartData.zeroY} stroke="#334155" strokeWidth="0.5" strokeDasharray="2 2" />
+                        <polyline points={chartData.points} fill="none" stroke={chartData.current >= 0 ? '#34d399' : '#fb7185'} strokeWidth="2" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-slate-800/50 flex justify-between items-end text-sm">
+                    <span className="text-slate-500 font-bold uppercase text-xs">Итог профита</span>
+                    <div className={`font-black text-lg ${chartData.current >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>${chartData.current.toFixed(1)}</div>
+                  </div>
+                </div>
+
+                <h3 className="font-bold text-sm text-white pt-2">История сессий по дням</h3>
+                <div className="space-y-4">
+                  {sessionsHistory.length === 0 && <div className="text-center py-10 text-slate-500 text-xs">Дневник пуст</div>}
+                  
+                  {Object.entries(
+                    sessionsHistory.reduce((acc: Record<string, SessionData[]>, h) => {
+                      if (!acc[h.date]) acc[h.date] = [];
+                      acc[h.date].push(h);
+                      return acc;
+                    }, {})
+                  ).map(([date, daySessions]) => {
+                    const dayTotalCashes = daySessions.reduce((sum, s) => sum + s.total_cashes, 0);
+                    const dayTotalBuyin = daySessions.reduce((sum, s) => sum + s.total_buyin, 0);
+                    const dayProfit = dayTotalCashes - dayTotalBuyin;
+                    const dayTournamentsCount = daySessions.reduce((sum, s) => sum + s.tournaments_count, 0);
+
+                    return (
+                      <div key={date} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-xl">
+                        <div className="flex justify-between items-center pb-2.5 border-b border-slate-800/80 text-xs">
+                          <div className="font-bold text-cyan-400 flex items-center gap-2">
+                            <span>📅 {date}</span>
+                            <span className="text-[10px] text-slate-500 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                              {dayTournamentsCount} турн.
+                            </span>
+                          </div>
+                          <div className={`font-black text-sm ${dayProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {dayProfit > 0 ? '+' : ''}${dayProfit.toFixed(1)}
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          {daySessions.map((h, idx) => (
+                            <div key={h.id || idx} className="bg-slate-950/60 border border-slate-800/60 rounded-xl p-3 flex justify-between items-center text-xs">
+                              <div>
+                                <div className="text-[10px] text-slate-400 mb-0.5">Сессия #{daySessions.length - idx} • <span className="text-cyan-400 font-bold">{h.tournaments_count} турн.</span></div>
+                                <div className="font-bold text-slate-300">Вгружено: <span className="text-emerald-400">${h.total_buyin.toFixed(1)}</span></div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-[10px] text-slate-400 mb-0.5">Призовые: ${h.total_cashes.toFixed(1)}</div>
+                                <div className={`font-black text-xs ${h.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                  {h.profit > 0 ? '+' : ''}${h.profit.toFixed(1)}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
 
