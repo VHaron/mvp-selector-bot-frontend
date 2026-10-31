@@ -758,7 +758,6 @@ export default function App() {
                   <div className="flex justify-between items-center flex-wrap gap-2">
                     <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Фильтр периода и румов</span>
                     
-                    {/* Кнопки быстрых форматов (теперь доступны везде и на телефоне) */}
                     <div className="flex gap-1.5 items-center">
                       <button onClick={() => toggleFormat('isPko')} className={`px-2.5 py-1.5 text-[10px] font-black uppercase rounded-xl border transition flex items-center gap-1 ${activeFormats.isPko ? 'bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800'}`}>
                         <ShieldAlert size={12} /> PKO
