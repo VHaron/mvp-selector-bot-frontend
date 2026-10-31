@@ -79,7 +79,7 @@ const getUniqueId = (t: Tournament) => `${t.id}_${t.room}_${t.name}_${t.buyin}_$
 
 const cleanTournamentName = (name: string) => {
   if (!name) return '';
-  return name.replace(/\s*\[?\d{2}:\d{2}\]?/g, '').trim();
+  return name.replace(/\s*\[.*?\]/g, '').trim();
 };
 
 const getLocalTimeDate = (mskTimeStr: string) => {
