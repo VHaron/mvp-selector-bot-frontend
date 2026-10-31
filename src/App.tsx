@@ -104,18 +104,20 @@ const getDiffMins = (mskTimeStr: string) => {
 export default function App() {
   const [authStep, setAuthStep] = useState<'login' | 'mfa' | 'app'>('login');
   const [sessionToken, setSessionToken] = useState<string | null>(localStorage.getItem('mvp_token'));
-  const [username, setUsername] = useState(''); 
-  const [password, setPassword] = useState(''); 
-  const [otp, setOtp] = useState('');
-  const [authLoading, setAuthLoading] = useState(false); 
-  const [authError, setAuthError] = useState('');
-
+  
   const [activeTab, setActiveTab] = useState<'search' | 'grid' | 'diary'>(() => {
     return (localStorage.getItem('mvp_active_tab') as 'search' | 'grid' | 'diary') || 'search';
   });
   useEffect(() => {
     localStorage.setItem('mvp_active_tab', activeTab);
   }, [activeTab]);
+
+  const [username, setUsername] = useState(''); 
+  const [password, setPassword] = useState(''); 
+  const [otp, setOtp] = useState('');
+  const [authLoading, setAuthLoading] = useState(false); 
+  const [authError, setAuthError] = useState('');
+
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [grid, setGrid] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(false);
@@ -247,7 +249,6 @@ export default function App() {
   const [showSessionModal, setShowSessionModal] = useState(false);
 
   const openFinishModal = () => {
-    // Подставляем текущие балансы в модалку при открытии
     const initialModalState: Record<string, string> = {};
     selectedRooms.forEach(id => {
       const roomName = ROOMS[id];
@@ -266,7 +267,7 @@ export default function App() {
       setDateTo(formatLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 5, 0)));
     } else if (type === 'tomorrow') {
       setDateFrom(formatLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 12, 0)));
-      setDateTo(formatLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 5, 0)))
+      setDateTo(formatLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 5, 0)));
     }
   };
 
@@ -493,9 +494,7 @@ export default function App() {
     setPresets(newPresets); apiCall('save_presets', { session_token: sessionToken, presets: newPresets });
   };
 
-  // ФИНАЛИЗАЦИЯ СЕССИИ ИЗ МОДАЛКИ С АВТОМАТИЧЕСКИМ СОХРАНЕНИЕМ БАНКРОЛЛА И РАСЧЕТОМ ПРОФИТА
   const finishSession = async () => {
-    // 1. Считаем новый общий банкролл по введенным в модалке данным
     const newBalances: Record<string, number> = {};
     let newTotalBankroll = 0;
     
@@ -505,7 +504,6 @@ export default function App() {
       newTotalBankroll += val;
     });
 
-    // 2. Вычисляем профит сессии (Разница между новым и старым общим банкроллом)
     const profit = newTotalBankroll - totalBankroll;
     const cashes = totalBuyin + profit;
 
@@ -518,7 +516,6 @@ export default function App() {
       tournaments_count: grid.length 
     };
 
-    // 3. Обновляем стейты и отправляем на бэкенд
     setBalances(newBalances);
     if (sessionToken) {
       apiCall('save_balances', { session_token: sessionToken, balances: newBalances });
@@ -702,10 +699,13 @@ export default function App() {
           </div>
           <div className="flex flex-col gap-2">
             <button onClick={() => setActiveTab('search')} title="Поиск турниров" className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${activeTab === 'search' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}><Search size={20} /></button>
-            <button onClick={() => setActiveTab('grid')} title="Сетка" className={`w-12 h-12 rounded-2xl flex items-center justify-center transition relative ${activeTab === 'grid' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}>
+            
+            {/* Кнопка Сетка скрыта на больших экранах (xl:hidden), так как справа в поиске уже есть панель сетки */}
+            <button onClick={() => setActiveTab('grid')} title="Сетка" className={`w-12 h-12 rounded-2xl items-center justify-center transition relative xl:hidden ${activeTab === 'grid' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'} ${activeTab === 'grid' ? 'flex' : 'flex'}`}>
               <ListTodo size={20} />
               {grid.length > 0 && <span className="absolute top-2 right-2 bg-emerald-500 text-slate-950 text-[9px] font-black h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center">{grid.length}</span>}
             </button>
+
             <button onClick={() => setActiveTab('diary')} title="Дневник и банкролл" className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${activeTab === 'diary' ? 'bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}><TrendingUp size={20} /></button>
           </div>
           <div className="w-8 h-[1px] bg-slate-800 my-1"></div>
@@ -1084,7 +1084,6 @@ export default function App() {
         );
       })()}
 
-      {/* МОДАЛКА ВВОДА АКТУАЛЬНЫХ БАНКРОЛЛОВ ПРИ ЗАВЕРШЕНИИ */}
       {showSessionModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl relative space-y-4">
