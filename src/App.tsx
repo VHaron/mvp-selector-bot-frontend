@@ -864,34 +864,41 @@ export default function App() {
                       <div 
                         key={uniqueKey} 
                         onClick={() => toggleGrid(t)} 
-                        className={`rounded-xl px-3 py-2.5 border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-sm ${
+                        className={`rounded-xl px-3 py-2.5 border transition-all flex flex-col gap-2 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-sm ${
                           isAdded ? 'bg-emerald-950/90 border-transparent shadow-none' : 'bg-slate-900 border-slate-800'
                         }`}
                       >
-                        <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                          <div className="flex items-center gap-1.5 shrink-0 sm:w-[150px]">
+                        {/* 1-я строка: Рум, время, таймер и кнопка заметки справа */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
                             <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
                               {formatDayWeek(t.day_week)}{formatLocalTime(t.time_start)}
                             </span>
                             {getSmartTimer(t.time_start, t.day_week)}
                           </div>
-                          
-                          <div className="font-bold text-xs text-white truncate flex-1">
-                            {t.name}
-                            {isOverlay(t) && <Flame size={12} className="inline-block ml-1.5 text-orange-500 animate-pulse mb-0.5"/>}
-                          </div>
-                          
-                          <div className="flex items-center justify-between sm:justify-end gap-3 text-[11px] shrink-0 sm:w-[280px]">
-                            <span className="font-black text-emerald-400 sm:w-12 sm:text-right">{getRoomCurrency(t.room)}{t.buyin}</span>
-                            <span className="text-slate-400 sm:w-14 sm:text-right truncate" title={t.afs}>{t.afs} {t.afs.includes('не задано') ? '' : 'рег.'}</span>
-                            <span className="text-slate-400 sm:w-20 sm:text-right truncate" title={t.gtd}>GTD: {t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
-                            <span className={`sm:w-14 sm:text-right font-bold ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
-                          </div>
+
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} 
+                            title="Заметка" 
+                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"
+                          >
+                            <NotebookPen size={12}/>
+                          </button>
                         </div>
-                        
-                        <div className="shrink-0 flex items-center justify-end gap-1.5">
-                          <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"><NotebookPen size={14}/></button>
+
+                        {/* 2-я строка: Название турнира */}
+                        <div className="font-bold text-xs text-white leading-snug">
+                          {t.name}
+                          {isOverlay(t) && <Flame size={12} className="inline-block ml-1.5 text-orange-500 animate-pulse mb-0.5"/>}
+                        </div>
+
+                        {/* 3-я строка: Финансовые показатели */}
+                        <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-800/60 text-slate-400">
+                          <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
+                          <span>{t.afs} {t.afs.includes('не задано') ? '' : 'рег.'}</span>
+                          <span>GTD: {t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
+                          <span className={`font-bold ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
                         </div>
                       </div>
                     );
