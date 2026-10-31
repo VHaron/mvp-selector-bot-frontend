@@ -604,11 +604,12 @@ export default function App() {
   const totalBuyin = grid.reduce((sum, t) => sum + parseNum(t.buyin), 0);
   const totalEV = grid.reduce((sum, t) => sum + parseNum(t.ev_mtt), 0);
 
-  const formatDayWeek = (dayWeek?: string) => {
-    if (!dayWeek) return '';
-    const clean = dayWeek.replace(/\./g, '').trim();
-    return clean ? `${clean}. ` : '';
-  };
+const getLocalDayWeek = (mskTimeStr: string, dayWeekStr?: string) => {
+  if (!mskTimeStr) return '';
+  const date = getLocalTimeDate(mskTimeStr, dayWeekStr);
+  const daysArr = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+  return `${daysArr[date.getDay()]}. `;
+};
 
   const renderGridCard = (t: any, overrideKey?: string) => {
     const prioStyles = getPriorityStyles(t.priority);
@@ -621,7 +622,7 @@ export default function App() {
           <div className="flex items-center gap-1.5">
             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
             <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
-              {formatDayWeek(t.day_week)}{formatLocalTime(t.time_start, t.day_week)}
+              {getLocalDayWeek(t.time_start, t.day_week)}{formatLocalTime(t.time_start, t.day_week)}
             </span>
             {getSmartTimer(t.time_start, t.day_week)}
           </div>
@@ -945,7 +946,7 @@ export default function App() {
                             <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                               <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
                               <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
-                                {formatDayWeek(t.day_week)}{formatLocalTime(t.time_start, t.day_week)}
+                                {getLocalDayWeek(t.time_start, t.day_week)}{formatLocalTime(t.time_start, t.day_week)}
                               </span>
                               {getSmartTimer(t.time_start, t.day_week)}
                             </div>
@@ -987,7 +988,7 @@ export default function App() {
                           <div className="flex items-center gap-2 shrink-0 w-44">
                             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
                             <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">
-                              {formatDayWeek(t.day_week)}{formatLocalTime(t.time_start, t.day_week)}
+                              {getLocalDayWeek(t.time_start, t.day_week)}{formatLocalTime(t.time_start, t.day_week)}
                             </span>
                             {getSmartTimer(t.time_start, t.day_week)}
                           </div>
