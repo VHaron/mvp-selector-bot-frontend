@@ -80,7 +80,7 @@ const getUniqueId = (t: Tournament) => `${t.id}_${t.room}_${t.name}_${t.buyin}_$
 const cleanTournamentName = (name: string) => {
   if (!name) return '';
   let maxSize = '';
-  const maxMatch = name.match(/(\d-max)/i);
+  const maxMatch = name.match(/[\d-max]/i);
   if (maxMatch) {
     maxSize = maxMatch[1].toLowerCase();
   }
