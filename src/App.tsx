@@ -105,29 +105,85 @@ const getTournamentFormats = (name: string) => {
   };
 };
 
-const getLocalTimeDate = (mskTimeStr: string) => {
+// ----------------------------------------------------
+// ИДЕАЛЬНОЕ ВЫЧИСЛЕНИЕ ВРЕМЕНИ И ДАТ (БЕЗ КОСТЫЛЕЙ)
+// ----------------------------------------------------
+const getLocalTimeDate = (mskTimeStr: string, dayWeekStr?: string) => {
   if (!mskTimeStr) return new Date();
   const [hours, mins] = mskTimeStr.slice(0, 5).split(':').map(Number);
-  const date = new Date();
-  date.setUTCHours(hours - 3, mins || 0, 0, 0);
-  return date;
+  
+  const now = new Date();
+  // Эмулируем время МСК (+3 часа) через UTC
+  const mskWall = new Date(now.getTime() + 3 * 3600000); 
+  
+  let tMsk = new Date(mskWall.getTime());
+  tMsk.setUTCHours(hours, mins || 0, 0, 0);
+
+  // Корректируем дату по дню недели от сервера (он шлет день недели по МСК)
+  if (dayWeekStr) {
+    const cleanDay = dayWeekStr.toLowerCase().replace(/[^а-яё]/g, '');
+    const days = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+    const targetDay = days.findIndex(d => cleanDay.includes(d));
+    
+    if (targetDay !== -1) {
+      const currentMskDay = tMsk.getUTCDay();
+      let dayDiff = targetDay - currentMskDay;
+      
+      // Обработка перехода через неделю (вперед/назад)
+      if (dayDiff > 3) dayDiff -= 7;
+      else if (dayDiff < -3) dayDiff += 7;
+      
+      tMsk.setUTCDate(tMsk.getUTCDate() + dayDiff);
+    }
+  } else {
+    // Резервная логика, если дня недели нет в строке
+    const diffMins = (tMsk.getTime() - mskWall.getTime()) / 60000;
+    if (diffMins > 12 * 60) tMsk.setUTCDate(tMsk.getUTCDate() - 1);
+    else if (diffMins < -12 * 60) tMsk.setUTCDate(tMsk.getUTCDate() + 1);
+  }
+
+  // Получаем итоговый честный таймстемп
+  const actualTimestamp = tMsk.getTime() - 3 * 3600000;
+  return new Date(actualTimestamp);
 };
 
-const formatLocalTime = (mskTimeStr: string) => {
+const formatLocalTime = (mskTimeStr: string, dayWeekStr?: string) => {
   if (!mskTimeStr) return '';
-  const date = getLocalTimeDate(mskTimeStr);
+  const date = getLocalTimeDate(mskTimeStr, dayWeekStr);
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 };
 
-const getDiffMins = (mskTimeStr: string) => {
+const getDiffMins = (mskTimeStr: string, dayWeekStr?: string) => {
   if (!mskTimeStr) return 0;
-  const tDate = getLocalTimeDate(mskTimeStr);
+  const tDate = getLocalTimeDate(mskTimeStr, dayWeekStr);
   const now = new Date();
-  let diff = (tDate.getHours() * 60 + tDate.getMinutes()) - (now.getHours() * 60 + now.getMinutes());
-  if (diff > 12 * 60) diff -= 24 * 60;
-  else if (diff < -12 * 60) diff += 24 * 60;
-  return diff;
+  return Math.round((tDate.getTime() - now.getTime()) / 60000);
 };
+
+const isPlayed = (timeString: string, dayWeekStr?: string) => {
+  if (!timeString) return false;
+  return getDiffMins(timeString, dayWeekStr) < -120;
+};
+
+const isStartedTooLongAgo = (timeString: string, dayWeekStr?: string) => {
+  if (!timeString) return false;
+  return getDiffMins(timeString, dayWeekStr) < -15; 
+};
+
+const getSmartTimer = (timeStr: string, dayWeekStr?: string) => {
+  if (!timeStr) return null;
+  const diffMins = getDiffMins(timeStr, dayWeekStr);
+
+  if (diffMins > 0 && diffMins <= 60) {
+    return <span className="text-[8px] font-black uppercase tracking-wider text-amber-400 animate-pulse bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/30">⏳ {diffMins}м</span>;
+  } else if (diffMins <= 0 && diffMins >= -15) {
+    return <span className="text-[8px] font-black uppercase tracking-wider text-rose-400 animate-pulse bg-rose-500/10 px-1 py-0.5 rounded border border-rose-500/30">🔥 Late</span>;
+  } else if (diffMins < -15 && diffMins >= -120) {
+    return <span className="text-[8px] font-black uppercase tracking-wider text-emerald-400 animate-pulse bg-emerald-500/20 px-1.5 py-0.5 rounded border border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.3)]">🟢 IN GAME</span>;
+  }
+  return null;
+};
+// ----------------------------------------------------
 
 export default function App() {
   const [authStep, setAuthStep] = useState<'login' | 'mfa' | 'app'>('login');
@@ -201,34 +257,6 @@ export default function App() {
   }, []);
 
   const toggleFormat = (key: 'isPko' | 'isFreezeout' | 'isTurbo') => setActiveFormats(prev => ({ ...prev, [key]: !prev[key] }));
-
-  const isToday = (dayWeekStr?: string) => {
-    if (!dayWeekStr) return true;
-    const cleanDay = dayWeekStr.toLowerCase().replace(/[^а-яё]/g, '');
-    const days = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
-    const todayIndex = new Date().getDay();
-    const tourneyIndex = days.findIndex(d => cleanDay.includes(d));
-    return tourneyIndex === -1 || tourneyIndex === todayIndex;
-  };
-
-  const isPlayed = (timeString: string, dayWeekStr?: string) => {
-    if (!timeString || !isToday(dayWeekStr)) return false;
-    return getDiffMins(timeString) < -120;
-  };
-
-  const getSmartTimer = (timeStr: string, dayWeekStr?: string) => {
-    if (!timeStr || !isToday(dayWeekStr)) return null;
-    const diffMins = getDiffMins(timeStr);
-
-    if (diffMins > 0 && diffMins <= 60) {
-      return <span className="text-[8px] font-black uppercase tracking-wider text-amber-400 animate-pulse bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/30">⏳ {diffMins}м</span>;
-    } else if (diffMins <= 0 && diffMins >= -15) {
-      return <span className="text-[8px] font-black uppercase tracking-wider text-rose-400 animate-pulse bg-rose-500/10 px-1 py-0.5 rounded border border-rose-500/30">🔥 Late</span>;
-    } else if (diffMins < -15 && diffMins >= -120) {
-      return <span className="text-[8px] font-black uppercase tracking-wider text-emerald-400 animate-pulse bg-emerald-500/20 px-1.5 py-0.5 rounded border border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.3)]">🟢 IN GAME</span>;
-    }
-    return null;
-  };
 
   const isRoomAllowed = (roomName: string) => {
     if (!roomName) return false;
@@ -387,7 +415,6 @@ export default function App() {
   };
 
   const isOverlay = (t: Tournament) => {
-    if (!isToday(t.day_week)) return false;
     const buyin = parseNum(t.buyin), gtd = parseNum(t.gtd), afs = parseNum(t.afs);
     return (gtd > 0 && buyin > 0 && afs > 0 && (buyin * afs * 0.9) < gtd);
   };
@@ -412,14 +439,17 @@ export default function App() {
 
   const getSessionEndTime = (items: Tournament[]) => {
     if (!items || items.length === 0) return "--:--";
-    let maxEndTimeMins = 0;
+    let maxEndTime = 0;
     items.forEach(t => {
       if (!t.time_start || !t.duration) return;
-      const tDate = getLocalTimeDate(t.time_start);
-      const endMins = (tDate.getHours() * 60) + tDate.getMinutes() + (parseFloat(t.duration.replace(',', '.')) * 60);
-      if (endMins > maxEndTimeMins) maxEndTimeMins = endMins;
+      const tDate = getLocalTimeDate(t.time_start, t.day_week);
+      const durationMins = parseFloat(t.duration.replace(',', '.')) * 60;
+      const endTime = tDate.getTime() + durationMins * 60000;
+      if (endTime > maxEndTime) maxEndTime = endTime;
     });
-    return `${String(Math.floor(maxEndTimeMins / 60) % 24).padStart(2, '0')}:${String(Math.round(maxEndTimeMins % 60)).padStart(2, '0')}`;
+    if (maxEndTime === 0) return "--:--";
+    const endD = new Date(maxEndTime);
+    return `${String(endD.getHours()).padStart(2, '0')}:${String(endD.getMinutes()).padStart(2, '0')}`;
   };
 
   const getPeakTablesData = (items: Tournament[]) => {
@@ -427,34 +457,36 @@ export default function App() {
     let events: { time: number, type: number }[] = [];
     items.forEach(t => {
       if (!t.time_start || !t.duration) return;
-      const tDate = getLocalTimeDate(t.time_start);
-      const hours = tDate.getHours();
-      let startMins = hours * 60 + tDate.getMinutes();
-      if (hours < 10) startMins += 24 * 60;
-      events.push({ time: startMins, type: 1 });  
-      events.push({ time: startMins + (parseFloat(t.duration.replace(',', '.')) * 60), type: -1 });   
+      const tDate = getLocalTimeDate(t.time_start, t.day_week);
+      const startMs = tDate.getTime();
+      const durationMins = parseFloat(t.duration.replace(',', '.')) * 60;
+      const endMs = startMs + durationMins * 60000;
+      events.push({ time: startMs, type: 1 });  
+      events.push({ time: endMs, type: -1 });   
     });
     events.sort((a, b) => a.time === b.time ? a.type - b.type : a.time - b.time);
-    let current = 0, max = 0, peakStartMins = 0;
+    let current = 0, max = 0, peakStartMs = 0;
     events.forEach(e => {
       current += e.type;
-      if (current > max) { max = current; peakStartMins = e.time; }
+      if (current > max) { max = current; peakStartMs = e.time; }
     });
-    return { max, timeStr: `${String(Math.floor(peakStartMins / 60) % 24).padStart(2, '0')}:${String(Math.round(peakStartMins % 60)).padStart(2, '0')}` };
+    if (peakStartMs === 0) return { max: 0, timeStr: '--:--' };
+    const peakDate = new Date(peakStartMs);
+    return { max, timeStr: `${String(peakDate.getHours()).padStart(2, '0')}:${String(peakDate.getMinutes()).padStart(2, '0')}` };
   };
 
   const sortedGrid = useMemo(() => {
-    const daysOrder: Record<string, number> = { 'пн': 1, 'вт': 2, 'ср': 3, 'чт': 4, 'пт': 5, 'сб': 6, 'вс': 7 };
     return [...grid]
       .filter(t => isRoomAllowed(t.room))
       .sort((a, b) => {
         if (sortOrder === 'buyin') return parseNum(b.buyin) - parseNum(a.buyin);
         if (sortOrder === 'ev') return parseNum(b.ev_mtt) - parseNum(a.ev_mtt);
         if (sortOrder === 'tier') return getTier(a).id - getTier(b).id;
-        const indexA = daysOrder[(a.day_week || '').toLowerCase().replace(/[^а-я]/g, '')] || 0;
-        const indexB = daysOrder[(b.day_week || '').toLowerCase().replace(/[^а-я]/g, '')] || 0;
-        if (indexA !== indexB) return indexA - indexB;
-        return a.time_start.localeCompare(b.time_start);
+        
+        // Сортируем чисто по абсолютному математическому времени!
+        const timeA = getLocalTimeDate(a.time_start, a.day_week).getTime();
+        const timeB = getLocalTimeDate(b.time_start, b.day_week).getTime();
+        return timeA - timeB;
       });
   }, [grid, sortOrder, selectedRooms]);
 
@@ -477,7 +509,11 @@ export default function App() {
 
   const searchResults = useMemo(() => {
     return tournaments
-      .filter(t => isRoomAllowed(t.room))
+      .filter(t => {
+        // ВОЗВРАЩАЕМ ФИЛЬТР! Больше не будет багов с его отработкой.
+        if (isStartedTooLongAgo(t.time_start, t.day_week)) return false; 
+        return isRoomAllowed(t.room);
+      })
       .sort((a, b) => sortOrder === 'tier' ? getTier(a).id - getTier(b).id : 0);
   }, [tournaments, sortOrder, selectedRooms]);
 
@@ -585,7 +621,7 @@ export default function App() {
           <div className="flex items-center gap-1.5">
             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
             <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
-              {formatDayWeek(t.day_week)}{formatLocalTime(t.time_start)}
+              {formatDayWeek(t.day_week)}{formatLocalTime(t.time_start, t.day_week)}
             </span>
             {getSmartTimer(t.time_start, t.day_week)}
           </div>
@@ -892,7 +928,6 @@ export default function App() {
                     );
 
                     const isAdded = grid.some(item => getUniqueId(item) === getUniqueId(t));
-                    const played = isPlayed(t.time_start, t.day_week);
                     const prioStyles = getPriorityStyles(t.priority);
                     const fmts = getTournamentFormats(t.name);
                     
@@ -901,7 +936,7 @@ export default function App() {
                         key={uniqueKey} 
                         onClick={() => toggleGrid(t)} 
                         className={`rounded-xl px-3 py-2.5 border transition-all border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-sm ${
-                          played ? 'opacity-40 grayscale bg-slate-900/40 border-slate-800' : (isAdded ? 'bg-emerald-950/90 border-transparent shadow-none' : 'bg-slate-900 border-slate-800')
+                          isAdded ? 'bg-emerald-950/90 border-transparent shadow-none' : 'bg-slate-900 border-slate-800'
                         }`}
                       >
                         {/* МОБИЛКА: вертикальный вид (xl:hidden) */}
@@ -910,7 +945,7 @@ export default function App() {
                             <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                               <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
                               <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
-                                {formatDayWeek(t.day_week)}{formatLocalTime(t.time_start)}
+                                {formatDayWeek(t.day_week)}{formatLocalTime(t.time_start, t.day_week)}
                               </span>
                               {getSmartTimer(t.time_start, t.day_week)}
                             </div>
@@ -952,7 +987,7 @@ export default function App() {
                           <div className="flex items-center gap-2 shrink-0 w-44">
                             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
                             <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">
-                              {formatDayWeek(t.day_week)}{formatLocalTime(t.time_start)}
+                              {formatDayWeek(t.day_week)}{formatLocalTime(t.time_start, t.day_week)}
                             </span>
                             {getSmartTimer(t.time_start, t.day_week)}
                           </div>
