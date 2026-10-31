@@ -755,27 +755,27 @@ export default function App() {
               <div className="w-full xl:w-[75%] shrink-0 space-y-4">
                 
                 <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4 md:p-5 shadow-xl space-y-4">
-                  <div className="flex justify-between items-center flex-nowrap gap-2">
-                    <span className="text-xs text-slate-400 font-bold uppercase tracking-wider shrink-0">Фильтр периода и румов</span>
+                  <div className="flex justify-between items-center flex-wrap gap-2">
+                    <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Фильтр периода и румов</span>
                     
-                    <div className="flex gap-1.5 md:gap-2 items-center shrink-0">
-                      {/* Кнопки форматов только для мобилок (xl:hidden) */}
-                      <div className="flex xl:hidden gap-1.5 items-center">
-                        <button onClick={() => toggleFormat('isPko')} className={`px-2.5 py-1.5 text-[10px] font-black uppercase rounded-xl border transition flex items-center gap-1 ${activeFormats.isPko ? 'bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800'}`}>
-                          <ShieldAlert size={12} /> PKO
-                        </button>
-                        <button onClick={() => toggleFormat('isTurbo')} className={`px-2.5 py-1.5 text-[10px] font-black uppercase rounded-xl border transition flex items-center gap-1 ${activeFormats.isTurbo ? 'bg-amber-500/20 text-amber-400 border-amber-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800'}`}>
-                          <Zap size={12} /> Turbo
-                        </button>
-                        <button onClick={() => toggleFormat('isFreezeout')} className={`px-2.5 py-1.5 text-[10px] font-black uppercase rounded-xl border transition flex items-center gap-1 ${activeFormats.isFreezeout ? 'bg-blue-500/20 text-blue-400 border-blue-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800'}`}>
-                          <Disc size={12} /> Frz
-                        </button>
-                      </div>
+                    {/* Кнопки форматов только для мобилок (xl:hidden) */}
+                    <div className="flex xl:hidden gap-1.5 items-center">
+                      <button onClick={() => toggleFormat('isPko')} className={`px-2.5 py-1.5 text-[10px] font-black uppercase rounded-xl border transition flex items-center gap-1 ${activeFormats.isPko ? 'bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800'}`}>
+                        <ShieldAlert size={12} /> PKO
+                      </button>
+                      <button onClick={() => toggleFormat('isTurbo')} className={`px-2.5 py-1.5 text-[10px] font-black uppercase rounded-xl border transition flex items-center gap-1 ${activeFormats.isTurbo ? 'bg-amber-500/20 text-amber-400 border-amber-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800'}`}>
+                        <Zap size={12} /> Turbo
+                      </button>
+                      <button onClick={() => toggleFormat('isFreezeout')} className={`px-2.5 py-1.5 text-[10px] font-black uppercase rounded-xl border transition flex items-center gap-1 ${activeFormats.isFreezeout ? 'bg-blue-500/20 text-blue-400 border-blue-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800'}`}>
+                        <Disc size={12} /> Frz
+                      </button>
+                    </div>
 
+                    <div className="flex gap-1.5 md:gap-2 items-center flex-wrap w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800">
                       <button onClick={() => setPresetDate('today')} className="px-3 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl transition shadow-sm active:scale-95">Сегодня</button>
                       <button onClick={() => setPresetDate('tomorrow')} className="px-3 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl transition shadow-sm active:scale-95">Завтра</button>
                       <button onClick={() => setPresetDate('clear')} title="Сбросить даты" className="w-9 h-9 flex items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:border-rose-500/50 rounded-xl transition shadow-sm active:scale-95"><X size={15} strokeWidth={2.5} /></button>
-                      <button onClick={() => setShowPresetsModal(true)} className="px-3 py-2 text-[11px] font-black uppercase bg-emerald-950/50 hover:bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 hover:border-emerald-500/70 rounded-xl transition shadow-sm active:scale-95">Шаблоны</button>
+                      <button onClick={() => setShowPresetsModal(true)} className="px-3 py-2 text-[11px] font-black uppercase bg-emerald-950/50 hover:bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 hover:border-emerald-500/70 rounded-xl transition shadow-sm ml-auto active:scale-95">Шаблоны</button>
                     </div>
                   </div>
                   
@@ -878,42 +878,57 @@ export default function App() {
                       <div 
                         key={uniqueKey} 
                         onClick={() => toggleGrid(t)} 
-                        className={`rounded-xl px-3 py-2.5 border transition-all flex flex-col gap-2 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-sm ${
+                        className={`rounded-xl px-3 py-2.5 border transition-all border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-sm ${
                           isAdded ? 'bg-emerald-950/90 border-transparent shadow-none' : 'bg-slate-900 border-slate-800'
                         }`}
                       >
-                        {/* 1-я строка: Рум, время, таймер и кнопка заметки справа */}
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                        {/* МОБИЛКА: вертикальный вид (xl:hidden) */}
+                        <div className="flex flex-col gap-2 xl:hidden">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                              <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
+                              <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
+                                {formatDayWeek(t.day_week)}{formatLocalTime(t.time_start)}
+                              </span>
+                              {getSmartTimer(t.time_start, t.day_week)}
+                            </div>
+                            <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"><NotebookPen size={12}/></button>
+                          </div>
+                          <div className="font-bold text-xs text-white leading-snug">
+                            {t.name}
+                            {isOverlay(t) && <Flame size={12} className="inline-block ml-1.5 text-orange-500 animate-pulse mb-0.5"/>}
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-800/60 text-slate-400">
+                            <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
+                            <span>{t.afs} {t.afs.includes('не задано') ? '' : 'рег.'}</span>
+                            <span>GTD: {t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
+                            <span className={`font-bold ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
+                          </div>
+                        </div>
+
+                        {/* ПК: СТРОГО В ОДНУ СТРОКУ (hidden xl:flex) */}
+                        <div className="hidden xl:flex items-center justify-between gap-3 text-xs">
+                          <div className="flex items-center gap-2 shrink-0 w-44">
                             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
-                            <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
+                            <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">
                               {formatDayWeek(t.day_week)}{formatLocalTime(t.time_start)}
                             </span>
                             {getSmartTimer(t.time_start, t.day_week)}
                           </div>
 
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} 
-                            title="Заметка" 
-                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"
-                          >
-                            <NotebookPen size={12}/>
-                          </button>
+                          <div className="font-bold text-white truncate flex-1 min-w-0">
+                            {t.name}
+                            {isOverlay(t) && <Flame size={12} className="inline-block ml-1.5 text-orange-500 animate-pulse mb-0.5"/>}
+                          </div>
+
+                          <div className="flex items-center gap-4 shrink-0 text-right">
+                            <span className="font-black text-emerald-400 w-16 text-left">{getRoomCurrency(t.room)}{t.buyin}</span>
+                            <span className="text-slate-400 w-20 text-left">{t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
+                            <span className={`font-bold w-16 text-right ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
+                            <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"><NotebookPen size={12}/></button>
+                          </div>
                         </div>
 
-                        {/* 2-я строка: Название турнира */}
-                        <div className="font-bold text-xs text-white leading-snug">
-                          {t.name}
-                          {isOverlay(t) && <Flame size={12} className="inline-block ml-1.5 text-orange-500 animate-pulse mb-0.5"/>}
-                        </div>
-
-                        {/* 3-я строка: Финансовые показатели */}
-                        <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-800/60 text-slate-400">
-                          <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
-                          <span>{t.afs} {t.afs.includes('не задано') ? '' : 'рег.'}</span>
-                          <span>GTD: {t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
-                          <span className={`font-bold ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
-                        </div>
                       </div>
                     );
                   })}
