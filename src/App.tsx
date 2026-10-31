@@ -134,7 +134,7 @@ export default function App() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [calendarYear, setCalendarYear] = useState(2026);
-  const [calendarMonth, setCalendarMonth] = useState(9); // 9 = октябрь
+  const [calendarMonth, setCalendarMonth] = useState(9);
 
   const monthsNames = [
     "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", 
@@ -585,8 +585,7 @@ export default function App() {
 
   const renderGridPanel = () => (
     <div className="space-y-5">
-      <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4 shadow-xl space-y-2.5 h-[200px] flex flex-col justify-between">
-        
+      <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4 shadow-xl space-y-2.5 flex flex-col justify-between">
         <div className="space-y-2.5">
           <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
             <div className="flex items-center gap-2">
@@ -690,22 +689,39 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans antialiased flex">
+    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans antialiased flex flex-col pb-20 xl:pb-0">
       
-      <aside className="w-20 bg-slate-950 border-r border-slate-800/80 flex flex-col items-center justify-between py-6 shrink-0 sticky top-0 h-screen z-40">
+      {/* НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ (BOTTOM BAR) */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-md border-t border-slate-800/80 px-4 py-3 flex items-center justify-around z-40 xl:hidden shadow-2xl">
+        <button onClick={() => setActiveTab('search')} title="Поиск турниров" className={`flex flex-col items-center gap-1 transition ${activeTab === 'search' ? 'text-cyan-400' : 'text-slate-500 hover:text-slate-300'}`}>
+          <Search size={20} />
+          <span className="text-[10px] font-bold uppercase tracking-wider">Поиск</span>
+        </button>
+        <button onClick={() => setActiveTab('grid')} title="Сетка" className={`flex flex-col items-center gap-1 transition relative ${activeTab === 'grid' ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}>
+          <div className="relative">
+            <ListTodo size={20} />
+            {grid.length > 0 && <span className="absolute -top-1 -right-2 bg-emerald-500 text-slate-950 text-[9px] font-black h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center">{grid.length}</span>}
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-wider">Сетка</span>
+        </button>
+        <button onClick={() => setActiveTab('diary')} title="Дневник и банкролл" className={`flex flex-col items-center gap-1 transition ${activeTab === 'diary' ? 'text-fuchsia-400' : 'text-slate-500 hover:text-slate-300'}`}>
+          <TrendingUp size={20} />
+          <span className="text-[10px] font-bold uppercase tracking-wider">Дневник</span>
+        </button>
+        <button onClick={logout} title="Выйти" className="flex flex-col items-center gap-1 text-rose-500 hover:text-rose-400 transition">
+          <LogOut size={20} />
+          <span className="text-[10px] font-bold uppercase tracking-wider">Выход</span>
+        </button>
+      </nav>
+
+      {/* ДЕСКТОПНЫЙ ЛЕСТНИЧНЫЙ САЙДБАР (Только для больших экранов xl+) */}
+      <aside className="hidden xl:flex w-20 bg-slate-950 border-r border-slate-800/80 flex-col items-center justify-between py-6 shrink-0 fixed top-0 h-screen z-40">
         <div className="flex flex-col items-center gap-6">
           <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/40 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.2)]">
             <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse"></div>
           </div>
           <div className="flex flex-col gap-2">
             <button onClick={() => setActiveTab('search')} title="Поиск турниров" className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${activeTab === 'search' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}><Search size={20} /></button>
-            
-            {/* Кнопка Сетка скрыта на больших экранах (xl:hidden), так как справа в поиске уже есть панель сетки */}
-            <button onClick={() => setActiveTab('grid')} title="Сетка" className={`w-12 h-12 rounded-2xl items-center justify-center transition relative xl:hidden ${activeTab === 'grid' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'} ${activeTab === 'grid' ? 'flex' : 'flex'}`}>
-              <ListTodo size={20} />
-              {grid.length > 0 && <span className="absolute top-2 right-2 bg-emerald-500 text-slate-950 text-[9px] font-black h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center">{grid.length}</span>}
-            </button>
-
             <button onClick={() => setActiveTab('diary')} title="Дневник и банкролл" className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${activeTab === 'diary' ? 'bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}><TrendingUp size={20} /></button>
           </div>
           <div className="w-8 h-[1px] bg-slate-800 my-1"></div>
@@ -718,34 +734,34 @@ export default function App() {
         <button onClick={logout} title="Выйти из системы" className="w-12 h-12 rounded-2xl flex items-center justify-center text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/30 transition"><LogOut size={18} /></button>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 xl:pl-20">
         
-        <header className="h-16 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 px-8 flex justify-between items-center sticky top-0 z-30">
+        <header className="h-16 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 px-4 md:px-8 flex justify-between items-center sticky top-0 z-30">
           <div className="text-xs font-black tracking-wider text-white uppercase">
             {activeTab === 'search' && 'Поиск турниров'}
             {activeTab === 'grid' && 'Текущая сетка сессии'}
             {activeTab === 'diary' && 'Дневник сессий и банкролл'}
           </div>
-          <div className="bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-6 shadow-sm">
+          <div className="bg-slate-900 border border-slate-800 px-3 md:px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-3 md:gap-6 shadow-sm">
             <div>Загрузка: <b className="text-emerald-400">${totalBuyin.toFixed(1)}</b></div>
             <div>EV: <b className={totalEV >= 0 ? 'text-blue-400' : 'text-rose-400'}>{totalEV > 0 ? '+' : ''}${totalEV.toFixed(1)}</b></div>
           </div>
         </header>
 
-        <main className="max-w-[1800px] w-full mx-auto px-4 md:px-6 py-6 md:py-8">
+        <main className="max-w-[1800px] w-full mx-auto px-3 md:px-6 py-6 md:py-8">
           
           {activeTab === 'search' && (
             <div className="flex flex-col xl:flex-row gap-4 items-start">
               <div className="w-full xl:w-[75%] shrink-0 space-y-4">
                 
-                <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4">
-                  <div className="flex justify-between items-center">
+                <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4 md:p-5 shadow-xl space-y-4">
+                  <div className="flex justify-between items-center flex-wrap gap-2">
                     <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Фильтр периода и румов</span>
-                    <div className="flex gap-2 items-center">
-                      <button onClick={() => setPresetDate('today')} className="px-3.5 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl transition shadow-sm active:scale-95">Сегодня</button>
-                      <button onClick={() => setPresetDate('tomorrow')} className="px-3.5 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl transition shadow-sm active:scale-95">Завтра</button>
+                    <div className="flex gap-1.5 md:gap-2 items-center flex-wrap">
+                      <button onClick={() => setPresetDate('today')} className="px-3 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl transition shadow-sm active:scale-95">Сегодня</button>
+                      <button onClick={() => setPresetDate('tomorrow')} className="px-3 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl transition shadow-sm active:scale-95">Завтра</button>
                       <button onClick={() => setPresetDate('clear')} title="Сбросить даты" className="w-9 h-9 flex items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:border-rose-500/50 rounded-xl transition shadow-sm active:scale-95"><X size={15} strokeWidth={2.5} /></button>
-                      <button onClick={() => setShowPresetsModal(true)} className="px-3.5 py-2 text-[11px] font-black uppercase bg-emerald-950/50 hover:bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 hover:border-emerald-500/70 rounded-xl transition shadow-sm ml-auto active:scale-95">Шаблоны</button>
+                      <button onClick={() => setShowPresetsModal(true)} className="px-3 py-2 text-[11px] font-black uppercase bg-emerald-950/50 hover:bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 hover:border-emerald-500/70 rounded-xl transition shadow-sm ml-auto active:scale-95">Шаблоны</button>
                     </div>
                   </div>
                   
@@ -755,7 +771,7 @@ export default function App() {
                   </div>
 
                   <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center justify-between">
-                    <div className="flex gap-2 flex-1 min-w-0">
+                    <div className="flex gap-2 flex-1 min-w-0 w-full sm:w-auto">
                       <div className="relative flex-1" ref={dropdownRef}>
                         <button onClick={() => setIsRoomsDropdownOpen(!isRoomsDropdownOpen)} className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-300 flex items-center justify-between transition shadow-sm">
                           <div className="flex items-center gap-2 min-w-0 overflow-hidden">
@@ -805,17 +821,19 @@ export default function App() {
                       </div>
                     </div>
 
-                    {!loading && searchResults.length > 0 && (
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button onClick={() => bulkAdd('top')} title="Добавить все зеленые турниры" className="w-11 h-11 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl flex items-center justify-center transition active:scale-95 shadow-sm"><Check size={18} strokeWidth={3} /></button>
-                        <button onClick={() => bulkAdd('overlay')} title="Добавить все оверлеи" className="w-11 h-11 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-xl flex items-center justify-center transition active:scale-95 shadow-sm"><Flame size={18} className="text-orange-500 animate-pulse" /></button>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                      {!loading && searchResults.length > 0 && (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button onClick={() => bulkAdd('top')} title="Добавить все зеленые турниры" className="w-11 h-11 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl flex items-center justify-center transition active:scale-95 shadow-sm"><Check size={18} strokeWidth={3} /></button>
+                          <button onClick={() => bulkAdd('overlay')} title="Добавить все оверлеи" className="w-11 h-11 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-xl flex items-center justify-center transition active:scale-95 shadow-sm"><Flame size={18} className="text-orange-500 animate-pulse" /></button>
+                        </div>
+                      )}
 
-                    <button onClick={fetchTournaments} className="px-6 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] active:scale-95 shrink-0">
-                      {loading ? <Search className="animate-spin" size={16} /> : <Search size={16} strokeWidth={3} />}
-                      <span className="hidden sm:inline">Найти</span>
-                    </button>
+                      <button onClick={fetchTournaments} className="flex-1 sm:flex-none px-6 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] active:scale-95 shrink-0">
+                        {loading ? <Search className="animate-spin" size={16} /> : <Search size={16} strokeWidth={3} />}
+                        <span>Найти</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
                 
@@ -846,12 +864,12 @@ export default function App() {
                       <div 
                         key={uniqueKey} 
                         onClick={() => toggleGrid(t)} 
-                        className={`rounded-xl px-3 py-2 md:py-2.5 border transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-sm ${
+                        className={`rounded-xl px-3 py-2.5 border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-sm ${
                           isAdded ? 'bg-emerald-950/90 border-transparent shadow-none' : 'bg-slate-900 border-slate-800'
                         }`}
                       >
-                        <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                          <div className="flex items-center gap-1.5 shrink-0 md:w-[150px]">
+                        <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                          <div className="flex items-center gap-1.5 shrink-0 sm:w-[150px]">
                             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
                             <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
                               {formatDayWeek(t.day_week)}{formatLocalTime(t.time_start)}
@@ -864,15 +882,15 @@ export default function App() {
                             {isOverlay(t) && <Flame size={12} className="inline-block ml-1.5 text-orange-500 animate-pulse mb-0.5"/>}
                           </div>
                           
-                          <div className="flex items-center gap-3 text-[11px] shrink-0 md:w-[280px] md:justify-end">
-                            <span className="font-black text-emerald-400 w-12 text-right">{getRoomCurrency(t.room)}{t.buyin}</span>
-                            <span className="text-slate-400 w-14 text-right truncate" title={t.afs}>{t.afs} {t.afs.includes('не задано') ? '' : 'рег.'}</span>
-                            <span className="text-slate-400 w-20 text-right truncate" title={t.gtd}>GTD: {t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
-                            <span className={`w-14 text-right font-bold ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
+                          <div className="flex items-center justify-between sm:justify-end gap-3 text-[11px] shrink-0 sm:w-[280px]">
+                            <span className="font-black text-emerald-400 sm:w-12 sm:text-right">{getRoomCurrency(t.room)}{t.buyin}</span>
+                            <span className="text-slate-400 sm:w-14 sm:text-right truncate" title={t.afs}>{t.afs} {t.afs.includes('не задано') ? '' : 'рег.'}</span>
+                            <span className="text-slate-400 sm:w-20 sm:text-right truncate" title={t.gtd}>GTD: {t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
+                            <span className={`sm:w-14 sm:text-right font-bold ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
                           </div>
                         </div>
                         
-                        <div className="shrink-0 flex items-center justify-end gap-1.5 md:w-[70px]">
+                        <div className="shrink-0 flex items-center justify-end gap-1.5">
                           <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"><NotebookPen size={14}/></button>
                         </div>
                       </div>
@@ -880,6 +898,8 @@ export default function App() {
                   })}
                 </div>
               </div>
+
+              {/* Десктопная правая колонка сетки */}
               <div className="hidden xl:block w-full xl:w-[25%] shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-8 pr-1">
                 {renderGridPanel()}
               </div>
