@@ -79,7 +79,17 @@ const getUniqueId = (t: Tournament) => `${t.id}_${t.room}_${t.name}_${t.buyin}_$
 
 const cleanTournamentName = (name: string) => {
   if (!name) return '';
-  return name.replace(/\s*\[.*?\]/g, '').trim();
+  return name
+    .replace(/\s*\[?\d{2}:\d{2}\]?/g, '')
+    .replace(/\[([^\]]*?)\]/g, (match, inner) => {
+      if (inner.toLowerCase().includes('max')) {
+        return ` (${inner.trim()})`;
+      }
+      return '';
+    })
+    .replace(/\b(regular|turbo|hyper|freezeout|pko|bounty)\b/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 };
 
 const getLocalTimeDate = (mskTimeStr: string) => {
