@@ -91,7 +91,7 @@ const cleanTournamentName = (name: string) => {
     .trim();
 
   if (maxSize && !cleaned.toLowerCase().includes(maxSize)) {
-    cleaned = `${cleaned} (${maxSize})`;
+    cleaned = `${cleaned} [${maxSize}]`;
   }
   return cleaned;
 };
