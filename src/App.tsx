@@ -932,9 +932,21 @@ export default function App() {
                             
                             {/* Иконки форматов для мобилки */}
                             <div className="flex items-center gap-1">
-                              {fmts.isPko && <span className="px-1.5 py-0.5 rounded bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-400 text-[9px] font-black">PKO</span>}
-                              {fmts.isTurbo && <span className="px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[9px] font-black">TURB</span>}
-                              {fmts.isFreezeout && <span className="px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[9px] font-black">FRZ</span>}
+                              {fmts.isPko && (
+                                <div className="w-5 h-5 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/40 text-fuchsia-400 flex items-center justify-center" title="PKO">
+                                  <ShieldAlert size={10} />
+                                </div>
+                              )}
+                              {fmts.isTurbo && (
+                                <div className="w-5 h-5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-center" title="Turbo">
+                                  <Zap size={10} />
+                                </div>
+                              )}
+                              {fmts.isFreezeout && (
+                                <div className="w-5 h-5 rounded-lg bg-blue-500/15 border border-blue-500/40 text-blue-400 flex items-center justify-center" title="Freezeout">
+                                  <Disc size={10} />
+                                </div>
+                              )}
                             </div>
 
                             <span>GTD: {t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
@@ -963,9 +975,21 @@ export default function App() {
 
                             {/* Иконки форматов между гарантией и EV на ПК */}
                             <div className="flex items-center gap-1 w-24 justify-center">
-                              {fmts.isPko && <span className="px-1.5 py-0.5 rounded bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-400 text-[9px] font-black" title="PKO">PKO</span>}
-                              {fmts.isTurbo && <span className="px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[9px] font-black" title="Turbo">TURB</span>}
-                              {fmts.isFreezeout && <span className="px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[9px] font-black" title="Freezeout">FRZ</span>}
+                              {fmts.isPko && (
+                                <div className="w-6 h-6 rounded-xl bg-fuchsia-500/15 border border-fuchsia-500/40 text-fuchsia-400 flex items-center justify-center shadow-sm" title="PKO">
+                                  <ShieldAlert size={12} />
+                                </div>
+                              )}
+                              {fmts.isTurbo && (
+                                <div className="w-6 h-6 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-center shadow-sm" title="Turbo">
+                                  <Zap size={12} />
+                                </div>
+                              )}
+                              {fmts.isFreezeout && (
+                                <div className="w-6 h-6 rounded-xl bg-blue-500/15 border border-blue-500/40 text-blue-400 flex items-center justify-center shadow-sm" title="Freezeout">
+                                  <Disc size={12} />
+                                </div>
+                              )}
                             </div>
 
                             <span className={`font-bold w-16 text-right ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
