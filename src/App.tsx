@@ -216,11 +216,6 @@ export default function App() {
     return getDiffMins(timeString) < -120;
   };
 
-  const isStartedTooLongAgo = (timeString: string, dayWeekStr?: string) => {
-    if (!timeString || !isToday(dayWeekStr)) return false;
-    return getDiffMins(timeString) < -15; 
-  };
-
   const getSmartTimer = (timeStr: string, dayWeekStr?: string) => {
     if (!timeStr || !isToday(dayWeekStr)) return null;
     const diffMins = getDiffMins(timeStr);
@@ -482,10 +477,7 @@ export default function App() {
 
   const searchResults = useMemo(() => {
     return tournaments
-      .filter(t => {
-        if (isStartedTooLongAgo(t.time_start, t.day_week)) return false; 
-        return isRoomAllowed(t.room);
-      })
+      .filter(t => isRoomAllowed(t.room))
       .sort((a, b) => sortOrder === 'tier' ? getTier(a).id - getTier(b).id : 0);
   }, [tournaments, sortOrder, selectedRooms]);
 
@@ -900,6 +892,7 @@ export default function App() {
                     );
 
                     const isAdded = grid.some(item => getUniqueId(item) === getUniqueId(t));
+                    const played = isPlayed(t.time_start, t.day_week);
                     const prioStyles = getPriorityStyles(t.priority);
                     const fmts = getTournamentFormats(t.name);
                     
@@ -908,7 +901,7 @@ export default function App() {
                         key={uniqueKey} 
                         onClick={() => toggleGrid(t)} 
                         className={`rounded-xl px-3 py-2.5 border transition-all border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-sm ${
-                          isAdded ? 'bg-emerald-950/90 border-transparent shadow-none' : 'bg-slate-900 border-slate-800'
+                          played ? 'opacity-40 grayscale bg-slate-900/40 border-slate-800' : (isAdded ? 'bg-emerald-950/90 border-transparent shadow-none' : 'bg-slate-900 border-slate-800')
                         }`}
                       >
                         {/* МОБИЛКА: вертикальный вид (xl:hidden) */}
