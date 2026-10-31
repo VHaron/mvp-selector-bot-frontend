@@ -79,17 +79,30 @@ const getUniqueId = (t: Tournament) => `${t.id}_${t.room}_${t.name}_${t.buyin}_$
 
 const cleanTournamentName = (name: string) => {
   if (!name) return '';
-  return name
-    .replace(/\s*\[?\d{2}:\d{2}\]?/g, '')
-    .replace(/\[([^\]]*?)\]/g, (_, inner) => {
-      if (inner.toLowerCase().includes('max')) {
-        return ` (${inner.trim()})`;
-      }
-      return '';
-    })
-    .replace(/\b(regular|turbo|hyper|freezeout|pko|bounty)\b/gi, '')
-    .replace(/\s{2,}/g, ' ')
+
+  // Сначала вытаскиваем размер стола (например, 8-max, 7-max), чтобы он не потерялся
+  let maxSize = '';
+  const maxMatch = name.match(/(\d-max)/i);
+  if (maxMatch) {
+    maxSize = maxMatch[1].toLowerCase();
+  }
+
+  // Очищаем: убираем время, весь мусор в квадратных/круглых скобках и сугубо технические слова
+  let cleaned = name
+    .replace(/\s*\[?\d{2}:\d{2}\]?/g, '') // убираем время [11:30]
+    .replace(/\[.*?\]/g, '') // убираем всё в квадратных скобках
+    .replace(/\(.*?\)/g, '') // убираем всё в круглых скобках
+    .replace(/\b(regular|turbo|hyper|freezeout|pko|freez)\b/gi, '') // убираем только технические маркеры форматов
+    .replace(/[,.-]+/g, ' ') // убираем лишние знаки препинания и висящие запятые
+    .replace(/\s{2,}/g, ' ') // убираем лишние пробелы
     .trim();
+
+  // Возвращаем размер стола аккуратно в конце, если он был
+  if (maxSize && !cleaned.toLowerCase().includes(maxSize)) {
+    cleaned = `${cleaned} (${maxSize})`;
+  }
+
+  return cleaned;
 };
 
 const getLocalTimeDate = (mskTimeStr: string) => {
