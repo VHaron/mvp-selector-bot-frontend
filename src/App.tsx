@@ -757,7 +757,21 @@ export default function App() {
                 <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4 md:p-5 shadow-xl space-y-4">
                   <div className="flex justify-between items-center flex-wrap gap-2">
                     <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Фильтр периода и румов</span>
-                    <div className="flex gap-1.5 md:gap-2 items-center flex-wrap">
+                    
+                    {/* Кнопки быстрых форматов (теперь доступны везде и на телефоне) */}
+                    <div className="flex gap-1.5 items-center">
+                      <button onClick={() => toggleFormat('isPko')} className={`px-2.5 py-1.5 text-[10px] font-black uppercase rounded-xl border transition flex items-center gap-1 ${activeFormats.isPko ? 'bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800'}`}>
+                        <ShieldAlert size={12} /> PKO
+                      </button>
+                      <button onClick={() => toggleFormat('isTurbo')} className={`px-2.5 py-1.5 text-[10px] font-black uppercase rounded-xl border transition flex items-center gap-1 ${activeFormats.isTurbo ? 'bg-amber-500/20 text-amber-400 border-amber-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800'}`}>
+                        <Zap size={12} /> Turbo
+                      </button>
+                      <button onClick={() => toggleFormat('isFreezeout')} className={`px-2.5 py-1.5 text-[10px] font-black uppercase rounded-xl border transition flex items-center gap-1 ${activeFormats.isFreezeout ? 'bg-blue-500/20 text-blue-400 border-blue-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800'}`}>
+                        <Disc size={12} /> Frz
+                      </button>
+                    </div>
+
+                    <div className="flex gap-1.5 md:gap-2 items-center flex-wrap w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800">
                       <button onClick={() => setPresetDate('today')} className="px-3 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl transition shadow-sm active:scale-95">Сегодня</button>
                       <button onClick={() => setPresetDate('tomorrow')} className="px-3 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl transition shadow-sm active:scale-95">Завтра</button>
                       <button onClick={() => setPresetDate('clear')} title="Сбросить даты" className="w-9 h-9 flex items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:border-rose-500/50 rounded-xl transition shadow-sm active:scale-95"><X size={15} strokeWidth={2.5} /></button>
