@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown, Zap, ShieldAlert, Disc, Layers } from 'lucide-react';
+import { Search, ListTodo, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown, Zap, ShieldAlert, Disc, Layers, Radar } from 'lucide-react';
 
 interface Tournament {
   id: string; room: string; name: string; priority: string;
@@ -774,8 +774,8 @@ const getLocalDayWeek = (mskTimeStr: string, dayWeekStr?: string) => {
       {/* ДЕСКТОПНЫЙ ЛЕСТНИЧНЫЙ САЙДБАР (Только для ПК, с кнопками форматов) */}
       <aside className="hidden xl:flex w-20 bg-slate-950 border-r border-slate-800/80 flex-col items-center justify-between py-6 shrink-0 fixed top-0 h-screen z-40">
         <div className="flex flex-col items-center gap-6">
-          <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/40 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.2)]">
-            <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse"></div>
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/40 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+            <Radar size={20} className="text-cyan-400" />
           </div>
           <div className="flex flex-col gap-2">
             <button onClick={() => setActiveTab('search')} title="Поиск турниров" className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${activeTab === 'search' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}><Search size={20} /></button>
