@@ -77,6 +77,11 @@ const API_BASE_URL = 'https://selector-backend-production.up.railway.app';
 const parseNum = (str: string) => parseFloat(str?.replace(/[^\d.-]/g, '')) || 0;
 const getUniqueId = (t: Tournament) => `${t.id}_${t.room}_${t.name}_${t.buyin}_${t.time_start}`;
 
+const cleanTournamentName = (name: string) => {
+  if (!name) return '';
+  return name.replace(/\s*\[?\d{2}:\d{2}\]?/g, '').trim();
+};
+
 const getLocalTimeDate = (mskTimeStr: string) => {
   if (!mskTimeStr) return new Date();
   const [hours, mins] = mskTimeStr.slice(0, 5).split(':').map(Number);
@@ -569,7 +574,7 @@ export default function App() {
             </span>
             {getSmartTimer(t.time_start, t.day_week)}
           </div>
-          <div className="font-bold text-[11px] text-white truncate leading-tight">{t.name}</div>
+          <div className="font-bold text-[11px] text-white truncate leading-tight">{cleanTournamentName(t.name)}</div>
           <div className="flex items-center gap-2 text-[10px]">
             <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
             <span className="text-slate-500 truncate">GTD: {t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
@@ -866,7 +871,7 @@ export default function App() {
 
                     if (note?.tag === 'skip') return (
                       <div key={uniqueKey} className="bg-slate-900/30 rounded-xl px-3 py-2 border border-slate-800/40 flex justify-between items-center opacity-40 grayscale text-xs">
-                        <div className="flex items-center gap-2"><Ban size={14} className="text-rose-500"/><span className="line-through">{t.name}</span></div>
+                        <div className="flex items-center gap-2"><Ban size={14} className="text-rose-500"/><span className="line-through">{cleanTournamentName(t.name)}</span></div>
                         <button onClick={() => setActiveStats(t)} className="text-xs text-blue-400 font-bold">Вернуть</button>
                       </div>
                     );
@@ -895,7 +900,7 @@ export default function App() {
                             <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"><NotebookPen size={12}/></button>
                           </div>
                           <div className="font-bold text-xs text-white leading-snug">
-                            {t.name}
+                            {cleanTournamentName(t.name)}
                             {isOverlay(t) && <Flame size={12} className="inline-block ml-1.5 text-orange-500 animate-pulse mb-0.5"/>}
                           </div>
                           <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-800/60 text-slate-400">
@@ -917,7 +922,7 @@ export default function App() {
                           </div>
 
                           <div className="font-bold text-white truncate flex-1 min-w-0">
-                            {t.name}
+                            {cleanTournamentName(t.name)}
                             {isOverlay(t) && <Flame size={12} className="inline-block ml-1.5 text-orange-500 animate-pulse mb-0.5"/>}
                           </div>
 
@@ -1115,7 +1120,7 @@ export default function App() {
           <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative">
               <button onClick={() => setActiveStats(null)} className="absolute top-4 right-4 p-2 bg-slate-800 rounded-full text-slate-400"><X size={18}/></button>
-              <div className="flex items-center gap-2 mb-1 pr-8"><div className={`w-2.5 h-2.5 rounded-full ${getPriorityStyles(activeStats.priority).dot}`}></div><h3 className="font-black text-base text-white">{activeStats.name}</h3></div>
+              <div className="flex items-center gap-2 mb-1 pr-8"><div className={`w-2.5 h-2.5 rounded-full ${getPriorityStyles(activeStats.priority).dot}`}></div><h3 className="font-black text-base text-white">{cleanTournamentName(activeStats.name)}</h3></div>
               <div className="inline-block mt-1"><RoomBadge roomName={activeStats.room} getRoomStyle={getRoomStyle} /></div>            
               <div className="grid grid-cols-2 gap-2 my-4 text-xs">
                 <div className="bg-slate-950 p-3 rounded-xl border border-slate-800"><span className="text-[9px] text-slate-500 uppercase block">GTD</span><b className="text-white text-sm">${activeStats.gtd}</b></div>
