@@ -714,7 +714,7 @@ export default function App() {
         </button>
       </nav>
 
-      {/* ДЕСКТОПНЫЙ ЛЕСТНИЧНЫЙ САЙДБАР (Только для больших экранов xl+) - УБРАНЫ ФОРМАТЫ */}
+      {/* ДЕСКТОПНЫЙ ЛЕСТНИЧНЫЙ САЙДБАР (Только для ПК, здесь снова есть форматные кнопки) */}
       <aside className="hidden xl:flex w-20 bg-slate-950 border-r border-slate-800/80 flex-col items-center justify-between py-6 shrink-0 fixed top-0 h-screen z-40">
         <div className="flex flex-col items-center gap-6">
           <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/40 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.2)]">
@@ -723,6 +723,12 @@ export default function App() {
           <div className="flex flex-col gap-2">
             <button onClick={() => setActiveTab('search')} title="Поиск турниров" className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${activeTab === 'search' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}><Search size={20} /></button>
             <button onClick={() => setActiveTab('diary')} title="Дневник и банкролл" className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${activeTab === 'diary' ? 'bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}><TrendingUp size={20} /></button>
+          </div>
+          <div className="w-8 h-[1px] bg-slate-800 my-1"></div>
+          <div className="flex flex-col gap-2">
+            <button onClick={() => toggleFormat('isPko')} title="Формат: PKO" className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition border ${activeFormats.isPko ? 'bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/40 shadow-sm' : 'bg-slate-900/40 text-slate-600 border-slate-800/80 hover:text-slate-400'}`}><ShieldAlert size={16} /><span className="text-[9px] font-black">PKO</span></button>
+            <button onClick={() => toggleFormat('isTurbo')} title="Формат: Turbo" className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition border ${activeFormats.isTurbo ? 'bg-amber-500/15 text-amber-400 border-amber-500/40 shadow-sm' : 'bg-slate-900/40 text-slate-600 border-slate-800/80 hover:text-slate-400'}`}><Zap size={16} /><span className="text-[9px] font-black">TURB</span></button>
+            <button onClick={() => toggleFormat('isFreezeout')} title="Формат: Freezeout" className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition border ${activeFormats.isFreezeout ? 'bg-blue-500/15 text-blue-400 border-blue-500/40 shadow-sm' : 'bg-slate-900/40 text-slate-600 border-slate-800/80 hover:text-slate-400'}`}><Disc size={16} /><span className="text-[9px] font-black">FRZ</span></button>
           </div>
         </div>
         <button onClick={logout} title="Выйти из системы" className="w-12 h-12 rounded-2xl flex items-center justify-center text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/30 transition"><LogOut size={18} /></button>
@@ -752,7 +758,8 @@ export default function App() {
                   <div className="flex justify-between items-center flex-wrap gap-2">
                     <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Фильтр периода и румов</span>
                     
-                    <div className="flex gap-1.5 items-center">
+                    {/* Кнопки форматов только для мобилок (xl:hidden) */}
+                    <div className="flex xl:hidden gap-1.5 items-center">
                       <button onClick={() => toggleFormat('isPko')} className={`px-2.5 py-1.5 text-[10px] font-black uppercase rounded-xl border transition flex items-center gap-1 ${activeFormats.isPko ? 'bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800'}`}>
                         <ShieldAlert size={12} /> PKO
                       </button>
