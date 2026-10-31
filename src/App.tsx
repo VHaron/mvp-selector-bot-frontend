@@ -79,28 +79,30 @@ const getUniqueId = (t: Tournament) => `${t.id}_${t.room}_${t.name}_${t.buyin}_$
 
 const cleanTournamentName = (name: string) => {
   if (!name) return '';
-
-  // 1. Ищем размер стола в скобках (например, 8-max, 7-max, 6-max)
   let maxSize = '';
   const maxMatch = name.match(/(\d-max)/i);
   if (maxMatch) {
     maxSize = maxMatch[1].toLowerCase();
   }
-
-  // 2. Убираем из текста время [12:30] и полностью технические квадратные скобки [...], 
-  // чтобы в самом названии не висели эти хвосты
   let cleaned = name
-    .replace(/\s*\[?\d{2}:\d{2}\]?/g, '') // убираем время
-    .replace(/\s*\[.*?\]/g, '') // полностью убираем квадратные скобки со всем содержимым внутри них
-    .replace(/\s{2,}/g, ' ') // убираем лишние пробелы
+    .replace(/\s*\[?\d{2}:\d{2}\]?/g, '')
+    .replace(/\s*\[.*?\]/g, '')
+    .replace(/\s{2,}/g, ' ')
     .trim();
 
-  // 3. Если был найден размер стола, аккуратно добавляем его в конец в скобках
   if (maxSize && !cleaned.toLowerCase().includes(maxSize)) {
     cleaned = `${cleaned} (${maxSize})`;
   }
-
   return cleaned;
+};
+
+const getTournamentFormats = (name: string) => {
+  const n = (name || '').toLowerCase();
+  return {
+    isPko: n.includes('pko') || n.includes('bounty'),
+    isTurbo: n.includes('turbo') || n.includes('hyper'),
+    isFreezeout: n.includes('freezeout') || n.includes('freez') || n.includes('frz'),
+  };
 };
 
 const getLocalTimeDate = (mskTimeStr: string) => {
@@ -899,6 +901,7 @@ export default function App() {
 
                     const isAdded = grid.some(item => getUniqueId(item) === getUniqueId(t));
                     const prioStyles = getPriorityStyles(t.priority);
+                    const fmts = getTournamentFormats(t.name);
                     
                     return (
                       <div 
@@ -926,7 +929,14 @@ export default function App() {
                           </div>
                           <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-800/60 text-slate-400">
                             <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
-                            <span>{t.afs} {t.afs.includes('не задано') ? '' : 'рег.'}</span>
+                            
+                            {/* Иконки форматов для мобилки */}
+                            <div className="flex items-center gap-1">
+                              {fmts.isPko && <span className="px-1.5 py-0.5 rounded bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-400 text-[9px] font-black">PKO</span>}
+                              {fmts.isTurbo && <span className="px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[9px] font-black">TURB</span>}
+                              {fmts.isFreezeout && <span className="px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[9px] font-black">FRZ</span>}
+                            </div>
+
                             <span>GTD: {t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
                             <span className={`font-bold ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
                           </div>
@@ -950,6 +960,14 @@ export default function App() {
                           <div className="flex items-center gap-4 shrink-0 text-right">
                             <span className="font-black text-emerald-400 w-16 text-left">{getRoomCurrency(t.room)}{t.buyin}</span>
                             <span className="text-slate-400 w-20 text-left">{t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
+
+                            {/* Иконки форматов между гарантией и EV на ПК */}
+                            <div className="flex items-center gap-1 w-24 justify-center">
+                              {fmts.isPko && <span className="px-1.5 py-0.5 rounded bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-400 text-[9px] font-black" title="PKO">PKO</span>}
+                              {fmts.isTurbo && <span className="px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[9px] font-black" title="Turbo">TURB</span>}
+                              {fmts.isFreezeout && <span className="px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[9px] font-black" title="Freezeout">FRZ</span>}
+                            </div>
+
                             <span className={`font-bold w-16 text-right ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
                             <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"><NotebookPen size={12}/></button>
                           </div>
