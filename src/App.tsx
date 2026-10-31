@@ -25,7 +25,7 @@ const ROOM_DOMAINS: Record<string, string> = {
   '248': 'partypoker.com',
   '249': 'pokerstars.com',
   '250': 'pokerstars.es',
-  '251': 'wina.fr',
+  '251': 'winamax.fr',
   '252': 'americascardroom.eu',
   '264': 'pokerdom.com',
   '266': 'wptglobal.com',
@@ -34,7 +34,7 @@ const ROOM_DOMAINS: Record<string, string> = {
 
 const getRoomCurrency = (roomName: string) => {
   const name = (roomName || '').toLowerCase();
-  if (name.includes('ps(es)') || name.includes('es') || name.includes('wina') || name.includes('ipoker') || name.includes('wmx')) return '€';
+  if (name.includes('ps(es)') || name.includes('es') || name.includes('winamax') || name.includes('ipoker') || name.includes('wmx')) return '€';
   return '$';
 };
 
@@ -42,7 +42,7 @@ const getRoomIdByName = (roomName: string) => {
   if (!roomName) return null;
   const nameLower = roomName.toLowerCase().trim();
   
-  if (nameLower.includes('wmx') || nameLower.includes('wina')) return '251';
+  if (nameLower.includes('wmx') || nameLower.includes('winamax')) return '251';
   if (nameLower.includes('gg')) return '246';
   if (nameLower.includes('888')) return '244';
   if (nameLower.includes('pokerstars') || nameLower.includes('ps')) return nameLower.includes('es') ? '250' : '249';
