@@ -81,7 +81,7 @@ const cleanTournamentName = (name: string) => {
   if (!name) return '';
   return name
     .replace(/\s*\[?\d{2}:\d{2}\]?/g, '')
-    .replace(/\[([^\]]*?)\]/g, (match, inner) => {
+    .replace(/\[([^\]]*?)\]/g, (_, inner) => {
       if (inner.toLowerCase().includes('max')) {
         return ` (${inner.trim()})`;
       }
