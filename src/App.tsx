@@ -90,6 +90,7 @@ const cleanTournamentName = (name: string) => {
     .replace(/\s{2,}/g, ' ')
     .trim();
 
+  // Заменили круглые скобки на квадратные
   if (maxSize && !cleaned.toLowerCase().includes(maxSize)) {
     cleaned = `${cleaned} [${maxSize}]`;
   }
@@ -106,20 +107,23 @@ const getTournamentFormats = (name: string) => {
 };
 
 // ----------------------------------------------------
-// ИДЕАЛЬНОЕ ВЫЧИСЛЕНИЕ ВРЕМЕНИ И ДАТ (БЕЗ КОСТЫЛЕЙ)
+// ЛОГИКА ВРЕМЕНИ С ПОДДЕРЖКОЙ ИСКЛЮЧЕНИЙ РУМОВ (WPN)
 // ----------------------------------------------------
-const getLocalTimeDate = (mskTimeStr: string, dayWeekStr?: string) => {
+const getLocalTimeDate = (mskTimeStr: string, dayWeekStr?: string, roomName?: string) => {
   if (!mskTimeStr) return new Date();
-  const [hours, mins] = mskTimeStr.slice(0, 5).split(':').map(Number);
+  let [hours, mins] = mskTimeStr.slice(0, 5).split(':').map(Number);
+  
+  // Корректировка времени для WPN: бэкенд отдает его со смещением на 1 час
+  if (roomName && (roomName.toLowerCase().includes('wpn') || roomName === '252')) {
+    hours += 1;
+  }
   
   const now = new Date();
-  // Эмулируем время МСК (+3 часа) через UTC
   const mskWall = new Date(now.getTime() + 3 * 3600000); 
   
   let tMsk = new Date(mskWall.getTime());
   tMsk.setUTCHours(hours, mins || 0, 0, 0);
 
-  // Корректируем дату по дню недели от сервера (он шлет день недели по МСК)
   if (dayWeekStr) {
     const cleanDay = dayWeekStr.toLowerCase().replace(/[^а-яё]/g, '');
     const days = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
@@ -129,50 +133,54 @@ const getLocalTimeDate = (mskTimeStr: string, dayWeekStr?: string) => {
       const currentMskDay = tMsk.getUTCDay();
       let dayDiff = targetDay - currentMskDay;
       
-      // Обработка перехода через неделю (вперед/назад)
       if (dayDiff > 3) dayDiff -= 7;
       else if (dayDiff < -3) dayDiff += 7;
       
       tMsk.setUTCDate(tMsk.getUTCDate() + dayDiff);
     }
   } else {
-    // Резервная логика, если дня недели нет в строке
     const diffMins = (tMsk.getTime() - mskWall.getTime()) / 60000;
     if (diffMins > 12 * 60) tMsk.setUTCDate(tMsk.getUTCDate() - 1);
     else if (diffMins < -12 * 60) tMsk.setUTCDate(tMsk.getUTCDate() + 1);
   }
 
-  // Получаем итоговый честный таймстемп
   const actualTimestamp = tMsk.getTime() - 3 * 3600000;
   return new Date(actualTimestamp);
 };
 
-const formatLocalTime = (mskTimeStr: string, dayWeekStr?: string) => {
+const getLocalDayWeek = (mskTimeStr: string, dayWeekStr?: string, roomName?: string) => {
   if (!mskTimeStr) return '';
-  const date = getLocalTimeDate(mskTimeStr, dayWeekStr);
+  const date = getLocalTimeDate(mskTimeStr, dayWeekStr, roomName);
+  const daysArr = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+  return `${daysArr[date.getDay()]}. `;
+};
+
+const formatLocalTime = (mskTimeStr: string, dayWeekStr?: string, roomName?: string) => {
+  if (!mskTimeStr) return '';
+  const date = getLocalTimeDate(mskTimeStr, dayWeekStr, roomName);
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 };
 
-const getDiffMins = (mskTimeStr: string, dayWeekStr?: string) => {
+const getDiffMins = (mskTimeStr: string, dayWeekStr?: string, roomName?: string) => {
   if (!mskTimeStr) return 0;
-  const tDate = getLocalTimeDate(mskTimeStr, dayWeekStr);
+  const tDate = getLocalTimeDate(mskTimeStr, dayWeekStr, roomName);
   const now = new Date();
   return Math.round((tDate.getTime() - now.getTime()) / 60000);
 };
 
-const isPlayed = (timeString: string, dayWeekStr?: string) => {
+const isPlayed = (timeString: string, dayWeekStr?: string, roomName?: string) => {
   if (!timeString) return false;
-  return getDiffMins(timeString, dayWeekStr) < -120;
+  return getDiffMins(timeString, dayWeekStr, roomName) < -120;
 };
 
-const isStartedTooLongAgo = (timeString: string, dayWeekStr?: string) => {
+const isStartedTooLongAgo = (timeString: string, dayWeekStr?: string, roomName?: string) => {
   if (!timeString) return false;
-  return getDiffMins(timeString, dayWeekStr) < -15; 
+  return getDiffMins(timeString, dayWeekStr, roomName) < -15; 
 };
 
-const getSmartTimer = (timeStr: string, dayWeekStr?: string) => {
+const getSmartTimer = (timeStr: string, dayWeekStr?: string, roomName?: string) => {
   if (!timeStr) return null;
-  const diffMins = getDiffMins(timeStr, dayWeekStr);
+  const diffMins = getDiffMins(timeStr, dayWeekStr, roomName);
 
   if (diffMins > 0 && diffMins <= 60) {
     return <span className="text-[8px] font-black uppercase tracking-wider text-amber-400 animate-pulse bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/30">⏳ {diffMins}м</span>;
@@ -442,7 +450,7 @@ export default function App() {
     let maxEndTime = 0;
     items.forEach(t => {
       if (!t.time_start || !t.duration) return;
-      const tDate = getLocalTimeDate(t.time_start, t.day_week);
+      const tDate = getLocalTimeDate(t.time_start, t.day_week, t.room);
       const durationMins = parseFloat(t.duration.replace(',', '.')) * 60;
       const endTime = tDate.getTime() + durationMins * 60000;
       if (endTime > maxEndTime) maxEndTime = endTime;
@@ -457,7 +465,7 @@ export default function App() {
     let events: { time: number, type: number }[] = [];
     items.forEach(t => {
       if (!t.time_start || !t.duration) return;
-      const tDate = getLocalTimeDate(t.time_start, t.day_week);
+      const tDate = getLocalTimeDate(t.time_start, t.day_week, t.room);
       const startMs = tDate.getTime();
       const durationMins = parseFloat(t.duration.replace(',', '.')) * 60;
       const endMs = startMs + durationMins * 60000;
@@ -483,16 +491,15 @@ export default function App() {
         if (sortOrder === 'ev') return parseNum(b.ev_mtt) - parseNum(a.ev_mtt);
         if (sortOrder === 'tier') return getTier(a).id - getTier(b).id;
         
-        // Сортируем чисто по абсолютному математическому времени!
-        const timeA = getLocalTimeDate(a.time_start, a.day_week).getTime();
-        const timeB = getLocalTimeDate(b.time_start, b.day_week).getTime();
+        const timeA = getLocalTimeDate(a.time_start, a.day_week, a.room).getTime();
+        const timeB = getLocalTimeDate(b.time_start, b.day_week, b.room).getTime();
         return timeA - timeB;
       });
   }, [grid, sortOrder, selectedRooms]);
 
   const displayGrid = useMemo(() => {
     return sortedGrid
-      .map(t => ({ ...t, played: isPlayed(t.time_start, t.day_week) }))
+      .map(t => ({ ...t, played: isPlayed(t.time_start, t.day_week, t.room) }))
       .sort((a, b) => (a.played === b.played ? 0 : a.played ? 1 : -1));
   }, [sortedGrid]);
 
@@ -510,8 +517,7 @@ export default function App() {
   const searchResults = useMemo(() => {
     return tournaments
       .filter(t => {
-        // ВОЗВРАЩАЕМ ФИЛЬТР! Больше не будет багов с его отработкой.
-        if (isStartedTooLongAgo(t.time_start, t.day_week)) return false; 
+        if (isStartedTooLongAgo(t.time_start, t.day_week, t.room)) return false; 
         return isRoomAllowed(t.room);
       })
       .sort((a, b) => sortOrder === 'tier' ? getTier(a).id - getTier(b).id : 0);
@@ -604,16 +610,9 @@ export default function App() {
   const totalBuyin = grid.reduce((sum, t) => sum + parseNum(t.buyin), 0);
   const totalEV = grid.reduce((sum, t) => sum + parseNum(t.ev_mtt), 0);
 
-const getLocalDayWeek = (mskTimeStr: string, dayWeekStr?: string) => {
-  if (!mskTimeStr) return '';
-  const date = getLocalTimeDate(mskTimeStr, dayWeekStr);
-  const daysArr = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-  return `${daysArr[date.getDay()]}. `;
-};
-
   const renderGridCard = (t: any, overrideKey?: string) => {
     const prioStyles = getPriorityStyles(t.priority);
-    const played = isPlayed(t.time_start, t.day_week);
+    const played = isPlayed(t.time_start, t.day_week, t.room);
     const elementKey = overrideKey || getUniqueId(t);
 
     return (
@@ -622,9 +621,9 @@ const getLocalDayWeek = (mskTimeStr: string, dayWeekStr?: string) => {
           <div className="flex items-center gap-1.5">
             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
             <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
-              {getLocalDayWeek(t.time_start, t.day_week)}{formatLocalTime(t.time_start, t.day_week)}
+              {getLocalDayWeek(t.time_start, t.day_week, t.room)}{formatLocalTime(t.time_start, t.day_week, t.room)}
             </span>
-            {getSmartTimer(t.time_start, t.day_week)}
+            {getSmartTimer(t.time_start, t.day_week, t.room)}
           </div>
           <div className="font-bold text-[11px] text-white truncate leading-tight">{cleanTournamentName(t.name)}</div>
           <div className="flex items-center gap-2 text-[10px]">
@@ -748,7 +747,6 @@ const getLocalDayWeek = (mskTimeStr: string, dayWeekStr?: string) => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans antialiased flex flex-col pb-20 xl:pb-0">
       
-      {/* НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ (BOTTOM BAR) */}
       <nav className="fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-md border-t border-slate-800/80 px-4 py-3 flex items-center justify-around z-40 xl:hidden shadow-2xl">
         <button onClick={() => setActiveTab('search')} title="Поиск турниров" className={`flex flex-col items-center gap-1 transition ${activeTab === 'search' ? 'text-cyan-400' : 'text-slate-500 hover:text-slate-300'}`}>
           <Search size={20} />
@@ -771,12 +769,14 @@ const getLocalDayWeek = (mskTimeStr: string, dayWeekStr?: string) => {
         </button>
       </nav>
 
-      {/* ДЕСКТОПНЫЙ ЛЕСТНИЧНЫЙ САЙДБАР (Только для ПК, с кнопками форматов) */}
       <aside className="hidden xl:flex w-20 bg-slate-950 border-r border-slate-800/80 flex-col items-center justify-between py-6 shrink-0 fixed top-0 h-screen z-40">
         <div className="flex flex-col items-center gap-6">
+          
+          {/* НОВЫЙ ЛОГОТИП ПИКИ (ВМЕСТО ТОЧКИ) */}
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/40 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.2)]">
             <Spade size={20} className="text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.8)] animate-pulse" fill="currentColor" />
           </div>
+
           <div className="flex flex-col gap-2">
             <button onClick={() => setActiveTab('search')} title="Поиск турниров" className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${activeTab === 'search' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}><Search size={20} /></button>
             <button onClick={() => setActiveTab('diary')} title="Дневник и банкролл" className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${activeTab === 'diary' ? 'bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}><TrendingUp size={20} /></button>
@@ -815,7 +815,6 @@ const getLocalDayWeek = (mskTimeStr: string, dayWeekStr?: string) => {
                   <div className="flex justify-between items-center flex-wrap gap-2">
                     <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Фильтр периода и румов</span>
                     
-                    {/* Кнопки форматов только для мобилок (xl:hidden) */}
                     <div className="flex xl:hidden gap-1.5 items-center">
                       <button onClick={() => toggleFormat('isPko')} className={`px-2.5 py-1.5 text-[10px] font-black uppercase rounded-xl border transition flex items-center gap-1 ${activeFormats.isPko ? 'bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800'}`}>
                         <ShieldAlert size={12} /> PKO
@@ -940,15 +939,14 @@ const getLocalDayWeek = (mskTimeStr: string, dayWeekStr?: string) => {
                           isAdded ? 'bg-emerald-950/90 border-transparent shadow-none' : 'bg-slate-900 border-slate-800'
                         }`}
                       >
-                        {/* МОБИЛКА: вертикальный вид (xl:hidden) */}
                         <div className="flex flex-col gap-2 xl:hidden">
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                               <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
                               <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
-                                {getLocalDayWeek(t.time_start, t.day_week)}{formatLocalTime(t.time_start, t.day_week)}
+                                {getLocalDayWeek(t.time_start, t.day_week, t.room)}{formatLocalTime(t.time_start, t.day_week, t.room)}
                               </span>
-                              {getSmartTimer(t.time_start, t.day_week)}
+                              {getSmartTimer(t.time_start, t.day_week, t.room)}
                             </div>
                             <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"><NotebookPen size={12}/></button>
                           </div>
@@ -959,7 +957,6 @@ const getLocalDayWeek = (mskTimeStr: string, dayWeekStr?: string) => {
                           <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-800/60 text-slate-400">
                             <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
                             
-                            {/* Иконки форматов для мобилки */}
                             <div className="flex items-center gap-1">
                               {fmts.isPko && (
                                 <div className="w-5 h-5 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/40 text-fuchsia-400 flex items-center justify-center" title="PKO">
@@ -983,14 +980,13 @@ const getLocalDayWeek = (mskTimeStr: string, dayWeekStr?: string) => {
                           </div>
                         </div>
 
-                        {/* ПК: СТРОГО В ОДНУ СТРОКУ (hidden xl:flex) */}
                         <div className="hidden xl:flex items-center justify-between gap-3 text-xs">
                           <div className="flex items-center gap-2 shrink-0 w-44">
                             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
                             <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">
-                              {getLocalDayWeek(t.time_start, t.day_week)}{formatLocalTime(t.time_start, t.day_week)}
+                              {getLocalDayWeek(t.time_start, t.day_week, t.room)}{formatLocalTime(t.time_start, t.day_week, t.room)}
                             </span>
-                            {getSmartTimer(t.time_start, t.day_week)}
+                            {getSmartTimer(t.time_start, t.day_week, t.room)}
                           </div>
 
                           <div className="font-bold text-white truncate flex-1 min-w-0">
@@ -1002,7 +998,6 @@ const getLocalDayWeek = (mskTimeStr: string, dayWeekStr?: string) => {
                             <span className="font-black text-emerald-400 w-16 text-left">{getRoomCurrency(t.room)}{t.buyin}</span>
                             <span className="text-slate-400 w-20 text-left">{t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
 
-                            {/* Иконки форматов между гарантией и EV на ПК */}
                             <div className="flex items-center gap-1 w-24 justify-center">
                               {fmts.isPko && (
                                 <div className="w-6 h-6 rounded-xl bg-fuchsia-500/15 border border-fuchsia-500/40 text-fuchsia-400 flex items-center justify-center shadow-sm" title="PKO">
@@ -1032,7 +1027,6 @@ const getLocalDayWeek = (mskTimeStr: string, dayWeekStr?: string) => {
                 </div>
               </div>
 
-              {/* Десктопная правая колонка сетки */}
               <div className="hidden xl:block w-full xl:w-[25%] shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-8 pr-1">
                 {renderGridPanel()}
               </div>
