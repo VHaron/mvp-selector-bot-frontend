@@ -13,23 +13,24 @@ interface NoteData { tag: NoteTag; text: string; }
 interface SessionData { id: string; date: string; total_buyin: number; total_cashes: number; profit: number; tournaments_count: number; }
 
 const ROOMS: Record<string, string> = {
-  '244': '888', '245': 'Chico', '246': 'GGNet', '247': 'iPoker', '248': 'PartyPoker', '249': 'PS(COM)',
-  '250': 'PS(ES)', '251': 'WMX', '252': 'WPN', '264': 'PD', '266': 'WPT', '265': 'Coin'
+    '421': '888', '422': 'Chico', '423': 'GGNet', '424': 'iPoker', 
+    '425': 'PartyPoker', '426': 'PS(COM)', '427': 'PS(ES)', 
+    '428': 'WMX', '429': 'WPN', '430': 'PD', '431': 'WPT', '432': 'Coin'
 };
 
 const ROOM_DOMAINS: Record<string, string> = {
-  '244': '888poker.com',
-  '245': 'betonline.ag',
-  '246': 'ggpoker.com',
-  '247': 'redstar.games',
-  '248': 'partypoker.com',
-  '249': 'pokerstars.com',
-  '250': 'pokerstars.es',
-  '251': 'winamax.fr',
-  '252': 'americascardroom.eu',
-  '264': 'pokerdom.com',
-  '266': 'wptglobal.com',
-  '265': 'coinpoker.com'
+  '421': '888poker.com',
+  '422': 'betonline.ag',
+  '423': 'ggpoker.com',
+  '424': 'redstar.games',
+  '425': 'partypoker.com',
+  '426': 'pokerstars.com',
+  '427': 'pokerstars.es',
+  '428': 'winamax.fr',
+  '429': 'americascardroom.eu',
+  '430': 'pokerdom.com',
+  '431': 'wptglobal.com',
+  '432': 'coinpoker.com'
 };
 
 const getRoomCurrency = (roomName: string) => {
@@ -39,23 +40,21 @@ const getRoomCurrency = (roomName: string) => {
 };
 
 const getRoomIdByName = (roomName: string) => {
-  if (!roomName) return null;
-  const nameLower = roomName.toLowerCase().trim();
-  
-  if (nameLower.includes('wmx') || nameLower.includes('winamax')) return '251';
-  if (nameLower.includes('gg')) return '246';
-  if (nameLower.includes('888')) return '244';
-  if (nameLower.includes('pokerstars') || nameLower.includes('ps')) return nameLower.includes('es') ? '250' : '249';
-  if (nameLower.includes('pokerdom') || nameLower.includes('pd')) return '264';
-  if (nameLower.includes('coin')) return '265';
-  if (nameLower.includes('wpn') || nameLower.includes('acardroom') || nameLower.includes('americas')) return '252';
-  if (nameLower.includes('ipoker') || nameLower.includes('redstar')) return '247';
-  if (nameLower.includes('party')) return '248';
-  if (nameLower.includes('chico') || nameLower.includes('betonline')) return '245';
-  if (nameLower.includes('wpt')) return '266';
-
-  let foundId = Object.keys(ROOMS).find(id => nameLower.includes(ROOMS[id].toLowerCase()));
-  return foundId || null;
+    if (!roomName) return null;
+    const nameLower = roomName.toLowerCase().trim();
+    if (nameLower.includes('wmx') || nameLower.includes('winamax')) return '428';
+    if (nameLower.includes('gg')) return '423';
+    if (nameLower.includes('888')) return '421';
+    if (nameLower.includes('pokerstars') || nameLower.includes('ps')) return nameLower.includes('es') ? '427' : '426';
+    if (nameLower.includes('pokerdom') || nameLower.includes('pd')) return '430';
+    if (nameLower.includes('coin')) return '432';
+    if (nameLower.includes('wpn') || nameLower.includes('acardroom') || nameLower.includes('americas')) return '429';
+    if (nameLower.includes('ipoker') || nameLower.includes('redstar')) return '424';
+    if (nameLower.includes('party')) return '425';
+    if (nameLower.includes('chico') || nameLower.includes('betonline')) return '422';
+    if (nameLower.includes('wpt')) return '431';
+    let foundId = Object.keys(ROOMS).find(id => nameLower.includes(ROOMS[id].toLowerCase()));
+    return foundId || null;
 };
 
 const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle: (n: string) => string }) => {
