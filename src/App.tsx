@@ -112,7 +112,7 @@ const getTournamentFormats = (name: string) => {
 // ----------------------------------------------------
 // ЛОГИКА ВРЕМЕНИ С ПОДДЕРЖКОЙ ИСКЛЮЧЕНИЙ РУМОВ (WPN)
 // ----------------------------------------------------
-const getLocalTimeDate = (mskTimeStr: string, dayWeekStr?: string, roomName?: string) => {
+const getLocalTimeDate = (mskTimeStr: string, dayWeekStr?: string, _roomName?: string) => {
   if (!mskTimeStr) return new Date();
   let [hours, mins] = mskTimeStr.slice(0, 5).split(':').map(Number);
   
