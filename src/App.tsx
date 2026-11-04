@@ -14,7 +14,7 @@ interface SessionData { id: string; date: string; total_buyin: number; total_cas
 
 const ROOMS: Record<string, string> = {
   '244': '888', '245': 'Chico', '246': 'GGNet', '247': 'iPoker', '248': 'PartyPoker', '249': 'PS(COM)',
-  '250': 'PS(ES)', '251': 'WMX', '252': 'WPN', '264': 'PD', '266': 'WPTGlobal', '265': 'Coin',
+  '250': 'PS(ES)', '251': 'WMX', '252': 'WPN', '264': 'PD', '265': 'Coin',
   '267': 'ClubGG', '268': 'WPT'
 };
 
@@ -29,7 +29,6 @@ const ROOM_DOMAINS: Record<string, string> = {
   '251': 'winamax.fr',
   '252': 'americascardroom.eu',
   '264': 'pokerdom.com',
-  '266': 'wptglobal.com',
   '265': 'coinpoker.com',
   '267': 'clubgg.com',
   '268': 'wptglobal.com'
@@ -116,11 +115,6 @@ const getTournamentFormats = (name: string) => {
 const getLocalTimeDate = (mskTimeStr: string, dayWeekStr?: string, roomName?: string) => {
   if (!mskTimeStr) return new Date();
   let [hours, mins] = mskTimeStr.slice(0, 5).split(':').map(Number);
-  
-  // Корректировка времени для WPN: бэкенд отдает его со смещением на 1 час
-  if (roomName && (roomName.toLowerCase().includes('wpn') || roomName === '252')) {
-    hours += 1;
-  }
   
   const now = new Date();
   const mskWall = new Date(now.getTime() + 3 * 3600000); 
