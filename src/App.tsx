@@ -14,8 +14,7 @@ interface SessionData { id: string; date: string; total_buyin: number; total_cas
 
 const ROOMS: Record<string, string> = {
   '244': '888', '245': 'Chico', '246': 'GGNet', '247': 'iPoker', '248': 'PartyPoker', '249': 'PS(COM)',
-  '250': 'PS(ES)', '251': 'WMX', '252': 'WPN', '264': 'PD', '265': 'Coin',
-  '267': 'ClubGG', '268': 'WPT'
+  '250': 'PS(ES)', '251': 'WMX', '252': 'WPN', '264': 'PD', '265': 'Coin', '267': 'ClubGG', '268': 'WPT'
 };
 
 const ROOM_DOMAINS: Record<string, string> = {
@@ -192,7 +191,7 @@ const getSmartTimer = (timeStr: string, dayWeekStr?: string, roomName?: string) 
 // ----------------------------------------------------
 
 export default function App() {
-  const [authStep, setAuthStep] = useState<'login' | 'mfa' | 'app'>('login');
+  const [authStep, setAuthStep] = useState<'login' | 'mfa' | 'app' | 'site_select'>('login');
   const [sessionToken, setSessionToken] = useState<string | null>(localStorage.getItem('mvp_token'));
   
   const [activeTab, setActiveTab] = useState<'search' | 'grid' | 'diary'>(() => {
@@ -205,7 +204,8 @@ export default function App() {
   const [username, setUsername] = useState(''); 
   const [password, setPassword] = useState(''); 
   const [otp, setOtp] = useState('');
-  const [loginSite, setLoginSite] = useState<'auto' | 'globusgo' | 'globusmvp'>('auto');
+  const [siteSelectionId, setSiteSelectionId] = useState<string | null>(null);
+  const [siteCandidates, setSiteCandidates] = useState<{ site: string; auth_status: string }[]>([]);
   const [authenticatedSite, setAuthenticatedSite] = useState<string>(localStorage.getItem('mvp_site') || 'globusgo');
   const [authLoading, setAuthLoading] = useState(false); 
   const [authError, setAuthError] = useState('');
@@ -370,15 +370,68 @@ export default function App() {
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault(); setAuthLoading(true); setAuthError('');
+    e.preventDefault();
+    setAuthLoading(true);
+    setAuthError('');
+    setSiteSelectionId(null);
+    setSiteCandidates([]);
     try {
-      const data = await apiCall('login', { username, password, site: loginSite });
+      const data = await apiCall('login', { username, password, site: 'auto' });
       if (data.detail) throw new Error(data.detail);
+
+      if (data.status === 'site_selection_required') {
+        setSiteSelectionId(data.selection_id);
+        setSiteCandidates(Array.isArray(data.candidates) ? data.candidates : []);
+        setAuthStep('site_select');
+        return;
+      }
+
+      if (!data.session_token) throw new Error('Сервер не вернул токен сессии');
       setSessionToken(data.session_token);
       if (data.site) setAuthenticatedSite(data.site);
-      if (data.status === 'mfa_required') setAuthStep('mfa');
-      else { localStorage.setItem('mvp_token', data.session_token); if (data.site) localStorage.setItem('mvp_site', data.site); loadAllUserData(data.session_token); setAuthStep('app'); }
-    } catch (err: any) { setAuthError(err.message); } finally { setAuthLoading(false); }
+      if (data.status === 'mfa_required') {
+        setAuthStep('mfa');
+      } else {
+        localStorage.setItem('mvp_token', data.session_token);
+        if (data.site) localStorage.setItem('mvp_site', data.site);
+        loadAllUserData(data.session_token);
+        setAuthStep('app');
+      }
+    } catch (err: any) {
+      setAuthError(err.message || 'Ошибка авторизации');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleSiteSelect = async (site: string) => {
+    if (!siteSelectionId) return;
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const data = await apiCall('select_site', { selection_id: siteSelectionId, site });
+      if (data.detail) throw new Error(data.detail);
+      if (!data.session_token) throw new Error('Сервер не вернул токен выбранного сайта');
+
+      setSessionToken(data.session_token);
+      setAuthenticatedSite(data.site || site);
+      setSiteSelectionId(null);
+      setSiteCandidates([]);
+      setOtp('');
+
+      if (data.status === 'mfa_required') {
+        setAuthStep('mfa');
+      } else {
+        localStorage.setItem('mvp_token', data.session_token);
+        localStorage.setItem('mvp_site', data.site || site);
+        loadAllUserData(data.session_token);
+        setAuthStep('app');
+      }
+    } catch (err: any) {
+      setAuthError(err.message || 'Не удалось выбрать сайт');
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
   const handleMfa = async (e: React.FormEvent) => {
@@ -386,11 +439,14 @@ export default function App() {
     try {
       const data = await apiCall('mfa', { session_token: sessionToken, otp });
       if (data.detail) throw new Error(data.detail);
-      localStorage.setItem('mvp_token', sessionToken as string); if (data.site) { setAuthenticatedSite(data.site); localStorage.setItem('mvp_site', data.site); } loadAllUserData(sessionToken as string); setAuthStep('app');
+      const finalSite = data.site || authenticatedSite;
+      localStorage.setItem('mvp_token', sessionToken as string);
+      if (finalSite) { setAuthenticatedSite(finalSite); localStorage.setItem('mvp_site', finalSite); }
+      loadAllUserData(sessionToken as string); setAuthStep('app');
     } catch (err: any) { setAuthError(err.message); } finally { setAuthLoading(false); }
   };
 
-  const logout = () => { localStorage.removeItem('mvp_token'); localStorage.removeItem('mvp_site'); setSessionToken(null); setGrid([]); setPresets([]); setAuthStep('login'); };
+  const logout = () => { localStorage.removeItem('mvp_token'); localStorage.removeItem('mvp_site'); setSessionToken(null); setGrid([]); setPresets([]); setSiteSelectionId(null); setSiteCandidates([]); setAuthError(''); setAuthStep('login'); };
   const toggleRoom = (roomId: string) => setSelectedRooms(prev => prev.includes(roomId) ? prev.filter(id => id !== roomId) : [...prev, roomId]);
 
   const fetchTournaments = async () => {
@@ -718,7 +774,7 @@ export default function App() {
     </div>
   );
 
-  if (authStep === 'login' || authStep === 'mfa') {
+  if (authStep === 'login' || authStep === 'mfa' || authStep === 'site_select') {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 text-slate-200">
         <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
@@ -730,19 +786,26 @@ export default function App() {
           {authError && <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm font-bold p-3 rounded-xl mb-4 text-center">{authError}</div>}
           {authStep === 'login' ? (
             <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Сайт авторизации</label>
-                <select value={loginSite} onChange={e => setLoginSite(e.target.value as 'auto' | 'globusgo' | 'globusmvp')} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500">
-                  <option value="auto">Автоопределение по логину и паролю</option>
-                  <option value="globusgo">GlobusGo — globusgo.pro</option>
-                  <option value="globusmvp">GlobusMVP — globusmvp.co</option>
-                </select>
-                <p className="text-[10px] text-slate-500">В режиме «Авто» сначала проверяется GlobusGo, затем GlobusMVP. Если аккаунт существует на обоих сайтах, выберите сайт вручную.</p>
-              </div>
               <div className="relative"><User size={18} className="absolute left-4 top-3.5 text-slate-500" /><input type="text" required placeholder="Логин" value={username} onChange={e => setUsername(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500"/></div>
               <div className="relative"><KeyRound size={18} className="absolute left-4 top-3.5 text-slate-500" /><input type="password" required placeholder="Пароль" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500"/></div>
               <button type="submit" disabled={authLoading} className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black py-3.5 rounded-xl uppercase tracking-wider text-sm active:scale-95 disabled:opacity-50">{authLoading ? '...' : 'Войти'}</button>
             </form>
+          ) : authStep === 'site_select' ? (
+            <div className="space-y-4">
+              <p className="text-xs text-center text-slate-400 font-bold">Аккаунт найден на обоих сайтах. Выберите, куда войти:</p>
+              {siteCandidates.map(candidate => {
+                const siteLabel = candidate.site === 'globusmvp' ? 'GlobusMVP' : 'GlobusGo';
+                const siteDomain = candidate.site === 'globusmvp' ? 'globusmvp.co' : 'globusgo.pro';
+                return (
+                  <button key={candidate.site} type="button" disabled={authLoading} onClick={() => handleSiteSelect(candidate.site)} className="w-full bg-slate-950 border border-slate-800 hover:border-cyan-500/60 rounded-xl px-4 py-3.5 text-left transition disabled:opacity-50">
+                    <span className="block text-sm font-black text-white">{siteLabel}</span>
+                    <span className="block text-[10px] text-slate-500 mt-0.5">{siteDomain}{candidate.auth_status === 'mfa_required' ? ' · потребуется код 2FA' : ''}</span>
+                  </button>
+                );
+              })}
+              {siteCandidates.length === 0 && <p className="text-xs text-rose-400 text-center">Список доступных сайтов пуст. Вернитесь ко входу и попробуйте снова.</p>}
+              <button type="button" onClick={() => { setSiteSelectionId(null); setSiteCandidates([]); setAuthStep('login'); setAuthError(''); }} className="w-full text-xs text-slate-500 hover:text-slate-300 py-2">Назад</button>
+            </div>
           ) : (
             <form onSubmit={handleMfa} className="space-y-4">
               <p className="text-xs text-center text-slate-400 font-bold mb-3">Введите 2FA код</p>
