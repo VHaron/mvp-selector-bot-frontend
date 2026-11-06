@@ -34,9 +34,8 @@ const ROOM_DOMAINS: Record<string, string> = {
 };
 
 const getRoomCurrency = (roomName: string) => {
-  const name = (roomName || '').toLowerCase();
-  if (name.includes('ps(es)') || name.includes('es') || name.includes('winamax') || name.includes('ipoker') || name.includes('wmx')) return '€';
-  return '$';
+  const roomId = getRoomIdByName(roomName);
+  return ['247', '250', '251'].includes(roomId || '') ? '€' : '$';
 };
 
 const getRoomIdByName = (roomName: string) => {
@@ -76,7 +75,24 @@ const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle:
 };
 
 const API_BASE_URL = 'https://selector-backend-production.up.railway.app';
-const parseNum = (str: string) => parseFloat(str?.replace(/[^\d.-]/g, '')) || 0;
+const parseNum = (value: string | number | null | undefined) => {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  if (!value) return 0;
+  let normalized = String(value).trim().replace(/\s/g, '').replace(/[^\d,.-]/g, '');
+  if (normalized.includes(',') && normalized.includes('.')) {
+    const decimalSeparator = normalized.lastIndexOf(',') > normalized.lastIndexOf('.') ? ',' : '.';
+    normalized = decimalSeparator === ','
+      ? normalized.replace(/\./g, '').replace(',', '.')
+      : normalized.replace(/,/g, '');
+  } else if (normalized.includes(',')) {
+    const parts = normalized.split(',');
+    normalized = parts.length === 2 && parts[1].length !== 3
+      ? `${parts[0]}.${parts[1]}`
+      : normalized.replace(/,/g, '');
+  }
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
 const getUniqueId = (t: Tournament) => `${t.id}_${t.room}_${t.name}_${t.buyin}_${t.time_start}`;
 
 const cleanTournamentName = (name: string) => {
@@ -225,8 +241,8 @@ export default function App() {
   const [isRoomsDropdownOpen, setIsRoomsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [calendarYear, setCalendarYear] = useState(2026);
-  const [calendarMonth, setCalendarMonth] = useState(9);
+  const [calendarYear, setCalendarYear] = useState(() => new Date().getFullYear());
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date().getMonth());
 
   const monthsNames = [
     "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", 
@@ -275,14 +291,18 @@ export default function App() {
 
   const toggleGrid = (t: Tournament) => {
     const targetId = getUniqueId(t);
-    if (grid.some(item => getUniqueId(item) === targetId)) setGrid(grid.filter(item => getUniqueId(item) !== targetId)); 
-    else setGrid([...grid, t]);
+    setGrid(previous => previous.some(item => getUniqueId(item) === targetId)
+      ? previous.filter(item => getUniqueId(item) !== targetId)
+      : [...previous, t]);
   };
 
   const bulkAdd = (type: 'top' | 'overlay') => {
     const toAdd = type === 'top' ? searchResults.filter(t => t.priority === '1') : searchResults.filter(t => isOverlay(t));
-    const newItems = toAdd.filter(t => !grid.some(g => getUniqueId(g) === getUniqueId(t)));
-    if (newItems.length > 0) setGrid([...grid, ...newItems]);
+    setGrid(previous => {
+      const existingIds = new Set(previous.map(getUniqueId));
+      const newItems = toAdd.filter(t => !existingIds.has(getUniqueId(t)));
+      return newItems.length ? [...previous, ...newItems] : previous;
+    });
   };
 
   const [balances, setBalances] = useState<Record<string, number>>({});
@@ -330,37 +350,90 @@ export default function App() {
     }
   };
 
-  const apiCall = async (endpoint: string, body: any) => {
-    const res = await fetch(`${API_BASE_URL}/api/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const data = await res.json();
-    return res.ok ? data : { ...data, status_code: res.status };
+  const apiCall = async (endpoint: string, body: unknown) => {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 45_000);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      const data = await response.json().catch(() => ({}));
+      return response.ok
+        ? data
+        : { ...(typeof data === 'object' && data !== null ? data : {}), status_code: response.status };
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw new Error('Сервер не ответил за 45 секунд. Попробуйте ещё раз.');
+      }
+      throw error;
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
   };
 
   const loadAllUserData = async (token: string) => {
+    // Reset account-scoped state before loading another GlobusGo/GlobusMVP profile.
+    // This prevents stale data from the previous account being displayed or saved.
+    setIsSettingsLoaded(false);
+    setPresets([]);
+    setNotes({});
+    setSessionsHistory([]);
+    setGrid([]);
+    setBalances({});
+    setSelectedRooms(Object.keys(ROOMS));
+    setActiveFormats({ isPko: true, isFreezeout: true, isTurbo: true });
+    setSortOrder('time');
+
+    const endpoints = [
+      ['get_presets', 'presets'],
+      ['get_settings', 'settings'],
+      ['get_notes', 'notes'],
+      ['get_sessions_history', 'history'],
+      ['get_grid', 'grid'],
+      ['get_balances', 'balances'],
+    ] as const;
+
     try {
-      const [presRes, setRes, notRes, histRes, gridRes, balRes] = await Promise.all([
-        apiCall('get_presets', { session_token: token }), apiCall('get_settings', { session_token: token }), apiCall('get_notes', { session_token: token }),
-        apiCall('get_sessions_history', { session_token: token }), apiCall('get_grid', { session_token: token }), apiCall('get_balances', { session_token: token })
-      ]);
-      if (presRes.status === 'success') setPresets(presRes.presets);
+      const results = await Promise.allSettled(
+        endpoints.map(([endpoint]) => apiCall(endpoint, { session_token: token }))
+      );
+      const responses = results.map(result =>
+        result.status === 'fulfilled' ? result.value : { status: 'error' }
+      );
+
+      if (responses.some(response => response.status_code === 401)) {
+        logout();
+        return;
+      }
+
+      const [presRes, setRes, notRes, histRes, gridRes, balRes] = responses;
+      if (presRes.status === 'success' && Array.isArray(presRes.presets)) setPresets(presRes.presets);
       if (setRes.status === 'success') {
-        if (setRes.selected_rooms) setSelectedRooms(setRes.selected_rooms);
+        if (Array.isArray(setRes.selected_rooms)) setSelectedRooms(setRes.selected_rooms);
         if (setRes.active_formats) setActiveFormats(setRes.active_formats);
         if (setRes.sort_order) setSortOrder(setRes.sort_order);
       }
       if (notRes.status === 'success' && notRes.notes) setNotes(notRes.notes);
-      if (histRes.status === 'success' && histRes.history) setSessionsHistory(histRes.history.reverse());
-      if (gridRes.status === 'success' && gridRes.grid) setGrid(gridRes.grid);
-      if (balRes && balRes.status === 'success' && balRes.balances) setBalances(balRes.balances);
-    } catch (e) { console.error(e); } finally { setIsSettingsLoaded(true); }
+      if (histRes.status === 'success' && Array.isArray(histRes.history)) setSessionsHistory([...histRes.history].reverse());
+      if (gridRes.status === 'success' && Array.isArray(gridRes.grid)) setGrid(gridRes.grid);
+      if (balRes.status === 'success' && balRes.balances) setBalances(balRes.balances);
+    } catch (error) {
+      console.error('Не удалось загрузить данные пользователя:', error);
+      setAuthError(error instanceof Error ? error.message : 'Не удалось загрузить данные пользователя');
+    } finally {
+      setIsSettingsLoaded(true);
+    }
   };
 
   useEffect(() => {
-    if (isSettingsLoaded && sessionToken) apiCall('save_settings', { session_token: sessionToken, selected_rooms: selectedRooms, active_formats: activeFormats, sort_order: sortOrder });
+    if (isSettingsLoaded && sessionToken) void apiCall('save_settings', { session_token: sessionToken, selected_rooms: selectedRooms, active_formats: activeFormats, sort_order: sortOrder }).catch(console.error);
   }, [selectedRooms, activeFormats, sortOrder, isSettingsLoaded, sessionToken]);
 
   useEffect(() => {
-    if (isSettingsLoaded && sessionToken) apiCall('save_grid', { session_token: sessionToken, grid: grid });
+    if (isSettingsLoaded && sessionToken) void apiCall('save_grid', { session_token: sessionToken, grid }).catch(console.error);
   }, [grid, isSettingsLoaded, sessionToken]);
 
   useEffect(() => {
@@ -446,11 +519,33 @@ export default function App() {
     } catch (err: any) { setAuthError(err.message); } finally { setAuthLoading(false); }
   };
 
-  const logout = () => { localStorage.removeItem('mvp_token'); localStorage.removeItem('mvp_site'); setSessionToken(null); setGrid([]); setPresets([]); setSiteSelectionId(null); setSiteCandidates([]); setAuthError(''); setAuthStep('login'); };
+  const logout = () => {
+    localStorage.removeItem('mvp_token');
+    localStorage.removeItem('mvp_site');
+    setSessionToken(null);
+    setIsSettingsLoaded(false);
+    setTournaments([]);
+    setGrid([]);
+    setPresets([]);
+    setNotes({});
+    setSessionsHistory([]);
+    setBalances({});
+    setSelectedRooms(Object.keys(ROOMS));
+    setActiveFormats({ isPko: true, isFreezeout: true, isTurbo: true });
+    setSortOrder('time');
+    setSiteSelectionId(null);
+    setSiteCandidates([]);
+    setOtp('');
+    setPassword('');
+    setAuthError('');
+    setAuthStep('login');
+  };
   const toggleRoom = (roomId: string) => setSelectedRooms(prev => prev.includes(roomId) ? prev.filter(id => id !== roomId) : [...prev, roomId]);
 
   const fetchTournaments = async () => {
+    if (!sessionToken) return;
     setLoading(true);
+    setAuthError('');
     try {
       const formatApiDate = (dateStr: string) => dateStr ? dateStr.replace('T', ' ') + ':00' : '';
       const data = await apiCall('tournaments', { 
@@ -460,7 +555,11 @@ export default function App() {
       });
       if (data.detail) { if (data.status_code === 401) logout(); else setAuthError(data.detail); return; }
       if (data.status === 'success') setTournaments(data.data);
-    } catch (e) {} finally { setLoading(false); }
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Не удалось загрузить турниры');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getRoomStyle = (roomName: string) => {
@@ -642,7 +741,7 @@ export default function App() {
       apiCall('save_session_history', { session_token: sessionToken, session_data: s });
     }
 
-    setSessionsHistory([s, ...sessionsHistory]);
+    setSessionsHistory(previous => [s, ...previous]);
     setGrid([]); 
     setShowSessionModal(false); 
   };
@@ -656,17 +755,34 @@ export default function App() {
 
   const uuidv4 = () => "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c => (+c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16));
   
-  const getCumulativeData = () => {
+  const chartData = useMemo(() => {
     if (sessionsHistory.length === 0) return { points: '', min: 0, max: 0, zeroY: 50, current: 0 };
-    const data = [...sessionsHistory].reverse().reduce((acc: number[], s) => [...acc, (acc[acc.length - 1] || 0) + s.profit], []);
-    const plotData = [0, ...data], max = Math.max(0, ...plotData), min = Math.min(0, ...plotData), range = (max - min) || 1;
-    const points = plotData.map((val, i) => `${(i / (plotData.length - 1)) * 100},${100 - ((val - min) / range) * 100}`).join(' ');
-    return { points, current: data[data.length - 1] || 0, zeroY: 100 - ((0 - min) / range) * 100 };
-  };
-
-  const chartData = getCumulativeData();
-  const totalBuyin = grid.reduce((sum, t) => sum + parseNum(t.buyin), 0);
-  const totalEV = grid.reduce((sum, t) => sum + parseNum(t.ev_mtt), 0);
+    let runningTotal = 0;
+    const cumulative: number[] = [];
+    for (const session of [...sessionsHistory].reverse()) {
+      runningTotal += session.profit;
+      cumulative.push(runningTotal);
+    }
+    const plotData = [0, ...cumulative];
+    const max = Math.max(0, ...plotData);
+    const min = Math.min(0, ...plotData);
+    const range = max - min || 1;
+    const points = plotData.map((value, index) =>
+      `${(index / (plotData.length - 1)) * 100},${100 - ((value - min) / range) * 100}`
+    ).join(' ');
+    return {
+      points,
+      min,
+      max,
+      current: cumulative[cumulative.length - 1] || 0,
+      zeroY: 100 - ((0 - min) / range) * 100,
+    };
+  }, [sessionsHistory]);
+  const totalBuyin = useMemo(() => grid.reduce((sum, t) => sum + parseNum(t.buyin), 0), [grid]);
+  const totalEV = useMemo(() => grid.reduce((sum, t) => sum + parseNum(t.ev_mtt), 0), [grid]);
+  const gridPeakTables = useMemo(() => getPeakTablesData(grid), [grid]);
+  const gridVariance = useMemo(() => getVariance(), [grid]);
+  const gridEndTime = useMemo(() => getSessionEndTime(grid), [grid]);
 
   const renderGridCard = (t: any, overrideKey?: string) => {
     const prioStyles = getPriorityStyles(t.priority);
@@ -712,12 +828,12 @@ export default function App() {
           <div className="grid grid-cols-3 gap-2 pb-2 border-b border-slate-800/80 text-center">
             <div><span className="text-[9px] uppercase font-bold text-slate-500 block">Турниров</span><div className="text-base font-black text-white">{grid.length}</div></div>
             <div className="border-x border-slate-800/80"><span className="text-[9px] uppercase font-bold text-slate-500 block">Ожидание</span><div className={`text-base font-black ${totalEV >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{totalEV > 0 ? '+' : ''}${totalEV.toFixed(1)}</div></div>
-            <div><span className="text-[9px] uppercase font-bold text-slate-500 block">Конец</span><div className="text-base font-black text-cyan-400">~{getSessionEndTime(grid)}</div></div>
+            <div><span className="text-[9px] uppercase font-bold text-slate-500 block">Конец</span><div className="text-base font-black text-cyan-400">~{gridEndTime}</div></div>
           </div>
 
           <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 px-1">
-            <span>Дисперсия: <b className={getVariance().color}>{getVariance().label}</b></span>
-            <span>Пик: <b className="text-cyan-400">{getPeakTablesData(grid).max} шт (~{getPeakTablesData(grid).timeStr})</b></span>
+            <span>Дисперсия: <b className={gridVariance.color}>{gridVariance.label}</b></span>
+            <span>Пик: <b className="text-cyan-400">{gridPeakTables.max} шт (~{gridPeakTables.timeStr})</b></span>
           </div>
         </div>
 
@@ -1336,7 +1452,7 @@ export default function App() {
                       <input 
                         type="number" 
                         value={modalBalances[roomName] !== undefined ? modalBalances[roomName] : ''} 
-                        onChange={(e) => setModalBalances({ ...modalBalances, [roomName]: e.target.value })} 
+                        onChange={(e) => setModalBalances(previous => ({ ...previous, [roomName]: e.target.value }))} 
                         placeholder="0" 
                         className="w-24 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-right text-white font-bold text-xs outline-none focus:border-cyan-500 [appearance:textfield]" 
                       />
