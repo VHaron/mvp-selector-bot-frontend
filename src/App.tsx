@@ -804,7 +804,7 @@ export default function App() {
     return (
       <div 
         key={elementKey} 
-        onClick={(e) => { 
+        onClick={() => { 
           if (window.getSelection()?.toString().length! > 0) return; // Игнорируем клик, если выделен текст
           toggleGrid(t); 
         }} 
@@ -1180,7 +1180,7 @@ export default function App() {
                     return (
                       <div 
                         key={uniqueKey} 
-                        onClick={(e) => { 
+                        onClick={() => { 
                           if (window.getSelection()?.toString().length! > 0) return; // Игнорируем клик, если выделен текст
                           toggleGrid(t); 
                         }} 
