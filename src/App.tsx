@@ -1173,6 +1173,12 @@ export default function App() {
                     return (
                       <div
                         key={uniqueKey}
+                          onClick={(e) => {
+                            const target = e.target as HTMLElement;
+                            if (target.closest('button, input, select, textarea, a')) return;
+                            if (window.getSelection()?.toString()) return;
+                            toggleGrid(t);
+                          }}
                         className={`rounded-xl px-3 py-2.5 border transition-all border-l-[3px] ${prioStyles.border} hover:border-slate-700 shadow-sm ${
                           isAdded ? 'bg-emerald-950/90 border-transparent shadow-none' : 'bg-slate-900 border-slate-800'
                         }`}
@@ -1229,9 +1235,6 @@ export default function App() {
 
                             <span className={`font-bold w-16 text-right ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
                             <div className="flex items-center gap-1 shrink-0">
-                              <button onClick={() => toggleGrid(t)} title={isAdded ? 'Убрать из сетки' : 'Добавить в сетку'} className={`w-7 h-7 flex items-center justify-center rounded-lg border transition ${isAdded ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-cyan-400'}`}>
-                                {isAdded ? <Check size={13} /> : <ListTodo size={13} />}
-                              </button>
                               <button onClick={() => setActiveStats(t)} title="Заметка" className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"><NotebookPen size={12}/></button>
                             </div>
                           </div>
