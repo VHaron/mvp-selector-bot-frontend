@@ -1136,26 +1136,39 @@ export default function App() {
 
                   {/* Блок быстрого фильтра по активным румам */}
                   {!loading && availableTournamentsForFilter.length > 0 && (
-                    <div className="flex gap-2 overflow-x-auto no-scrollbar py-2 mb-2 border-b border-slate-800/50 pb-3">
+                    <div className="flex flex-wrap gap-2 py-2 mb-2 border-b border-slate-800/50 pb-3">
                       <button
                         onClick={() => setSearchActiveRoom(null)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${!searchActiveRoom ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm' : 'bg-slate-900/50 text-slate-500 border border-slate-800/80 hover:bg-slate-900 hover:text-slate-300'}`}
+                        className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition flex items-center gap-1.5 border ${!searchActiveRoom ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 shadow-sm' : 'bg-slate-900/50 text-slate-500 border-slate-800/80 hover:bg-slate-900 hover:text-slate-300'}`}
                       >
                         Все турниры 
-                        <span className="bg-slate-950 px-1.5 py-0.5 rounded text-[10px] opacity-70">{availableTournamentsForFilter.length}</span>
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${!searchActiveRoom ? 'bg-cyan-950 text-cyan-400' : 'bg-slate-950 text-slate-500'}`}>{availableTournamentsForFilter.length}</span>
                       </button>
                       
                       {activeRoomsForFilter.map(room => {
                         const count = availableTournamentsForFilter.filter(t => t.room === room).length;
-                        const displayName = ROOMS[getRoomIdByName(room) || ''] || room;
+                        const roomId = getRoomIdByName(room);
+                        const displayName = roomId ? ROOMS[roomId] : room;
+                        const domain = roomId ? ROOM_DOMAINS[roomId] : null;
+                        const isSelected = searchActiveRoom === room;
+                        const roomStyle = getRoomStyle(room);
+                        
                         return (
                           <button
                             key={room}
                             onClick={() => setSearchActiveRoom(room)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${searchActiveRoom === room ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm' : 'bg-slate-900/50 text-slate-500 border border-slate-800/80 hover:bg-slate-900 hover:text-slate-300'}`}
+                            className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition flex items-center gap-1.5 border ${isSelected ? roomStyle + ' shadow-sm' : 'bg-slate-900/50 text-slate-500 border-slate-800/80 hover:bg-slate-900 hover:text-slate-300'}`}
                           >
+                            {domain && (
+                              <img 
+                                src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} 
+                                alt={displayName} 
+                                className={`w-3.5 h-3.5 rounded-full object-cover bg-white p-[0.5px] shrink-0 ${isSelected ? '' : 'opacity-40 grayscale'}`} 
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+                              />
+                            )}
                             <span>{displayName}</span>
-                            <span className="bg-slate-950 px-1.5 py-0.5 rounded text-[10px] opacity-70">{count}</span>
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] ${isSelected ? 'bg-black/20' : 'bg-slate-950'}`}>{count}</span>
                           </button>
                         );
                       })}
