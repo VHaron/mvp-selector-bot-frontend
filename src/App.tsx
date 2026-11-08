@@ -108,7 +108,6 @@ const cleanTournamentName = (name: string) => {
     .replace(/\s{2,}/g, ' ')
     .trim();
 
-  // Заменили круглые скобки на квадратные
   if (maxSize && !cleaned.toLowerCase().includes(maxSize)) {
     cleaned = `${cleaned} [${maxSize}]`;
   }
@@ -124,32 +123,6 @@ const getTournamentFormats = (name: string) => {
   };
 };
 
-const FormatBadges = ({ name, compact = false }: { name: string; compact?: boolean }) => {
-  const formats = getTournamentFormats(name);
-  const iconSize = compact ? 10 : 12;
-  const boxSize = compact ? 'w-5 h-5 rounded-md' : 'w-6 h-6 rounded-lg';
-  const badges = [
-    formats.isPko && { title: 'PKO / Bounty', icon: <ShieldAlert size={iconSize} />, style: 'bg-fuchsia-500/15 border-fuchsia-500/40 text-fuchsia-400' },
-    formats.isTurbo && { title: 'Turbo / Hyper', icon: <Zap size={iconSize} />, style: 'bg-amber-500/15 border-amber-500/40 text-amber-400' },
-    formats.isFreezeout && { title: 'Freezeout', icon: <Disc size={iconSize} />, style: 'bg-blue-500/15 border-blue-500/40 text-blue-400' },
-  ].filter(Boolean) as { title: string; icon: React.ReactNode; style: string }[];
-
-  if (!badges.length) return null;
-  return (
-    <div className="inline-flex items-center gap-1 shrink-0" aria-label="Форматы турнира">
-      {badges.map(badge => (
-        <span key={badge.title} title={badge.title} className={`${boxSize} inline-flex items-center justify-center border ${badge.style}`}>
-          {badge.icon}
-        </span>
-      ))}
-    </div>
-  );
-};
-
-
-// ----------------------------------------------------
-// ЛОГИКА ВРЕМЕНИ С ПОДДЕРЖКОЙ ИСКЛЮЧЕНИЙ РУМОВ (WPN)
-// ----------------------------------------------------
 const getLocalTimeDate = (mskTimeStr: string, dayWeekStr?: string, _roomName?: string) => {
   if (!mskTimeStr) return new Date();
   let [hours, mins] = mskTimeStr.slice(0, 5).split(':').map(Number);
@@ -227,7 +200,6 @@ const getSmartTimer = (timeStr: string, dayWeekStr?: string, roomName?: string) 
   }
   return null;
 };
-// ----------------------------------------------------
 
 export default function App() {
   const [authStep, setAuthStep] = useState<'login' | 'mfa' | 'app' | 'site_select'>('login');
@@ -261,8 +233,11 @@ export default function App() {
   const [activeFormats, setActiveFormats] = useState({ isPko: true, isFreezeout: true, isTurbo: true });
   const [sortOrder, setSortOrder] = useState<'time' | 'buyin' | 'ev' | 'tier'>('time');
   const [selectedRooms, setSelectedRooms] = useState<string[]>(Object.keys(ROOMS));
-  const [searchRoomFilter, setSearchRoomFilter] = useState('all');
   const [isRoomsDropdownOpen, setIsRoomsDropdownOpen] = useState(false);
+  
+  // Добавлен фильтр для быстрого поиска по румам
+  const [searchActiveRoom, setSearchActiveRoom] = useState<string | null>(null);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [calendarYear, setCalendarYear] = useState(() => new Date().getFullYear());
@@ -399,8 +374,6 @@ export default function App() {
   };
 
   const loadAllUserData = async (token: string) => {
-    // Reset account-scoped state before loading another GlobusGo/GlobusMVP profile.
-    // This prevents stale data from the previous account being displayed or saved.
     setIsSettingsLoaded(false);
     setPresets([]);
     setNotes({});
@@ -578,7 +551,10 @@ export default function App() {
         priorities: { priority1: '1', priority2: '1', priority3: '1' } 
       });
       if (data.detail) { if (data.status_code === 401) logout(); else setAuthError(data.detail); return; }
-      if (data.status === 'success') setTournaments(data.data);
+      if (data.status === 'success') {
+        setTournaments(data.data);
+        setSearchActiveRoom(null); // Сбрасываем быстрый фильтр при новом поиске
+      }
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : 'Не удалось загрузить турниры');
     } finally {
@@ -695,15 +671,25 @@ export default function App() {
     return displayGrid.filter(t => t.room === gridActiveRoom);
   }, [displayGrid, groupByRoom, gridActiveRoom, activeGridRooms]);
 
+  // Данные для быстрого фильтра румов в поиске
+  const availableTournamentsForFilter = useMemo(() => {
+    return tournaments.filter(t => !isStartedTooLongAgo(t.time_start, t.day_week, t.room) && isRoomAllowed(t.room));
+  }, [tournaments, selectedRooms]);
+
+  const activeRoomsForFilter = useMemo(() => {
+    return Array.from(new Set(availableTournamentsForFilter.map(t => t.room))).sort();
+  }, [availableTournamentsForFilter]);
+
   const searchResults = useMemo(() => {
     return tournaments
       .filter(t => {
-        if (isStartedTooLongAgo(t.time_start, t.day_week, t.room)) return false;
+        if (isStartedTooLongAgo(t.time_start, t.day_week, t.room)) return false; 
         if (!isRoomAllowed(t.room)) return false;
-        return searchRoomFilter === 'all' || getRoomIdByName(t.room) === searchRoomFilter;
+        if (searchActiveRoom && t.room !== searchActiveRoom) return false;
+        return true;
       })
       .sort((a, b) => sortOrder === 'tier' ? getTier(a).id - getTier(b).id : 0);
-  }, [tournaments, sortOrder, selectedRooms, searchRoomFilter]);
+  }, [tournaments, sortOrder, selectedRooms, searchActiveRoom]);
 
   const clearGrid = () => setGrid([]);
 
@@ -813,9 +799,17 @@ export default function App() {
     const prioStyles = getPriorityStyles(t.priority);
     const played = isPlayed(t.time_start, t.day_week, t.room);
     const elementKey = overrideKey || getUniqueId(t);
+    const fmts = getTournamentFormats(t.name);
 
     return (
-      <div key={elementKey} className={`bg-slate-900 rounded-xl px-3 py-2.5 border transition-all flex items-center justify-between gap-2 border-l-[3px] ${prioStyles.border} hover:border-slate-700 ${played ? 'opacity-40 grayscale bg-slate-900/40' : 'border-slate-800'}`}>
+      <div 
+        key={elementKey} 
+        onClick={() => { 
+          if (window.getSelection()?.toString().length! > 0) return; // Игнорируем клик, если выделен текст
+          toggleGrid(t); 
+        }} 
+        className={`bg-slate-900 rounded-xl px-3 py-2.5 border transition-all flex items-center justify-between gap-2 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 ${played ? 'opacity-40 grayscale bg-slate-900/40' : 'border-slate-800'}`}
+      >
         <div className="flex-1 min-w-0 space-y-1">
           <div className="flex items-center gap-1.5">
             <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
@@ -824,14 +818,17 @@ export default function App() {
             </span>
             {getSmartTimer(t.time_start, t.day_week, t.room)}
           </div>
-          <div className="font-bold text-[11px] text-white truncate leading-tight select-text">{cleanTournamentName(t.name)}</div>
-          <div className="flex items-center justify-between gap-2 text-[10px]">
-            <div className="flex items-center gap-1 shrink-0">
-              <FormatBadges name={t.name} compact />
-              {isOverlay(t) && <span title="Overlay" className="w-5 h-5 rounded-md inline-flex items-center justify-center border bg-orange-500/15 border-orange-500/40 text-orange-400"><Flame size={10} /></span>}
-            </div>
+          <div className="font-bold text-[11px] text-white truncate leading-tight">{cleanTournamentName(t.name)}</div>
+          <div className="flex items-center gap-2 text-[10px]">
             <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
-            <span className="text-slate-500 truncate">GTD: {t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
+            
+            <div className="flex items-center gap-0.5 ml-1">
+              {fmts.isPko && <div className="w-4 h-4 rounded bg-fuchsia-500/15 border border-fuchsia-500/40 text-fuchsia-400 flex items-center justify-center" title="PKO"><ShieldAlert size={8} /></div>}
+              {fmts.isTurbo && <div className="w-4 h-4 rounded bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-center" title="Turbo"><Zap size={8} /></div>}
+              {fmts.isFreezeout && <div className="w-4 h-4 rounded bg-blue-500/15 border border-blue-500/40 text-blue-400 flex items-center justify-center" title="Freezeout"><Disc size={8} /></div>}
+            </div>
+
+            <span className="text-slate-500 truncate ml-1">GTD: {t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
           </div>
         </div>
         <div className="shrink-0 flex flex-col items-center gap-1.5">
@@ -990,8 +987,6 @@ export default function App() {
 
       <aside className="hidden xl:flex w-20 bg-slate-950 border-r border-slate-800/80 flex-col items-center justify-between py-6 shrink-0 fixed top-0 h-screen z-40">
         <div className="flex flex-col items-center gap-6">
-          
-          {/* НОВЫЙ ЛОГОТИП ПИКИ (ВМЕСТО ТОЧКИ) */}
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/40 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.2)]">
             <Spade size={20} className="text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.8)] animate-pulse" fill="currentColor" />
           </div>
@@ -1129,24 +1124,6 @@ export default function App() {
                   </div>
                 </div>
                 
-                <div className="flex items-center justify-between gap-3 bg-slate-900/70 border border-slate-800 rounded-xl px-3 py-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Search size={14} className="text-cyan-400 shrink-0" />
-                    <span className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Быстрый фильтр рума</span>
-                  </div>
-                  <select
-                    value={searchRoomFilter}
-                    onChange={e => setSearchRoomFilter(e.target.value)}
-                    className="max-w-[58%] bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-bold text-white outline-none focus:border-cyan-500"
-                    aria-label="Фильтр турниров по руму"
-                  >
-                    <option value="all">Все выбранные румы</option>
-                    {Object.entries(ROOMS).filter(([id]) => selectedRooms.includes(id)).map(([id, name]) => (
-                      <option key={id} value={id}>{name}</option>
-                    ))}
-                  </select>
-                </div>
-
                 <div className="space-y-2 pt-1">
                   {loading && [1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-16 bg-slate-900/40 rounded-xl border border-slate-800/40 animate-pulse"></div>)}
                   {searchResults.length === 0 && !loading && (
@@ -1156,6 +1133,35 @@ export default function App() {
                       <p className="text-slate-500 text-xs mt-1">Нажмите «Найти» для загрузки расписания</p>
                     </div>
                   )}
+
+                  {/* Блок быстрого фильтра по активным румам */}
+                  {!loading && availableTournamentsForFilter.length > 0 && (
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar py-2 mb-2 border-b border-slate-800/50 pb-3">
+                      <button
+                        onClick={() => setSearchActiveRoom(null)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${!searchActiveRoom ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm' : 'bg-slate-900/50 text-slate-500 border border-slate-800/80 hover:bg-slate-900 hover:text-slate-300'}`}
+                      >
+                        Все турниры 
+                        <span className="bg-slate-950 px-1.5 py-0.5 rounded text-[10px] opacity-70">{availableTournamentsForFilter.length}</span>
+                      </button>
+                      
+                      {activeRoomsForFilter.map(room => {
+                        const count = availableTournamentsForFilter.filter(t => t.room === room).length;
+                        const displayName = ROOMS[getRoomIdByName(room) || ''] || room;
+                        return (
+                          <button
+                            key={room}
+                            onClick={() => setSearchActiveRoom(room)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${searchActiveRoom === room ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm' : 'bg-slate-900/50 text-slate-500 border border-slate-800/80 hover:bg-slate-900 hover:text-slate-300'}`}
+                          >
+                            <span>{displayName}</span>
+                            <span className="bg-slate-950 px-1.5 py-0.5 rounded text-[10px] opacity-70">{count}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
                   {searchResults.map((t, index) => {
                     const note = notes[getNoteKey(t)];
                     const uniqueKey = `${getUniqueId(t)}_${index}`; 
@@ -1169,17 +1175,16 @@ export default function App() {
 
                     const isAdded = grid.some(item => getUniqueId(item) === getUniqueId(t));
                     const prioStyles = getPriorityStyles(t.priority);
+                    const fmts = getTournamentFormats(t.name);
                     
                     return (
-                      <div
-                        key={uniqueKey}
-                          onClick={(e) => {
-                            const target = e.target as HTMLElement;
-                            if (target.closest('button, input, select, textarea, a')) return;
-                            if (window.getSelection()?.toString()) return;
-                            toggleGrid(t);
-                          }}
-                        className={`rounded-xl px-3 py-2.5 border transition-all border-l-[3px] ${prioStyles.border} hover:border-slate-700 shadow-sm ${
+                      <div 
+                        key={uniqueKey} 
+                        onClick={() => { 
+                          if (window.getSelection()?.toString().length! > 0) return; // Игнорируем клик, если выделен текст
+                          toggleGrid(t); 
+                        }} 
+                        className={`rounded-xl px-3 py-2.5 border transition-all border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-sm ${
                           isAdded ? 'bg-emerald-950/90 border-transparent shadow-none' : 'bg-slate-900 border-slate-800'
                         }`}
                       >
@@ -1192,12 +1197,7 @@ export default function App() {
                               </span>
                               {getSmartTimer(t.time_start, t.day_week, t.room)}
                             </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                              <button onClick={() => toggleGrid(t)} title={isAdded ? 'Убрать из сетки' : 'Добавить в сетку'} className={`w-7 h-7 flex items-center justify-center rounded-lg border transition ${isAdded ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-cyan-400'}`}>
-                                {isAdded ? <Check size={13} /> : <ListTodo size={13} />}
-                              </button>
-                              <button onClick={() => setActiveStats(t)} title="Заметка" className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"><NotebookPen size={12}/></button>
-                            </div>
+                            <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"><NotebookPen size={12}/></button>
                           </div>
                           <div className="font-bold text-xs text-white leading-snug">
                             {cleanTournamentName(t.name)}
@@ -1206,7 +1206,23 @@ export default function App() {
                           <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-800/60 text-slate-400">
                             <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
                             
-                            <FormatBadges name={t.name} compact />
+                            <div className="flex items-center gap-1">
+                              {fmts.isPko && (
+                                <div className="w-5 h-5 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/40 text-fuchsia-400 flex items-center justify-center" title="PKO">
+                                  <ShieldAlert size={10} />
+                                </div>
+                              )}
+                              {fmts.isTurbo && (
+                                <div className="w-5 h-5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-center" title="Turbo">
+                                  <Zap size={10} />
+                                </div>
+                              )}
+                              {fmts.isFreezeout && (
+                                <div className="w-5 h-5 rounded-lg bg-blue-500/15 border border-blue-500/40 text-blue-400 flex items-center justify-center" title="Freezeout">
+                                  <Disc size={10} />
+                                </div>
+                              )}
+                            </div>
 
                             <span>GTD: {t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
                             <span className={`font-bold ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
@@ -1231,12 +1247,26 @@ export default function App() {
                             <span className="font-black text-emerald-400 w-16 text-left">{getRoomCurrency(t.room)}{t.buyin}</span>
                             <span className="text-slate-400 w-20 text-left">{t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
 
-                            <FormatBadges name={t.name} compact />
+                            <div className="flex items-center gap-1 w-24 justify-center">
+                              {fmts.isPko && (
+                                <div className="w-6 h-6 rounded-xl bg-fuchsia-500/15 border border-fuchsia-500/40 text-fuchsia-400 flex items-center justify-center shadow-sm" title="PKO">
+                                  <ShieldAlert size={12} />
+                                </div>
+                              )}
+                              {fmts.isTurbo && (
+                                <div className="w-6 h-6 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-center shadow-sm" title="Turbo">
+                                  <Zap size={12} />
+                                </div>
+                              )}
+                              {fmts.isFreezeout && (
+                                <div className="w-6 h-6 rounded-xl bg-blue-500/15 border border-blue-500/40 text-blue-400 flex items-center justify-center shadow-sm" title="Freezeout">
+                                  <Disc size={12} />
+                                </div>
+                              )}
+                            </div>
 
                             <span className={`font-bold w-16 text-right ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
-                            <div className="flex items-center gap-1 shrink-0">
-                              <button onClick={() => setActiveStats(t)} title="Заметка" className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"><NotebookPen size={12}/></button>
-                            </div>
+                            <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"><NotebookPen size={12}/></button>
                           </div>
                         </div>
 
