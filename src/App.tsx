@@ -1173,38 +1173,51 @@ export default function App() {
                   })}
                 </div>
 
-                {/* === ПАНЕЛЬ ПАГИНАЦИИ (КНОПКИ НАЗАД И ВПЕРЕД) === */}
+                {/* === ПАНЕЛЬ ПАГИНАЦИИ С КНОПКАМИ НАЧАЛА/КОНЦА === */}
                 {!loading && filteredTournaments.length > 0 && (
                   <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 flex items-center justify-between shadow-xl mt-4">
-                    <button
-                      onClick={() => { setCurrentPage(prev => Math.max(prev - 1, 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                      disabled={currentPage === 1}
-                      className="px-4 py-2 bg-slate-950 border border-slate-800 hover:border-slate-700 text-cyan-400 text-xs font-black uppercase rounded-xl transition disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1.5 active:scale-95"
-                    >
-                      <ChevronLeft size={14} /> Назад
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setCurrentPage(1)}
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white text-[11px] font-black uppercase rounded-xl transition disabled:opacity-30 disabled:pointer-events-none active:scale-95"
+                        title="В начало"
+                      >
+                        « Первой
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 bg-slate-950 border border-slate-800 hover:border-slate-700 text-cyan-400 text-xs font-black uppercase rounded-xl transition disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1 active:scale-95"
+                      >
+                        <ChevronLeft size={14} /> Назад
+                      </button>
+                    </div>
 
                     <div className="text-xs font-bold text-slate-400">
                       Страница <b className="text-white">{currentPage}</b> из <b className="text-white">{totalPages}</b> 
                       <span className="text-[10px] text-slate-500 ml-1.5">({filteredTournaments.length} всего)</span>
                     </div>
 
-                    <button
-                      onClick={() => { setCurrentPage(prev => Math.min(prev + 1, totalPages)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                      disabled={currentPage >= totalPages}
-                      className="px-4 py-2 bg-slate-950 border border-slate-800 hover:border-slate-700 text-cyan-400 text-xs font-black uppercase rounded-xl transition disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1.5 active:scale-95"
-                    >
-                      Вперед <ChevronRight size={14} />
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage >= totalPages}
+                        className="px-3 py-2 bg-slate-950 border border-slate-800 hover:border-slate-700 text-cyan-400 text-xs font-black uppercase rounded-xl transition disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1 active:scale-95"
+                      >
+                        Вперед <ChevronRight size={14} />
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage(totalPages)}
+                        disabled={currentPage >= totalPages}
+                        className="px-3 py-2 bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white text-[11px] font-black uppercase rounded-xl transition disabled:opacity-30 disabled:pointer-events-none active:scale-95"
+                        title="В конец"
+                      >
+                        Последней »
+                      </button>
+                    </div>
                   </div>
                 )}
-              </div>
-
-              <div className="hidden xl:block w-full xl:w-[25%] shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-8 pr-1">
-                {renderGridPanel()}
-              </div>
-            </div>
-          )}
 
           {activeTab === 'grid' && <div className="w-full max-w-2xl mx-auto">{renderGridPanel()}</div>}
 
