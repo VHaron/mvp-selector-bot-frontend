@@ -10,11 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@twa-dev/sdk": "^8.0.2",
-    "lucide-react": "^1.58.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8"
-  },
+    "@formkit/auto-animate": "^0.8.2",
+    "@twa-dev/sdk": "^8.0.0",
+    "lucide-react": "^1.16.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "zustand": "^4.5.2"
+  }
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@tailwindcss/postcss": "^4.3.3",
