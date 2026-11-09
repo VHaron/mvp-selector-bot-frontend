@@ -1173,7 +1173,7 @@ export default function App() {
                   })}
                 </div>
 
-                {/* === ПАНЕЛЬ ПАГИНАЦИИ С КНОПКАМИ НАЧАЛА/КОНЦА === */}
+                {/* === ПАНЕЛЬ ПАГИНАЦИИ С КНОПКАМИ НАЧАЛА И КОНЦА === */}
                 {!loading && filteredTournaments.length > 0 && (
                   <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 flex items-center justify-between shadow-xl mt-4">
                     <div className="flex items-center gap-1.5">
@@ -1218,6 +1218,13 @@ export default function App() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              <div className="hidden xl:block w-full xl:w-[25%] shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-8 pr-1">
+                {renderGridPanel()}
+              </div>
+            </div>
+          )}
 
           {activeTab === 'grid' && <div className="w-full max-w-2xl mx-auto">{renderGridPanel()}</div>}
 
