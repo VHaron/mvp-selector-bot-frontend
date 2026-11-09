@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown, Zap, ShieldAlert, Disc, Layers, Spade, SlidersHorizontal } from 'lucide-react';
+import { Search, ListTodo, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown, Zap, ShieldAlert, Disc, Layers, Spade, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // === ИМПОРТЫ ДЛЯ АНИМАЦИЙ И СТЕЙТА ===
 import { useAutoAnimate } from '@formkit/auto-animate/react';
@@ -239,7 +239,8 @@ export default function App() {
     freezeout: true, pko: true, turbo: true, hyperTurbo: true, turboPko6max: true, series: true,
   });
   const [priorityFilters, setPriorityFilters] = useState({ p1: true, p2: true, p3: true });
-  const [pageSize, setPageSize] = useState<number>(50);
+  const [pageSize, setPageSize] = useState<number>(25);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   const [sortOrder, setSortOrder] = useState<'time' | 'buyin' | 'ev' | 'tier'>('time');
   const [selectedRooms, setSelectedRooms] = useState<string[]>(Object.keys(ROOMS));
@@ -293,7 +294,7 @@ export default function App() {
   };
 
   const bulkAdd = (type: 'top' | 'overlay') => {
-    const toAdd = type === 'top' ? searchResults.filter(t => t.priority === '1') : searchResults.filter(t => isOverlay(t));
+    const toAdd = type === 'top' ? filteredTournaments.filter(t => t.priority === '1') : filteredTournaments.filter(t => isOverlay(t));
     setGrid(previous => {
       const existingIds = new Set(previous.map(getUniqueId));
       const newItems = toAdd.filter(t => !existingIds.has(getUniqueId(t)));
@@ -482,7 +483,7 @@ export default function App() {
 
   const fetchTournaments = async () => {
     if (!sessionToken) return;
-    setLoading(true); setAuthError('');
+    setLoading(true); setAuthError(''); setCurrentPage(1);
     try {
       const formatApiDate = (dateStr: string) => dateStr ? dateStr.replace('T', ' ') + ':00' : '';
       const data = await apiCall('tournaments', { 
@@ -627,8 +628,8 @@ export default function App() {
     return Array.from(new Set(availableTournamentsForFilter.map(t => t.room))).sort();
   }, [availableTournamentsForFilter]);
 
-  // === ПРИМЕНЕНИЕ ТОНКИХ ФИЛЬТРОВ ИЗ ZUSTAND ===
-  const searchResults = useMemo(() => {
+  // === ВСЕ ОТФИЛЬТРОВАННЫЕ ТУРНИРЫ (ДО ПАГИНАЦИИ) ===
+  const filteredTournaments = useMemo(() => {
     return tournaments
       .filter(t => {
         if (isStartedTooLongAgo(t.time_start, t.day_week, t.room)) return false; 
@@ -642,9 +643,16 @@ export default function App() {
 
         return true;
       })
-      .sort((a, b) => sortOrder === 'tier' ? getTier(a).id - getTier(b).id : 0)
-      .slice(0, pageSize);
-  }, [tournaments, sortOrder, selectedRooms, searchActiveRoom, minBuyin, maxBuyin, minEv, pageSize]);
+      .sort((a, b) => sortOrder === 'tier' ? getTier(a).id - getTier(b).id : 0);
+  }, [tournaments, sortOrder, selectedRooms, searchActiveRoom, minBuyin, maxBuyin, minEv]);
+
+  const totalPages = Math.ceil(filteredTournaments.length / pageSize) || 1;
+
+  // ТУРНИРЫ ТЕКУЩЕЙ СТРАНИЦЫ
+  const searchResults = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredTournaments.slice(start, start + pageSize);
+  }, [filteredTournaments, currentPage, pageSize]);
 
   const clearGrid = () => setGrid([]);
 
@@ -1018,7 +1026,7 @@ export default function App() {
                     </div>
 
                     <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                      {!loading && searchResults.length > 0 && (
+                      {!loading && filteredTournaments.length > 0 && (
                         <div className="flex items-center gap-1.5 shrink-0">
                           <button onClick={() => bulkAdd('top')} title="Добавить все зеленые турниры" className="w-11 h-11 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl flex items-center justify-center transition active:scale-95 shadow-sm"><Check size={18} strokeWidth={3} /></button>
                           <button onClick={() => bulkAdd('overlay')} title="Добавить все оверлеи" className="w-11 h-11 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-xl flex items-center justify-center transition active:scale-95 shadow-sm"><Flame size={18} className="text-orange-500 animate-pulse" /></button>
@@ -1035,7 +1043,7 @@ export default function App() {
                 {/* === АНИМИРОВАННЫЙ СПИСОК ТУРНИРОВ === */}
                 <div ref={listRef} className="space-y-2 pt-1">
                   {loading && [1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-16 bg-slate-900/40 rounded-xl border border-slate-800/40 animate-pulse"></div>)}
-                  {searchResults.length === 0 && !loading && (
+                  {filteredTournaments.length === 0 && !loading && (
                     <div className="text-center py-24 bg-slate-900/30 rounded-2xl border border-slate-800/50">
                       <div className="text-4xl mb-3 opacity-30">🎲</div>
                       <h3 className="text-slate-300 font-bold text-base">Расписание пусто</h3>
@@ -1046,7 +1054,7 @@ export default function App() {
                   {!loading && availableTournamentsForFilter.length > 0 && (
                     <div className="flex flex-wrap gap-2 py-2 mb-2 border-b border-slate-800/50 pb-3">
                       <button
-                        onClick={() => setSearchActiveRoom(null)}
+                        onClick={() => { setSearchActiveRoom(null); setCurrentPage(1); }}
                         className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition flex items-center gap-1.5 border ${!searchActiveRoom ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 shadow-sm' : 'bg-slate-900/50 text-slate-500 border-slate-800/80 hover:bg-slate-900 hover:text-slate-300'}`}
                       >
                         Все турниры 
@@ -1064,7 +1072,7 @@ export default function App() {
                         return (
                           <button
                             key={room}
-                            onClick={() => setSearchActiveRoom(room)}
+                            onClick={() => { setSearchActiveRoom(room); setCurrentPage(1); }}
                             className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition flex items-center gap-1.5 border ${isSelected ? roomStyle + ' shadow-sm' : 'bg-slate-900/50 text-slate-500 border-slate-800/80 hover:bg-slate-900 hover:text-slate-300'}`}
                           >
                             {domain && (
@@ -1164,6 +1172,32 @@ export default function App() {
                     );
                   })}
                 </div>
+
+                {/* === ПАНЕЛЬ ПАГИНАЦИИ (КНОПКИ НАЗАД И ВПЕРЕД) === */}
+                {!loading && filteredTournaments.length > 0 && (
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 flex items-center justify-between shadow-xl mt-4">
+                    <button
+                      onClick={() => { setCurrentPage(prev => Math.max(prev - 1, 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 bg-slate-950 border border-slate-800 hover:border-slate-700 text-cyan-400 text-xs font-black uppercase rounded-xl transition disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1.5 active:scale-95"
+                    >
+                      <ChevronLeft size={14} /> Назад
+                    </button>
+
+                    <div className="text-xs font-bold text-slate-400">
+                      Страница <b className="text-white">{currentPage}</b> из <b className="text-white">{totalPages}</b> 
+                      <span className="text-[10px] text-slate-500 ml-1.5">({filteredTournaments.length} всего)</span>
+                    </div>
+
+                    <button
+                      onClick={() => { setCurrentPage(prev => Math.min(prev + 1, totalPages)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                      disabled={currentPage >= totalPages}
+                      className="px-4 py-2 bg-slate-950 border border-slate-800 hover:border-slate-700 text-cyan-400 text-xs font-black uppercase rounded-xl transition disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1.5 active:scale-95"
+                    >
+                      Вперед <ChevronRight size={14} />
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="hidden xl:block w-full xl:w-[25%] shrink-0 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-8 pr-1">
@@ -1462,7 +1496,7 @@ export default function App() {
                   {[25, 50, 100, 200].map(num => (
                     <button
                       key={num}
-                      onClick={() => setPageSize(num)}
+                      onClick={() => { setPageSize(num); setCurrentPage(1); }}
                       className={`py-2 rounded-xl border font-bold text-center transition ${pageSize === num ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-500'}`}
                     >
                       {num}
