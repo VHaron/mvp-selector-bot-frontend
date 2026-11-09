@@ -16,13 +16,13 @@ interface FilterState {
   setMinEv: (val: number) => void;
 }
 
-const useStore = create<FilterState>((set) => ({
+const useStore = create<FilterState>((set: any) => ({
   minBuyin: 0,
   maxBuyin: 1000,
-  minEv: -10, // По умолчанию пропускаем турниры с EV от -$10
-  setMinBuyin: (val) => set({ minBuyin: val }),
-  setMaxBuyin: (val) => set({ maxBuyin: val }),
-  setMinEv: (val) => set({ minEv: val }),
+  minEv: -10,
+  setMinBuyin: (val: number) => set({ minBuyin: val }),
+  setMaxBuyin: (val: number) => set({ maxBuyin: val }),
+  setMinEv: (val: number) => set({ minEv: val }),
 }));
 
 // === ИНТЕРФЕЙСЫ ===
