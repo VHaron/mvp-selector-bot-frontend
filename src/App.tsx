@@ -827,7 +827,6 @@ export default function App() {
           </div>
         </div>
       ) : (
-        {/* АНИМАЦИЯ БЕЗ ГРУППИРОВКИ */}
         <div ref={gridListRef} className="space-y-2">
           {displayGrid.map((t, idx) => renderGridCard(t, `${getUniqueId(t)}_grid_${idx}`))}
         </div>
