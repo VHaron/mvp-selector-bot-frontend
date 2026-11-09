@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown, Zap, ShieldAlert, Disc, Layers, Spade, DollarSign } from 'lucide-react';
+import { Search, ListTodo, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown, Zap, ShieldAlert, Disc, Layers, Spade, DollarSign, SlidersHorizontal } from 'lucide-react';
 
 // === ИМПОРТЫ ДЛЯ АНИМАЦИЙ И СТЕЙТА ===
 import { useAutoAnimate } from '@formkit/auto-animate/react';
@@ -199,11 +199,9 @@ const getSmartTimer = (timeStr: string, dayWeekStr?: string, roomName?: string) 
 
 
 export default function App() {
-  // === АНИМАЦИИ ===
   const [listRef] = useAutoAnimate<HTMLDivElement>({ duration: 250 });
   const [gridListRef] = useAutoAnimate<HTMLDivElement>({ duration: 250 });
 
-  // === ТОНКИЕ ФИЛЬТРЫ ИЗ ZUSTAND ===
   const { minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv } = useStore();
 
   const [authStep, setAuthStep] = useState<'login' | 'mfa' | 'app' | 'site_select'>('login');
@@ -310,9 +308,7 @@ export default function App() {
   const [dateTo, setDateTo] = useState('');
   const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
   const [activeStats, setActiveStats] = useState<Tournament | null>(null);
-  const [showPresetsModal, setShowPresetsModal] = useState(false);
-  const [newPresetName, setNewPresetName] = useState('');
-  const [presets, setPresets] = useState<{name: string, items: any[]}[]>([]);
+  const [showFineFiltersModal, setShowFineFiltersModal] = useState(false);
   const [notes, setNotes] = useState<Record<string, NoteData>>({});
   const [sessionsHistory, setSessionsHistory] = useState<SessionData[]>([]);
   const [showSessionModal, setShowSessionModal] = useState(false);
@@ -362,11 +358,11 @@ export default function App() {
 
   const loadAllUserData = async (token: string) => {
     setIsSettingsLoaded(false);
-    setPresets([]); setNotes({}); setSessionsHistory([]); setGrid([]); setBalances({});
+    setNotes({}); setSessionsHistory([]); setGrid([]); setBalances({});
     setSelectedRooms(Object.keys(ROOMS)); setActiveFormats({ isPko: true, isFreezeout: true, isTurbo: true }); setSortOrder('time');
 
     const endpoints = [
-      ['get_presets', 'presets'], ['get_settings', 'settings'], ['get_notes', 'notes'],
+      ['get_settings', 'settings'], ['get_notes', 'notes'],
       ['get_sessions_history', 'history'], ['get_grid', 'grid'], ['get_balances', 'balances']
     ] as const;
 
@@ -376,8 +372,7 @@ export default function App() {
 
       if (responses.some(response => response.status_code === 401)) { logout(); return; }
 
-      const [presRes, setRes, notRes, histRes, gridRes, balRes] = responses;
-      if (presRes.status === 'success' && Array.isArray(presRes.presets)) setPresets(presRes.presets);
+      const [setRes, notRes, histRes, gridRes, balRes] = responses;
       if (setRes.status === 'success') {
         if (Array.isArray(setRes.selected_rooms)) setSelectedRooms(setRes.selected_rooms);
         if (setRes.active_formats) setActiveFormats(setRes.active_formats);
@@ -468,7 +463,7 @@ export default function App() {
 
   const logout = () => {
     localStorage.removeItem('mvp_token'); localStorage.removeItem('mvp_site'); setSessionToken(null);
-    setIsSettingsLoaded(false); setTournaments([]); setGrid([]); setPresets([]); setNotes({});
+    setIsSettingsLoaded(false); setTournaments([]); setGrid([]); setNotes({});
     setSessionsHistory([]); setBalances({}); setSelectedRooms(Object.keys(ROOMS));
     setActiveFormats({ isPko: true, isFreezeout: true, isTurbo: true }); setSortOrder('time');
     setSiteSelectionId(null); setSiteCandidates([]); setOtp(''); setPassword('');
@@ -618,7 +613,6 @@ export default function App() {
         if (!isRoomAllowed(t.room)) return false;
         if (searchActiveRoom && t.room !== searchActiveRoom) return false;
 
-        // ПРОВЕРКА ТОНКИХ ФИЛЬТРОВ
         const buyinVal = parseNum(t.buyin);
         const evVal = parseNum(t.ev_mtt);
         if (buyinVal < minBuyin || buyinVal > maxBuyin) return false;
@@ -635,31 +629,6 @@ export default function App() {
   const saveNote = (t: Tournament, tag: NoteTag, text: string) => {
     const key = getNoteKey(t); const newNotes = { ...notes, [key]: { tag, text } };
     setNotes(newNotes); apiCall('save_notes', { session_token: sessionToken, notes: newNotes });
-  };
-
-  const savePreset = () => {
-    if (!newPresetName.trim() || !sessionToken) return;
-    const filterData = { isFilterPreset: true, timeFrom: dateFrom.split('T')[1] || '', timeTo: dateTo.split('T')[1] || '', rooms: selectedRooms, formats: activeFormats };
-    const newPresets = [...presets, { name: newPresetName, items: [filterData as any] }];
-    setPresets(newPresets); apiCall('save_presets', { session_token: sessionToken, presets: newPresets });
-    setNewPresetName('');
-  };
-  
-  const loadPreset = (presetItems: any[]) => {
-    if (!presetItems || presetItems.length === 0) return;
-    const data = presetItems[0];
-    if (data && data.isFilterPreset) {
-      if (data.timeFrom) setDateFrom(`${new Date().toISOString().split('T')[0]}T${data.timeFrom}`);
-      if (data.timeTo) setDateTo(`${new Date().toISOString().split('T')[0]}T${data.timeTo}`);
-      if (data.rooms) setSelectedRooms(data.rooms);
-      if (data.formats) setActiveFormats(data.formats);
-      setShowPresetsModal(false); setActiveTab('search');
-    } else { setGrid(presetItems); setShowPresetsModal(false); }
-  };
-
-  const deletePreset = (idx: number) => {
-    const newPresets = presets.filter((_, i) => i !== idx);
-    setPresets(newPresets); apiCall('save_presets', { session_token: sessionToken, presets: newPresets });
   };
 
   const finishSession = async () => {
@@ -821,7 +790,6 @@ export default function App() {
               </div>
             )}
           </div>
-          {/* АНИМАЦИЯ ПРИ ГРУППИРОВКЕ */}
           <div ref={gridListRef} className="space-y-2">
             {filteredGridBySelectedRoom.length === 0 ? <div className="text-center py-12 text-slate-500 text-xs">Нет турниров</div> : filteredGridBySelectedRoom.map((t, idx) => renderGridCard(t, `${getUniqueId(t)}_grid_filtered_${idx}`))}
           </div>
@@ -964,7 +932,9 @@ export default function App() {
                       <button onClick={() => setPresetDate('today')} className="px-3 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl transition shadow-sm active:scale-95">Сегодня</button>
                       <button onClick={() => setPresetDate('tomorrow')} className="px-3 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl transition shadow-sm active:scale-95">Завтра</button>
                       <button onClick={() => setPresetDate('clear')} title="Сбросить даты" className="w-9 h-9 flex items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:border-rose-500/50 rounded-xl transition shadow-sm active:scale-95"><X size={15} strokeWidth={2.5} /></button>
-                      <button onClick={() => setShowPresetsModal(true)} className="px-3 py-2 text-[11px] font-black uppercase bg-emerald-950/50 hover:bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 hover:border-emerald-500/70 rounded-xl transition shadow-sm ml-auto active:scale-95">Шаблоны</button>
+                      <button onClick={() => setShowFineFiltersModal(true)} className="px-3 py-2 text-[11px] font-black uppercase bg-slate-900 hover:bg-slate-800 text-cyan-400 border border-slate-800 hover:border-slate-700 rounded-xl transition shadow-sm ml-auto active:scale-95 flex items-center gap-1.5">
+                        <SlidersHorizontal size={13} /> Фильтры
+                      </button>
                     </div>
                   </div>
                   
@@ -1036,26 +1006,6 @@ export default function App() {
                         <span>Найти</span>
                       </button>
                     </div>
-                  </div>
-                </div>
-
-                {/* === ТОНКИЕ ФИЛЬТРЫ ИЗ ZUSTAND === */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-900 border border-slate-800/80 p-4 md:p-5 rounded-2xl shadow-xl">
-                  <div>
-                    <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5 mb-2">
-                      <DollarSign size={14} className="text-emerald-500"/> Диапазон Бай-ина ($)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input type="number" value={minBuyin} onChange={(e) => setMinBuyin(Number(e.target.value))} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-emerald-500 transition" placeholder="От" />
-                      <span className="text-slate-600 font-bold">-</span>
-                      <input type="number" value={maxBuyin} onChange={(e) => setMaxBuyin(Number(e.target.value))} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-emerald-500 transition" placeholder="До" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5 mb-2">
-                      <TrendingUp size={14} className="text-blue-500"/> Минимальное ожидание EV ($)
-                    </label>
-                    <input type="number" step="0.1" value={minEv} onChange={(e) => setMinEv(Number(e.target.value))} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-blue-400 font-bold outline-none focus:border-blue-500 transition" placeholder="Например: 0.5" />
                   </div>
                 </div>
                 
@@ -1409,28 +1359,39 @@ export default function App() {
         </div>
       )}
 
-      {showPresetsModal && (
+      {showFineFiltersModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative">
-            <button onClick={() => setShowPresetsModal(false)} className="absolute top-4 right-4 p-2 bg-slate-800 rounded-full text-slate-400"><X size={18}/></button>
-            <h2 className="text-base font-black text-white mb-4">Шаблоны фильтров</h2>
-            <div className="flex gap-2 mb-4">
-              <input value={newPresetName} onChange={e => setNewPresetName(e.target.value)} placeholder="Название..." className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none" />
-              <button onClick={savePreset} disabled={!newPresetName.trim()} className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-3.5 rounded-xl disabled:opacity-30"><Save size={18} /></button>
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative space-y-4">
+            <button onClick={() => setShowFineFiltersModal(false)} className="absolute top-4 right-4 p-2 bg-slate-800 rounded-full text-slate-400"><X size={18}/></button>
+            
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400"><SlidersHorizontal size={16} /></div>
+              <h2 className="text-sm font-black text-white uppercase tracking-wider">Тонкие фильтры</h2>
             </div>
-            <div className="space-y-2 max-h-56 overflow-y-auto">
-              {presets.length === 0 ? <div className="text-center py-6 text-slate-500 text-xs">Нет сохраненных шаблонов</div> : 
-                presets.map((p, idx) => (
-                  <div key={idx} className="flex justify-between items-center bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs">
-                    <span className="font-bold text-white">{p.name}</span>
-                    <div className="flex gap-1.5">
-                      <button onClick={() => loadPreset(p.items)} className="p-2 bg-cyan-500/10 text-cyan-400 rounded-lg"><Check size={16} /></button>
-                      <button onClick={() => deletePreset(idx)} className="p-2 bg-rose-500/10 text-rose-400 rounded-lg"><Trash2 size={16} /></button>
-                    </div>
-                  </div>
-                ))
-              }
+
+            <div className="space-y-3 pt-2">
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5 mb-1.5">
+                  <DollarSign size={12} className="text-emerald-500"/> Диапазон Бай-ина ($)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input type="number" value={minBuyin} onChange={(e) => setMinBuyin(Number(e.target.value))} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-emerald-500" placeholder="От" />
+                  <span className="text-slate-600 font-bold">-</span>
+                  <input type="number" value={maxBuyin} onChange={(e) => setMaxBuyin(Number(e.target.value))} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-emerald-500" placeholder="До" />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5 mb-1.5">
+                  <TrendingUp size={12} className="text-blue-500"/> Минимальное ожидание EV ($)
+                </label>
+                <input type="number" step="0.1" value={minEv} onChange={(e) => setMinEv(Number(e.target.value))} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-blue-400 font-bold outline-none focus:border-blue-500" placeholder="Например: 0.5" />
+              </div>
             </div>
+
+            <button onClick={() => setShowFineFiltersModal(false)} className="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-black rounded-xl text-xs uppercase tracking-wider transition active:scale-95">
+              Готово
+            </button>
           </div>
         </div>
       )}
