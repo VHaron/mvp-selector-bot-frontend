@@ -1366,7 +1366,7 @@ export default function App() {
             
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400"><SlidersHorizontal size={16} /></div>
-              <h2 className="text-sm font-black text-white uppercase tracking-wider">Тонкие фильтры</h2>
+              <h2 className="text-sm font-black text-white uppercase tracking-wider">Фильтр</h2>
             </div>
 
             <div className="space-y-3 pt-2">
