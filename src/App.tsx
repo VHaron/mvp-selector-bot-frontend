@@ -1,7 +1,31 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown, Zap, ShieldAlert, Disc, Layers, Spade } from 'lucide-react';
+import { Search, ListTodo, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Save, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown, Zap, ShieldAlert, Disc, Layers, Spade, DollarSign } from 'lucide-react';
 
+// === ИМПОРТЫ ДЛЯ АНИМАЦИЙ И СТЕЙТА ===
+import { useAutoAnimate } from '@formkit/auto-animate/react';
+import { create } from 'zustand';
+
+// === ГЛОБАЛЬНЫЙ СТЕЙТ ТОНКИХ ФИЛЬТРОВ (Zustand) ===
+interface FilterState {
+  minBuyin: number;
+  maxBuyin: number;
+  minEv: number;
+  setMinBuyin: (val: number) => void;
+  setMaxBuyin: (val: number) => void;
+  setMinEv: (val: number) => void;
+}
+
+const useStore = create<FilterState>((set) => ({
+  minBuyin: 0,
+  maxBuyin: 1000,
+  minEv: -10, // По умолчанию пропускаем турниры с EV от -$10
+  setMinBuyin: (val) => set({ minBuyin: val }),
+  setMaxBuyin: (val) => set({ maxBuyin: val }),
+  setMinEv: (val) => set({ minEv: val }),
+}));
+
+// === ИНТЕРФЕЙСЫ ===
 interface Tournament {
   id: string; room: string; name: string; priority: string;
   buyin: string; time_start: string; roi_str: string; gtd: string;
@@ -18,19 +42,9 @@ const ROOMS: Record<string, string> = {
 };
 
 const ROOM_DOMAINS: Record<string, string> = {
-  '244': '888poker.com',
-  '245': 'betonline.ag',
-  '246': 'ggpoker.com',
-  '247': 'redstar.games',
-  '248': 'partypoker.com',
-  '249': 'pokerstars.com',
-  '250': 'pokerstars.es',
-  '251': 'winamax.fr',
-  '252': 'americascardroom.eu',
-  '264': 'pokerdom.com',
-  '265': 'coinpoker.com',
-  '267': 'clubgg.com',
-  '268': 'wptglobal.com'
+  '244': '888poker.com', '245': 'betonline.ag', '246': 'ggpoker.com', '247': 'redstar.games',
+  '248': 'partypoker.com', '249': 'pokerstars.com', '250': 'pokerstars.es', '251': 'winamax.fr',
+  '252': 'americascardroom.eu', '264': 'pokerdom.com', '265': 'coinpoker.com', '267': 'clubgg.com', '268': 'wptglobal.com'
 };
 
 const getRoomCurrency = (roomName: string) => {
@@ -81,36 +95,24 @@ const parseNum = (value: string | number | null | undefined) => {
   let normalized = String(value).trim().replace(/\s/g, '').replace(/[^\d,.-]/g, '');
   if (normalized.includes(',') && normalized.includes('.')) {
     const decimalSeparator = normalized.lastIndexOf(',') > normalized.lastIndexOf('.') ? ',' : '.';
-    normalized = decimalSeparator === ','
-      ? normalized.replace(/\./g, '').replace(',', '.')
-      : normalized.replace(/,/g, '');
+    normalized = decimalSeparator === ',' ? normalized.replace(/\./g, '').replace(',', '.') : normalized.replace(/,/g, '');
   } else if (normalized.includes(',')) {
     const parts = normalized.split(',');
-    normalized = parts.length === 2 && parts[1].length !== 3
-      ? `${parts[0]}.${parts[1]}`
-      : normalized.replace(/,/g, '');
+    normalized = parts.length === 2 && parts[1].length !== 3 ? `${parts[0]}.${parts[1]}` : normalized.replace(/,/g, '');
   }
   const parsed = Number.parseFloat(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
 };
+
 const getUniqueId = (t: Tournament) => `${t.id}_${t.room}_${t.name}_${t.buyin}_${t.time_start}`;
 
 const cleanTournamentName = (name: string) => {
   if (!name) return '';
   let maxSize = '';
   const maxMatch = name.match(/(\d-max)/i);
-  if (maxMatch) {
-    maxSize = maxMatch[1].toLowerCase();
-  }
-  let cleaned = name
-    .replace(/\s*\[?\d{2}:\d{2}\]?/g, '')
-    .replace(/\s*\[.*?\]/g, '')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
-
-  if (maxSize && !cleaned.toLowerCase().includes(maxSize)) {
-    cleaned = `${cleaned} [${maxSize}]`;
-  }
+  if (maxMatch) maxSize = maxMatch[1].toLowerCase();
+  let cleaned = name.replace(/\s*\[?\d{2}:\d{2}\]?/g, '').replace(/\s*\[.*?\]/g, '').replace(/\s{2,}/g, ' ').trim();
+  if (maxSize && !cleaned.toLowerCase().includes(maxSize)) cleaned = `${cleaned} [${maxSize}]`;
   return cleaned;
 };
 
@@ -126,10 +128,8 @@ const getTournamentFormats = (name: string) => {
 const getLocalTimeDate = (mskTimeStr: string, dayWeekStr?: string, _roomName?: string) => {
   if (!mskTimeStr) return new Date();
   let [hours, mins] = mskTimeStr.slice(0, 5).split(':').map(Number);
-  
   const now = new Date();
   const mskWall = new Date(now.getTime() + 3 * 3600000); 
-  
   let tMsk = new Date(mskWall.getTime());
   tMsk.setUTCHours(hours, mins || 0, 0, 0);
 
@@ -137,14 +137,11 @@ const getLocalTimeDate = (mskTimeStr: string, dayWeekStr?: string, _roomName?: s
     const cleanDay = dayWeekStr.toLowerCase().replace(/[^а-яё]/g, '');
     const days = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
     const targetDay = days.findIndex(d => cleanDay.includes(d));
-    
     if (targetDay !== -1) {
       const currentMskDay = tMsk.getUTCDay();
       let dayDiff = targetDay - currentMskDay;
-      
       if (dayDiff > 3) dayDiff -= 7;
       else if (dayDiff < -3) dayDiff += 7;
-      
       tMsk.setUTCDate(tMsk.getUTCDate() + dayDiff);
     }
   } else {
@@ -152,7 +149,6 @@ const getLocalTimeDate = (mskTimeStr: string, dayWeekStr?: string, _roomName?: s
     if (diffMins > 12 * 60) tMsk.setUTCDate(tMsk.getUTCDate() - 1);
     else if (diffMins < -12 * 60) tMsk.setUTCDate(tMsk.getUTCDate() + 1);
   }
-
   const actualTimestamp = tMsk.getTime() - 3 * 3600000;
   return new Date(actualTimestamp);
 };
@@ -201,7 +197,15 @@ const getSmartTimer = (timeStr: string, dayWeekStr?: string, roomName?: string) 
   return null;
 };
 
+
 export default function App() {
+  // === АНИМАЦИИ ===
+  const [listRef] = useAutoAnimate<HTMLDivElement>({ duration: 250 });
+  const [gridListRef] = useAutoAnimate<HTMLDivElement>({ duration: 250 });
+
+  // === ТОНКИЕ ФИЛЬТРЫ ИЗ ZUSTAND ===
+  const { minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv } = useStore();
+
   const [authStep, setAuthStep] = useState<'login' | 'mfa' | 'app' | 'site_select'>('login');
   const [sessionToken, setSessionToken] = useState<string | null>(localStorage.getItem('mvp_token'));
   
@@ -234,10 +238,7 @@ export default function App() {
   const [sortOrder, setSortOrder] = useState<'time' | 'buyin' | 'ev' | 'tier'>('time');
   const [selectedRooms, setSelectedRooms] = useState<string[]>(Object.keys(ROOMS));
   const [isRoomsDropdownOpen, setIsRoomsDropdownOpen] = useState(false);
-  
-  // Добавлен фильтр для быстрого поиска по румам
   const [searchActiveRoom, setSearchActiveRoom] = useState<string | null>(null);
-
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [calendarYear, setCalendarYear] = useState(() => new Date().getFullYear());
@@ -249,26 +250,16 @@ export default function App() {
   ];
 
   const handlePrevMonth = () => {
-    if (calendarMonth === 0) {
-      setCalendarYear(prev => prev - 1);
-      setCalendarMonth(11);
-    } else {
-      setCalendarMonth(prev => prev - 1);
-    }
+    if (calendarMonth === 0) { setCalendarYear(prev => prev - 1); setCalendarMonth(11); }
+    else setCalendarMonth(prev => prev - 1);
   };
 
   const handleNextMonth = () => {
-    if (calendarMonth === 11) {
-      setCalendarYear(prev => prev + 1);
-      setCalendarMonth(0);
-    } else {
-      setCalendarMonth(prev => prev + 1);
-    }
+    if (calendarMonth === 11) { setCalendarYear(prev => prev + 1); setCalendarMonth(0); }
+    else setCalendarMonth(prev => prev + 1);
   };
 
-  const getDaysInMonth = (year: number, month: number) => {
-    return new Date(year, month + 1, 0).getDate();
-  };
+  const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -360,13 +351,9 @@ export default function App() {
         signal: controller.signal,
       });
       const data = await response.json().catch(() => ({}));
-      return response.ok
-        ? data
-        : { ...(typeof data === 'object' && data !== null ? data : {}), status_code: response.status };
+      return response.ok ? data : { ...(typeof data === 'object' && data !== null ? data : {}), status_code: response.status };
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        throw new Error('Сервер не ответил за 45 секунд. Попробуйте ещё раз.');
-      }
+      if (error instanceof DOMException && error.name === 'AbortError') throw new Error('Сервер не ответил за 45 секунд. Попробуйте ещё раз.');
       throw error;
     } finally {
       window.clearTimeout(timeoutId);
@@ -375,36 +362,19 @@ export default function App() {
 
   const loadAllUserData = async (token: string) => {
     setIsSettingsLoaded(false);
-    setPresets([]);
-    setNotes({});
-    setSessionsHistory([]);
-    setGrid([]);
-    setBalances({});
-    setSelectedRooms(Object.keys(ROOMS));
-    setActiveFormats({ isPko: true, isFreezeout: true, isTurbo: true });
-    setSortOrder('time');
+    setPresets([]); setNotes({}); setSessionsHistory([]); setGrid([]); setBalances({});
+    setSelectedRooms(Object.keys(ROOMS)); setActiveFormats({ isPko: true, isFreezeout: true, isTurbo: true }); setSortOrder('time');
 
     const endpoints = [
-      ['get_presets', 'presets'],
-      ['get_settings', 'settings'],
-      ['get_notes', 'notes'],
-      ['get_sessions_history', 'history'],
-      ['get_grid', 'grid'],
-      ['get_balances', 'balances'],
+      ['get_presets', 'presets'], ['get_settings', 'settings'], ['get_notes', 'notes'],
+      ['get_sessions_history', 'history'], ['get_grid', 'grid'], ['get_balances', 'balances']
     ] as const;
 
     try {
-      const results = await Promise.allSettled(
-        endpoints.map(([endpoint]) => apiCall(endpoint, { session_token: token }))
-      );
-      const responses = results.map(result =>
-        result.status === 'fulfilled' ? result.value : { status: 'error' }
-      );
+      const results = await Promise.allSettled(endpoints.map(([endpoint]) => apiCall(endpoint, { session_token: token })));
+      const responses = results.map(result => result.status === 'fulfilled' ? result.value : { status: 'error' });
 
-      if (responses.some(response => response.status_code === 401)) {
-        logout();
-        return;
-      }
+      if (responses.some(response => response.status_code === 401)) { logout(); return; }
 
       const [presRes, setRes, notRes, histRes, gridRes, balRes] = responses;
       if (presRes.status === 'success' && Array.isArray(presRes.presets)) setPresets(presRes.presets);
@@ -440,11 +410,7 @@ export default function App() {
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthLoading(true);
-    setAuthError('');
-    setSiteSelectionId(null);
-    setSiteCandidates([]);
+    e.preventDefault(); setAuthLoading(true); setAuthError(''); setSiteSelectionId(null); setSiteCandidates([]);
     try {
       const data = await apiCall('login', { username, password, site: 'auto' });
       if (data.detail) throw new Error(data.detail);
@@ -452,56 +418,39 @@ export default function App() {
       if (data.status === 'site_selection_required') {
         setSiteSelectionId(data.selection_id);
         setSiteCandidates(Array.isArray(data.candidates) ? data.candidates : []);
-        setAuthStep('site_select');
-        return;
+        setAuthStep('site_select'); return;
       }
-
       if (!data.session_token) throw new Error('Сервер не вернул токен сессии');
       setSessionToken(data.session_token);
       if (data.site) setAuthenticatedSite(data.site);
-      if (data.status === 'mfa_required') {
-        setAuthStep('mfa');
-      } else {
+      if (data.status === 'mfa_required') { setAuthStep('mfa'); } 
+      else {
         localStorage.setItem('mvp_token', data.session_token);
         if (data.site) localStorage.setItem('mvp_site', data.site);
-        loadAllUserData(data.session_token);
-        setAuthStep('app');
+        loadAllUserData(data.session_token); setAuthStep('app');
       }
-    } catch (err: any) {
-      setAuthError(err.message || 'Ошибка авторизации');
-    } finally {
-      setAuthLoading(false);
-    }
+    } catch (err: any) { setAuthError(err.message || 'Ошибка авторизации'); } 
+    finally { setAuthLoading(false); }
   };
 
   const handleSiteSelect = async (site: string) => {
     if (!siteSelectionId) return;
-    setAuthLoading(true);
-    setAuthError('');
+    setAuthLoading(true); setAuthError('');
     try {
       const data = await apiCall('select_site', { selection_id: siteSelectionId, site });
       if (data.detail) throw new Error(data.detail);
       if (!data.session_token) throw new Error('Сервер не вернул токен выбранного сайта');
+      setSessionToken(data.session_token); setAuthenticatedSite(data.site || site);
+      setSiteSelectionId(null); setSiteCandidates([]); setOtp('');
 
-      setSessionToken(data.session_token);
-      setAuthenticatedSite(data.site || site);
-      setSiteSelectionId(null);
-      setSiteCandidates([]);
-      setOtp('');
-
-      if (data.status === 'mfa_required') {
-        setAuthStep('mfa');
-      } else {
+      if (data.status === 'mfa_required') { setAuthStep('mfa'); } 
+      else {
         localStorage.setItem('mvp_token', data.session_token);
         localStorage.setItem('mvp_site', data.site || site);
-        loadAllUserData(data.session_token);
-        setAuthStep('app');
+        loadAllUserData(data.session_token); setAuthStep('app');
       }
-    } catch (err: any) {
-      setAuthError(err.message || 'Не удалось выбрать сайт');
-    } finally {
-      setAuthLoading(false);
-    }
+    } catch (err: any) { setAuthError(err.message || 'Не удалось выбрать сайт'); } 
+    finally { setAuthLoading(false); }
   };
 
   const handleMfa = async (e: React.FormEvent) => {
@@ -513,36 +462,24 @@ export default function App() {
       localStorage.setItem('mvp_token', sessionToken as string);
       if (finalSite) { setAuthenticatedSite(finalSite); localStorage.setItem('mvp_site', finalSite); }
       loadAllUserData(sessionToken as string); setAuthStep('app');
-    } catch (err: any) { setAuthError(err.message); } finally { setAuthLoading(false); }
+    } catch (err: any) { setAuthError(err.message); } 
+    finally { setAuthLoading(false); }
   };
 
   const logout = () => {
-    localStorage.removeItem('mvp_token');
-    localStorage.removeItem('mvp_site');
-    setSessionToken(null);
-    setIsSettingsLoaded(false);
-    setTournaments([]);
-    setGrid([]);
-    setPresets([]);
-    setNotes({});
-    setSessionsHistory([]);
-    setBalances({});
-    setSelectedRooms(Object.keys(ROOMS));
-    setActiveFormats({ isPko: true, isFreezeout: true, isTurbo: true });
-    setSortOrder('time');
-    setSiteSelectionId(null);
-    setSiteCandidates([]);
-    setOtp('');
-    setPassword('');
-    setAuthError('');
-    setAuthStep('login');
+    localStorage.removeItem('mvp_token'); localStorage.removeItem('mvp_site'); setSessionToken(null);
+    setIsSettingsLoaded(false); setTournaments([]); setGrid([]); setPresets([]); setNotes({});
+    setSessionsHistory([]); setBalances({}); setSelectedRooms(Object.keys(ROOMS));
+    setActiveFormats({ isPko: true, isFreezeout: true, isTurbo: true }); setSortOrder('time');
+    setSiteSelectionId(null); setSiteCandidates([]); setOtp(''); setPassword('');
+    setAuthError(''); setAuthStep('login');
   };
+
   const toggleRoom = (roomId: string) => setSelectedRooms(prev => prev.includes(roomId) ? prev.filter(id => id !== roomId) : [...prev, roomId]);
 
   const fetchTournaments = async () => {
     if (!sessionToken) return;
-    setLoading(true);
-    setAuthError('');
+    setLoading(true); setAuthError('');
     try {
       const formatApiDate = (dateStr: string) => dateStr ? dateStr.replace('T', ' ') + ':00' : '';
       const data = await apiCall('tournaments', { 
@@ -551,15 +488,9 @@ export default function App() {
         priorities: { priority1: '1', priority2: '1', priority3: '1' } 
       });
       if (data.detail) { if (data.status_code === 401) logout(); else setAuthError(data.detail); return; }
-      if (data.status === 'success') {
-        setTournaments(data.data);
-        setSearchActiveRoom(null); // Сбрасываем быстрый фильтр при новом поиске
-      }
-    } catch (error) {
-      setAuthError(error instanceof Error ? error.message : 'Не удалось загрузить турниры');
-    } finally {
-      setLoading(false);
-    }
+      if (data.status === 'success') { setTournaments(data.data); setSearchActiveRoom(null); }
+    } catch (error) { setAuthError(error instanceof Error ? error.message : 'Не удалось загрузить турниры'); } 
+    finally { setLoading(false); }
   };
 
   const getRoomStyle = (roomName: string) => {
@@ -671,7 +602,6 @@ export default function App() {
     return displayGrid.filter(t => t.room === gridActiveRoom);
   }, [displayGrid, groupByRoom, gridActiveRoom, activeGridRooms]);
 
-  // Данные для быстрого фильтра румов в поиске
   const availableTournamentsForFilter = useMemo(() => {
     return tournaments.filter(t => !isStartedTooLongAgo(t.time_start, t.day_week, t.room) && isRoomAllowed(t.room));
   }, [tournaments, selectedRooms]);
@@ -680,16 +610,24 @@ export default function App() {
     return Array.from(new Set(availableTournamentsForFilter.map(t => t.room))).sort();
   }, [availableTournamentsForFilter]);
 
+  // === ПРИМЕНЕНИЕ ТОНКИХ ФИЛЬТРОВ ИЗ ZUSTAND ===
   const searchResults = useMemo(() => {
     return tournaments
       .filter(t => {
         if (isStartedTooLongAgo(t.time_start, t.day_week, t.room)) return false; 
         if (!isRoomAllowed(t.room)) return false;
         if (searchActiveRoom && t.room !== searchActiveRoom) return false;
+
+        // ПРОВЕРКА ТОНКИХ ФИЛЬТРОВ
+        const buyinVal = parseNum(t.buyin);
+        const evVal = parseNum(t.ev_mtt);
+        if (buyinVal < minBuyin || buyinVal > maxBuyin) return false;
+        if (evVal < minEv) return false;
+
         return true;
       })
       .sort((a, b) => sortOrder === 'tier' ? getTier(a).id - getTier(b).id : 0);
-  }, [tournaments, sortOrder, selectedRooms, searchActiveRoom]);
+  }, [tournaments, sortOrder, selectedRooms, searchActiveRoom, minBuyin, maxBuyin, minEv]);
 
   const clearGrid = () => setGrid([]);
 
@@ -737,14 +675,7 @@ export default function App() {
     const profit = newTotalBankroll - totalBankroll;
     const cashes = totalBuyin + profit;
 
-    const s: SessionData = { 
-      id: uuidv4(), 
-      date: new Date().toLocaleDateString('ru-RU'), 
-      total_buyin: totalBuyin, 
-      total_cashes: cashes >= 0 ? cashes : 0, 
-      profit: profit, 
-      tournaments_count: grid.length 
-    };
+    const s: SessionData = { id: uuidv4(), date: new Date().toLocaleDateString('ru-RU'), total_buyin: totalBuyin, total_cashes: cashes >= 0 ? cashes : 0, profit: profit, tournaments_count: grid.length };
 
     setBalances(newBalances);
     if (sessionToken) {
@@ -753,8 +684,7 @@ export default function App() {
     }
 
     setSessionsHistory(previous => [s, ...previous]);
-    setGrid([]); 
-    setShowSessionModal(false); 
+    setGrid([]); setShowSessionModal(false); 
   };
 
   const clearHistory = async () => {
@@ -768,27 +698,16 @@ export default function App() {
   
   const chartData = useMemo(() => {
     if (sessionsHistory.length === 0) return { points: '', min: 0, max: 0, zeroY: 50, current: 0 };
-    let runningTotal = 0;
-    const cumulative: number[] = [];
+    let runningTotal = 0; const cumulative: number[] = [];
     for (const session of [...sessionsHistory].reverse()) {
-      runningTotal += session.profit;
-      cumulative.push(runningTotal);
+      runningTotal += session.profit; cumulative.push(runningTotal);
     }
     const plotData = [0, ...cumulative];
-    const max = Math.max(0, ...plotData);
-    const min = Math.min(0, ...plotData);
-    const range = max - min || 1;
-    const points = plotData.map((value, index) =>
-      `${(index / (plotData.length - 1)) * 100},${100 - ((value - min) / range) * 100}`
-    ).join(' ');
-    return {
-      points,
-      min,
-      max,
-      current: cumulative[cumulative.length - 1] || 0,
-      zeroY: 100 - ((0 - min) / range) * 100,
-    };
+    const max = Math.max(0, ...plotData); const min = Math.min(0, ...plotData); const range = max - min || 1;
+    const points = plotData.map((value, index) => `${(index / (plotData.length - 1)) * 100},${100 - ((value - min) / range) * 100}`).join(' ');
+    return { points, min, max, current: cumulative[cumulative.length - 1] || 0, zeroY: 100 - ((0 - min) / range) * 100 };
   }, [sessionsHistory]);
+  
   const totalBuyin = useMemo(() => grid.reduce((sum, t) => sum + parseNum(t.buyin), 0), [grid]);
   const totalEV = useMemo(() => grid.reduce((sum, t) => sum + parseNum(t.ev_mtt), 0), [grid]);
   const gridPeakTables = useMemo(() => getPeakTablesData(grid), [grid]);
@@ -805,7 +724,7 @@ export default function App() {
       <div 
         key={elementKey} 
         onClick={() => { 
-          if (window.getSelection()?.toString().length! > 0) return; // Игнорируем клик, если выделен текст
+          if (window.getSelection()?.toString().length! > 0) return; 
           toggleGrid(t); 
         }} 
         className={`bg-slate-900 rounded-xl px-3 py-2.5 border transition-all flex items-center justify-between gap-2 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 ${played ? 'opacity-40 grayscale bg-slate-900/40' : 'border-slate-800'}`}
@@ -821,13 +740,11 @@ export default function App() {
           <div className="font-bold text-[11px] text-white truncate leading-tight">{cleanTournamentName(t.name)}</div>
           <div className="flex items-center gap-2 text-[10px]">
             <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
-            
             <div className="flex items-center gap-0.5 ml-1">
               {fmts.isPko && <div className="w-4 h-4 rounded bg-fuchsia-500/15 border border-fuchsia-500/40 text-fuchsia-400 flex items-center justify-center" title="PKO"><ShieldAlert size={8} /></div>}
               {fmts.isTurbo && <div className="w-4 h-4 rounded bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-center" title="Turbo"><Zap size={8} /></div>}
               {fmts.isFreezeout && <div className="w-4 h-4 rounded bg-blue-500/15 border border-blue-500/40 text-blue-400 flex items-center justify-center" title="Freezeout"><Disc size={8} /></div>}
             </div>
-
             <span className="text-slate-500 truncate ml-1">GTD: {t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
           </div>
         </div>
@@ -904,12 +821,14 @@ export default function App() {
               </div>
             )}
           </div>
-          <div className="space-y-2">
+          {/* АНИМАЦИЯ ПРИ ГРУППИРОВКЕ */}
+          <div ref={gridListRef} className="space-y-2">
             {filteredGridBySelectedRoom.length === 0 ? <div className="text-center py-12 text-slate-500 text-xs">Нет турниров</div> : filteredGridBySelectedRoom.map((t, idx) => renderGridCard(t, `${getUniqueId(t)}_grid_filtered_${idx}`))}
           </div>
         </div>
       ) : (
-        <div className="space-y-2">
+        {/* АНИМАЦИЯ БЕЗ ГРУППИРОВКИ */}
+        <div ref={gridListRef} className="space-y-2">
           {displayGrid.map((t, idx) => renderGridCard(t, `${getUniqueId(t)}_grid_${idx}`))}
         </div>
       )}
@@ -990,7 +909,6 @@ export default function App() {
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/40 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.2)]">
             <Spade size={20} className="text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.8)] animate-pulse" fill="currentColor" />
           </div>
-
           <div className="flex flex-col gap-2">
             <button onClick={() => setActiveTab('search')} title="Поиск турниров" className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${activeTab === 'search' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}><Search size={20} /></button>
             <button onClick={() => setActiveTab('diary')} title="Дневник и банкролл" className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${activeTab === 'diary' ? 'bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}><TrendingUp size={20} /></button>
@@ -1031,7 +949,6 @@ export default function App() {
                 <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4 md:p-5 shadow-xl space-y-4">
                   <div className="flex justify-between items-center flex-wrap gap-2">
                     <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Фильтр периода и румов</span>
-                    
                     <div className="flex xl:hidden gap-1.5 items-center">
                       <button onClick={() => toggleFormat('isPko')} className={`px-2.5 py-1.5 text-[10px] font-black uppercase rounded-xl border transition flex items-center gap-1 ${activeFormats.isPko ? 'bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800'}`}>
                         <ShieldAlert size={12} /> PKO
@@ -1115,7 +1032,6 @@ export default function App() {
                           <button onClick={() => bulkAdd('overlay')} title="Добавить все оверлеи" className="w-11 h-11 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-xl flex items-center justify-center transition active:scale-95 shadow-sm"><Flame size={18} className="text-orange-500 animate-pulse" /></button>
                         </div>
                       )}
-
                       <button onClick={fetchTournaments} className="flex-1 sm:flex-none px-6 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] active:scale-95 shrink-0">
                         {loading ? <Search className="animate-spin" size={16} /> : <Search size={16} strokeWidth={3} />}
                         <span>Найти</span>
@@ -1123,18 +1039,38 @@ export default function App() {
                     </div>
                   </div>
                 </div>
+
+                {/* === ТОНКИЕ ФИЛЬТРЫ ИЗ ZUSTAND === */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-900 border border-slate-800/80 p-4 md:p-5 rounded-2xl shadow-xl">
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5 mb-2">
+                      <DollarSign size={14} className="text-emerald-500"/> Диапазон Бай-ина ($)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input type="number" value={minBuyin} onChange={(e) => setMinBuyin(Number(e.target.value))} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-emerald-500 transition" placeholder="От" />
+                      <span className="text-slate-600 font-bold">-</span>
+                      <input type="number" value={maxBuyin} onChange={(e) => setMaxBuyin(Number(e.target.value))} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-emerald-500 transition" placeholder="До" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5 mb-2">
+                      <TrendingUp size={14} className="text-blue-500"/> Минимальное ожидание EV ($)
+                    </label>
+                    <input type="number" step="0.1" value={minEv} onChange={(e) => setMinEv(Number(e.target.value))} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-blue-400 font-bold outline-none focus:border-blue-500 transition" placeholder="Например: 0.5" />
+                  </div>
+                </div>
                 
-                <div className="space-y-2 pt-1">
+                {/* === АНИМИРОВАННЫЙ СПИСОК ТУРНИРОВ === */}
+                <div ref={listRef} className="space-y-2 pt-1">
                   {loading && [1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-16 bg-slate-900/40 rounded-xl border border-slate-800/40 animate-pulse"></div>)}
                   {searchResults.length === 0 && !loading && (
                     <div className="text-center py-24 bg-slate-900/30 rounded-2xl border border-slate-800/50">
                       <div className="text-4xl mb-3 opacity-30">🎲</div>
                       <h3 className="text-slate-300 font-bold text-base">Расписание пусто</h3>
-                      <p className="text-slate-500 text-xs mt-1">Нажмите «Найти» для загрузки расписания</p>
+                      <p className="text-slate-500 text-xs mt-1">Измените фильтры или нажмите «Найти»</p>
                     </div>
                   )}
 
-                  {/* Блок быстрого фильтра по активным румам */}
                   {!loading && availableTournamentsForFilter.length > 0 && (
                     <div className="flex flex-wrap gap-2 py-2 mb-2 border-b border-slate-800/50 pb-3">
                       <button
@@ -1194,7 +1130,7 @@ export default function App() {
                       <div 
                         key={uniqueKey} 
                         onClick={() => { 
-                          if (window.getSelection()?.toString().length! > 0) return; // Игнорируем клик, если выделен текст
+                          if (window.getSelection()?.toString().length! > 0) return;
                           toggleGrid(t); 
                         }} 
                         className={`rounded-xl px-3 py-2.5 border transition-all border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 shadow-sm ${
@@ -1218,25 +1154,11 @@ export default function App() {
                           </div>
                           <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-800/60 text-slate-400">
                             <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
-                            
                             <div className="flex items-center gap-1">
-                              {fmts.isPko && (
-                                <div className="w-5 h-5 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/40 text-fuchsia-400 flex items-center justify-center" title="PKO">
-                                  <ShieldAlert size={10} />
-                                </div>
-                              )}
-                              {fmts.isTurbo && (
-                                <div className="w-5 h-5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-center" title="Turbo">
-                                  <Zap size={10} />
-                                </div>
-                              )}
-                              {fmts.isFreezeout && (
-                                <div className="w-5 h-5 rounded-lg bg-blue-500/15 border border-blue-500/40 text-blue-400 flex items-center justify-center" title="Freezeout">
-                                  <Disc size={10} />
-                                </div>
-                              )}
+                              {fmts.isPko && <div className="w-5 h-5 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/40 text-fuchsia-400 flex items-center justify-center" title="PKO"><ShieldAlert size={10} /></div>}
+                              {fmts.isTurbo && <div className="w-5 h-5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-center" title="Turbo"><Zap size={10} /></div>}
+                              {fmts.isFreezeout && <div className="w-5 h-5 rounded-lg bg-blue-500/15 border border-blue-500/40 text-blue-400 flex items-center justify-center" title="Freezeout"><Disc size={10} /></div>}
                             </div>
-
                             <span>GTD: {t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
                             <span className={`font-bold ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
                           </div>
@@ -1250,39 +1172,22 @@ export default function App() {
                             </span>
                             {getSmartTimer(t.time_start, t.day_week, t.room)}
                           </div>
-
                           <div className="font-bold text-white truncate flex-1 min-w-0">
                             {cleanTournamentName(t.name)}
                             {isOverlay(t) && <Flame size={12} className="inline-block ml-1.5 text-orange-500 animate-pulse mb-0.5"/>}
                           </div>
-
                           <div className="flex items-center gap-4 shrink-0 text-right">
                             <span className="font-black text-emerald-400 w-16 text-left">{getRoomCurrency(t.room)}{t.buyin}</span>
                             <span className="text-slate-400 w-20 text-left">{t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
-
                             <div className="flex items-center gap-1 w-24 justify-center">
-                              {fmts.isPko && (
-                                <div className="w-6 h-6 rounded-xl bg-fuchsia-500/15 border border-fuchsia-500/40 text-fuchsia-400 flex items-center justify-center shadow-sm" title="PKO">
-                                  <ShieldAlert size={12} />
-                                </div>
-                              )}
-                              {fmts.isTurbo && (
-                                <div className="w-6 h-6 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-center shadow-sm" title="Turbo">
-                                  <Zap size={12} />
-                                </div>
-                              )}
-                              {fmts.isFreezeout && (
-                                <div className="w-6 h-6 rounded-xl bg-blue-500/15 border border-blue-500/40 text-blue-400 flex items-center justify-center shadow-sm" title="Freezeout">
-                                  <Disc size={12} />
-                                </div>
-                              )}
+                              {fmts.isPko && <div className="w-6 h-6 rounded-xl bg-fuchsia-500/15 border border-fuchsia-500/40 text-fuchsia-400 flex items-center justify-center shadow-sm" title="PKO"><ShieldAlert size={12} /></div>}
+                              {fmts.isTurbo && <div className="w-6 h-6 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-center shadow-sm" title="Turbo"><Zap size={12} /></div>}
+                              {fmts.isFreezeout && <div className="w-6 h-6 rounded-xl bg-blue-500/15 border border-blue-500/40 text-blue-400 flex items-center justify-center shadow-sm" title="Freezeout"><Disc size={12} /></div>}
                             </div>
-
                             <span className={`font-bold w-16 text-right ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
                             <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"><NotebookPen size={12}/></button>
                           </div>
                         </div>
-
                       </div>
                     );
                   })}
@@ -1332,9 +1237,7 @@ export default function App() {
                   </div>
 
                   <div className="grid grid-cols-7 gap-1.5 text-center">
-                    {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d => (
-                      <span key={d} className="text-[10px] font-bold text-slate-500 py-1">{d}</span>
-                    ))}
+                    {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d => <span key={d} className="text-[10px] font-bold text-slate-500 py-1">{d}</span>)}
                     
                     {Array.from({ length: getDaysInMonth(calendarYear, calendarMonth) }, (_, i) => {
                       const dayNum = i + 1;
@@ -1354,27 +1257,18 @@ export default function App() {
                       let dotColor = "";
                       if (hasPlayed) {
                         if (dayTournaments >= 1 && dayTournaments <= 10) {
-                          bgClass = "bg-rose-500/20 text-rose-400 border-rose-500/40 hover:bg-rose-500/30";
-                          dotColor = "bg-rose-400";
+                          bgClass = "bg-rose-500/20 text-rose-400 border-rose-500/40 hover:bg-rose-500/30"; dotColor = "bg-rose-400";
                         } else if (dayTournaments >= 11 && dayTournaments <= 20) {
-                          bgClass = "bg-amber-500/20 text-amber-400 border-amber-500/40 hover:bg-amber-500/30";
-                          dotColor = "bg-amber-400";
+                          bgClass = "bg-amber-500/20 text-amber-400 border-amber-500/40 hover:bg-amber-500/30"; dotColor = "bg-amber-400";
                         } else {
-                          bgClass = "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30";
-                          dotColor = "bg-emerald-400";
+                          bgClass = "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30"; dotColor = "bg-emerald-400";
                         }
                       }
 
                       return (
-                        <div 
-                          key={dayNum}
-                          title={hasPlayed ? `Дата: ${dateStr}\nТурниров: ${dayTournaments}\nПрофит: ${dayProfit >= 0 ? '+' : ''}$${dayProfit.toFixed(1)}` : `Дата: ${dateStr}\nНет игр`}
-                          className={`h-9 rounded-xl border flex flex-col items-center justify-center text-xs font-bold transition cursor-pointer relative group ${bgClass}`}
-                        >
+                        <div key={dayNum} title={hasPlayed ? `Дата: ${dateStr}\nТурниров: ${dayTournaments}\nПрофит: ${dayProfit >= 0 ? '+' : ''}$${dayProfit.toFixed(1)}` : `Дата: ${dateStr}\nНет игр`} className={`h-9 rounded-xl border flex flex-col items-center justify-center text-xs font-bold transition cursor-pointer relative group ${bgClass}`}>
                           <span>{dayNum}</span>
-                          {hasPlayed && (
-                            <span className={`w-1 h-1 rounded-full ${dotColor}`}></span>
-                          )}
+                          {hasPlayed && <span className={`w-1 h-1 rounded-full ${dotColor}`}></span>}
                         </div>
                       );
                     })}
@@ -1411,30 +1305,18 @@ export default function App() {
                   
                   {Object.entries(
                     sessionsHistory.reduce((acc: Record<string, SessionData[]>, h) => {
-                      if (!acc[h.date]) acc[h.date] = [];
-                      acc[h.date].push(h);
-                      return acc;
+                      if (!acc[h.date]) acc[h.date] = []; acc[h.date].push(h); return acc;
                     }, {})
                   ).map(([date, daySessions]) => {
-                    const dayTotalCashes = daySessions.reduce((sum, s) => sum + s.total_cashes, 0);
-                    const dayTotalBuyin = daySessions.reduce((sum, s) => sum + s.total_buyin, 0);
-                    const dayProfit = dayTotalCashes - dayTotalBuyin;
+                    const dayProfit = daySessions.reduce((sum, s) => sum + s.total_cashes, 0) - daySessions.reduce((sum, s) => sum + s.total_buyin, 0);
                     const dayTournamentsCount = daySessions.reduce((sum, s) => sum + s.tournaments_count, 0);
 
                     return (
                       <div key={date} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-xl">
                         <div className="flex justify-between items-center pb-2.5 border-b border-slate-800/80 text-xs">
-                          <div className="font-bold text-cyan-400 flex items-center gap-2">
-                            <span>📅 {date}</span>
-                            <span className="text-[10px] text-slate-500 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-                              {dayTournamentsCount} турн.
-                            </span>
-                          </div>
-                          <div className={`font-black text-sm ${dayProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {dayProfit > 0 ? '+' : ''}${dayProfit.toFixed(1)}
-                          </div>
+                          <div className="font-bold text-cyan-400 flex items-center gap-2"><span>📅 {date}</span><span className="text-[10px] text-slate-500 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">{dayTournamentsCount} турн.</span></div>
+                          <div className={`font-black text-sm ${dayProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{dayProfit > 0 ? '+' : ''}${dayProfit.toFixed(1)}</div>
                         </div>
-
                         <div className="space-y-2">
                           {daySessions.map((h, idx) => (
                             <div key={h.id || idx} className="bg-slate-950/60 border border-slate-800/60 rounded-xl p-3 flex justify-between items-center text-xs">
@@ -1444,9 +1326,7 @@ export default function App() {
                               </div>
                               <div className="text-right">
                                 <div className="text-[10px] text-slate-400 mb-0.5">Призовые: ${h.total_cashes.toFixed(1)}</div>
-                                <div className={`font-black text-xs ${h.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                  {h.profit > 0 ? '+' : ''}${h.profit.toFixed(1)}
-                                </div>
+                                <div className={`font-black text-xs ${h.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{h.profit > 0 ? '+' : ''}${h.profit.toFixed(1)}</div>
                               </div>
                             </div>
                           ))}
@@ -1518,22 +1398,14 @@ export default function App() {
                     <RoomBadge roomName={roomName} getRoomStyle={getRoomStyle} />
                     <div className="flex items-center gap-1">
                       <span className="text-slate-500 text-xs font-black">{getRoomCurrency(roomName)}</span>
-                      <input 
-                        type="number" 
-                        value={modalBalances[roomName] !== undefined ? modalBalances[roomName] : ''} 
-                        onChange={(e) => setModalBalances(previous => ({ ...previous, [roomName]: e.target.value }))} 
-                        placeholder="0" 
-                        className="w-24 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-right text-white font-bold text-xs outline-none focus:border-cyan-500 [appearance:textfield]" 
-                      />
+                      <input type="number" value={modalBalances[roomName] !== undefined ? modalBalances[roomName] : ''} onChange={(e) => setModalBalances(previous => ({ ...previous, [roomName]: e.target.value }))} placeholder="0" className="w-24 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-right text-white font-bold text-xs outline-none focus:border-cyan-500 [appearance:textfield]" />
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            <button onClick={finishSession} className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs uppercase tracking-wider transition shadow-lg active:scale-95">
-              Сохранить и записать в дневник
-            </button>
+            <button onClick={finishSession} className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs uppercase tracking-wider transition shadow-lg active:scale-95">Сохранить и записать в дневник</button>
           </div>
         </div>
       )}
