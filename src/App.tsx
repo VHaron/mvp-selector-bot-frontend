@@ -932,7 +932,7 @@ export default function App() {
                       <button onClick={() => setPresetDate('today')} className="px-3 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl transition shadow-sm active:scale-95">Сегодня</button>
                       <button onClick={() => setPresetDate('tomorrow')} className="px-3 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl transition shadow-sm active:scale-95">Завтра</button>
                       <button onClick={() => setPresetDate('clear')} title="Сбросить даты" className="w-9 h-9 flex items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:border-rose-500/50 rounded-xl transition shadow-sm active:scale-95"><X size={15} strokeWidth={2.5} /></button>
-                      <button onClick={() => setShowFineFiltersModal(true)} className="px-3.5 py-2 text-[11px] font-black uppercase bg-slate-900 hover:bg-slate-800 text-cyan-400 border border-slate-800 hover:border-cyan-500/50 rounded-xl transition shadow-sm ml-auto active:scale-95 flex items-center gap-1.5">
+                      <button onClick={() => setShowFineFiltersModal(true)} className="px-3.5 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/40 hover:border-cyan-500 rounded-xl transition shadow-sm ml-auto active:scale-95 flex items-center gap-1.5">
                         <SlidersHorizontal size={13} /> Фильтры
                       </button>
                     </div>
