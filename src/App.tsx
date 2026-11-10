@@ -800,19 +800,27 @@ export default function App() {
             <button onClick={() => setIsGridRoomsOpen(!isGridRoomsOpen)} className="w-full bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-200 flex items-center justify-between transition shadow-sm">
               <div className="flex items-center gap-2 min-w-0">
                 <RoomBadge roomName={gridActiveRoom || activeGridRooms[0] || ''} getRoomStyle={getRoomStyle} />
-                <span className="truncate">({displayGrid.filter(t => t.room === (gridActiveRoom || activeGridRooms[0])).length} турн.)</span>
+                <span className="text-emerald-400 font-black">
+                  (${displayGrid.filter(t => t.room === (gridActiveRoom || activeGridRooms[0])).reduce((sum, t) => sum + parseNum(t.buyin), 0).toFixed(1)})
+                </span>
+                <span className="truncate text-slate-400 font-normal">({displayGrid.filter(t => t.room === (gridActiveRoom || activeGridRooms[0])).length} турн.)</span>
               </div>
               <ChevronDown size={14} className={`transition-transform shrink-0 ${isGridRoomsOpen ? 'rotate-180 text-cyan-400' : 'text-slate-400'}`} />
             </button>
             {isGridRoomsOpen && (
               <div className="absolute top-full left-0 right-0 mt-1.5 bg-slate-950 border border-slate-800 rounded-2xl p-2 shadow-2xl z-50 space-y-1">
                 {activeGridRooms.map(room => {
-                  const count = displayGrid.filter(t => t.room === room).length;
+                  const roomTournaments = displayGrid.filter(t => t.room === room);
+                  const count = roomTournaments.length;
+                  const roomSum = roomTournaments.reduce((sum, t) => sum + parseNum(t.buyin), 0);
                   const isSel = (gridActiveRoom === room) || (!gridActiveRoom && activeGridRooms[0] === room);
                   return (
                     <button key={room} onClick={() => { setGridActiveRoom(room); setIsGridRoomsOpen(false); }} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition ${isSel ? 'bg-cyan-950/50 border border-cyan-500/40 text-cyan-300' : 'hover:bg-slate-900 text-slate-300 border border-transparent'}`}>
                       <div className="flex items-center gap-2"><RoomBadge roomName={room} getRoomStyle={getRoomStyle} /></div>
-                      <span className="text-[11px] text-slate-400">{count} турн.</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-400 font-black">${roomSum.toFixed(1)}</span>
+                        <span className="text-[11px] text-slate-400">({count} турн.)</span>
+                      </div>
                     </button>
                   );
                 })}
@@ -1029,7 +1037,7 @@ export default function App() {
                   </div>
                 </div>
                 
-                {/* === АНИМИРОВАННЫЙ СПИСОК ТУРНИРОВ === */}
+                {/* === АНИМИРОВАННЫЙ СПИСОК ТУРНИРОВ С СУММАМИ ПО РУМАМ === */}
                 <div ref={listRef} className="space-y-2 pt-1">
                   {loading && [1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-16 bg-slate-900/40 rounded-xl border border-slate-800/40 animate-pulse"></div>)}
                   {filteredTournaments.length === 0 && !loading && (
@@ -1046,12 +1054,17 @@ export default function App() {
                         onClick={() => { setSearchActiveRoom(null); setCurrentPage(1); }}
                         className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition flex items-center gap-1.5 border ${!searchActiveRoom ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 shadow-sm' : 'bg-slate-900/50 text-slate-500 border-slate-800/80 hover:bg-slate-900 hover:text-slate-300'}`}
                       >
-                        Все турниры 
+                        <span>Все турниры</span> 
+                        <span className="text-emerald-400 font-black">
+                          (${availableTournamentsForFilter.reduce((sum, t) => sum + parseNum(t.buyin), 0).toFixed(0)})
+                        </span>
                         <span className={`px-1.5 py-0.5 rounded text-[10px] ${!searchActiveRoom ? 'bg-cyan-950 text-cyan-400' : 'bg-slate-950 text-slate-500'}`}>{availableTournamentsForFilter.length}</span>
                       </button>
                       
                       {activeRoomsForFilter.map(room => {
-                        const count = availableTournamentsForFilter.filter(t => t.room === room).length;
+                        const roomTournaments = availableTournamentsForFilter.filter(t => t.room === room);
+                        const count = roomTournaments.length;
+                        const roomSum = roomTournaments.reduce((sum, t) => sum + parseNum(t.buyin), 0);
                         const roomId = getRoomIdByName(room);
                         const displayName = roomId ? ROOMS[roomId] : room;
                         const domain = roomId ? ROOM_DOMAINS[roomId] : null;
@@ -1073,6 +1086,7 @@ export default function App() {
                               />
                             )}
                             <span>{displayName}</span>
+                            <span className="text-emerald-400 font-black">${roomSum.toFixed(0)}</span>
                             <span className={`px-1.5 py-0.5 rounded text-[10px] ${isSelected ? 'bg-black/20' : 'bg-slate-950'}`}>{count}</span>
                           </button>
                         );
