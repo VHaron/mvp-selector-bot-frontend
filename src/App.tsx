@@ -801,7 +801,7 @@ export default function App() {
               <div className="flex items-center gap-2 min-w-0">
                 <RoomBadge roomName={gridActiveRoom || activeGridRooms[0] || ''} getRoomStyle={getRoomStyle} />
                 <span className="text-emerald-400 font-black">
-                  (${displayGrid.filter(t => t.room === (gridActiveRoom || activeGridRooms[0])).reduce((sum, t) => sum + parseNum(t.buyin), 0).toFixed(1)})
+                  {getRoomCurrency(gridActiveRoom || activeGridRooms[0] || '')}{displayGrid.filter(t => t.room === (gridActiveRoom || activeGridRooms[0])).reduce((sum, t) => sum + parseNum(t.buyin), 0).toFixed(1)}
                 </span>
                 <span className="truncate text-slate-400 font-normal">({displayGrid.filter(t => t.room === (gridActiveRoom || activeGridRooms[0])).length} турн.)</span>
               </div>
@@ -813,12 +813,13 @@ export default function App() {
                   const roomTournaments = displayGrid.filter(t => t.room === room);
                   const count = roomTournaments.length;
                   const roomSum = roomTournaments.reduce((sum, t) => sum + parseNum(t.buyin), 0);
+                  const currency = getRoomCurrency(room);
                   const isSel = (gridActiveRoom === room) || (!gridActiveRoom && activeGridRooms[0] === room);
                   return (
                     <button key={room} onClick={() => { setGridActiveRoom(room); setIsGridRoomsOpen(false); }} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition ${isSel ? 'bg-cyan-950/50 border border-cyan-500/40 text-cyan-300' : 'hover:bg-slate-900 text-slate-300 border border-transparent'}`}>
                       <div className="flex items-center gap-2"><RoomBadge roomName={room} getRoomStyle={getRoomStyle} /></div>
                       <div className="flex items-center gap-2">
-                        <span className="text-emerald-400 font-black">${roomSum.toFixed(1)}</span>
+                        <span className="text-emerald-400 font-black">{currency}{roomSum.toFixed(1)}</span>
                         <span className="text-[11px] text-slate-400">({count} турн.)</span>
                       </div>
                     </button>
@@ -1037,7 +1038,7 @@ export default function App() {
                   </div>
                 </div>
                 
-                {/* === АНИМИРОВАННЫЙ СПИСОК ТУРНИРОВ С СУММАМИ ПО РУМАМ === */}
+                {/* === АНИМИРОВАННЫЙ СПИСОК ТУРНИРОВ С СУММАМИ В ВАЛЮТЕ РУМА === */}
                 <div ref={listRef} className="space-y-2 pt-1">
                   {loading && [1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-16 bg-slate-900/40 rounded-xl border border-slate-800/40 animate-pulse"></div>)}
                   {filteredTournaments.length === 0 && !loading && (
@@ -1065,6 +1066,7 @@ export default function App() {
                         const roomTournaments = availableTournamentsForFilter.filter(t => t.room === room);
                         const count = roomTournaments.length;
                         const roomSum = roomTournaments.reduce((sum, t) => sum + parseNum(t.buyin), 0);
+                        const currency = getRoomCurrency(room);
                         const roomId = getRoomIdByName(room);
                         const displayName = roomId ? ROOMS[roomId] : room;
                         const domain = roomId ? ROOM_DOMAINS[roomId] : null;
@@ -1086,7 +1088,7 @@ export default function App() {
                               />
                             )}
                             <span>{displayName}</span>
-                            <span className="text-emerald-400 font-black">${roomSum.toFixed(0)}</span>
+                            <span className="text-emerald-400 font-black">{currency}{roomSum.toFixed(0)}</span>
                             <span className={`px-1.5 py-0.5 rounded text-[10px] ${isSelected ? 'bg-black/20' : 'bg-slate-950'}`}>{count}</span>
                           </button>
                         );
