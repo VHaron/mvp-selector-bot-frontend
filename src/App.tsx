@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown, Zap, ShieldAlert, Disc, Layers, Spade, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, ListTodo, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown, ShieldAlert, Zap, Disc, Layers, Spade, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // === ИМПОРТЫ ДЛЯ АНИМАЦИЙ И СТЕЙТА ===
 import { useAutoAnimate } from '@formkit/auto-animate/react';
@@ -276,8 +276,6 @@ export default function App() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const toggleFormat = (key: 'isPko' | 'isFreezeout' | 'isTurbo') => setActiveFormats(prev => ({ ...prev, [key]: !prev[key] }));
 
   const isRoomAllowed = (roomName: string) => {
     if (!roomName) return false;
@@ -902,6 +900,7 @@ export default function App() {
         </button>
       </nav>
 
+      {/* === БОКОВАЯ ПАНЕЛЬ С КНОПКОЙ ФИЛЬТРОВ === */}
       <aside className="hidden xl:flex w-20 bg-slate-950 border-r border-slate-800/80 flex-col items-center justify-between py-6 shrink-0 fixed top-0 h-screen z-40">
         <div className="flex flex-col items-center gap-6">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/40 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.2)]">
@@ -913,9 +912,10 @@ export default function App() {
           </div>
           <div className="w-8 h-[1px] bg-slate-800 my-1"></div>
           <div className="flex flex-col gap-2">
-            <button onClick={() => toggleFormat('isPko')} title="Формат: PKO" className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition border ${activeFormats.isPko ? 'bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/40 shadow-sm' : 'bg-slate-900/40 text-slate-600 border-slate-800/80 hover:text-slate-400'}`}><ShieldAlert size={16} /><span className="text-[9px] font-black">PKO</span></button>
-            <button onClick={() => toggleFormat('isTurbo')} title="Формат: Turbo" className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition border ${activeFormats.isTurbo ? 'bg-amber-500/15 text-amber-400 border-amber-500/40 shadow-sm' : 'bg-slate-900/40 text-slate-600 border-slate-800/80 hover:text-slate-400'}`}><Zap size={16} /><span className="text-[9px] font-black">TURB</span></button>
-            <button onClick={() => toggleFormat('isFreezeout')} title="Формат: Freezeout" className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition border ${activeFormats.isFreezeout ? 'bg-blue-500/15 text-blue-400 border-blue-500/40 shadow-sm' : 'bg-slate-900/40 text-slate-600 border-slate-800/80 hover:text-slate-400'}`}><Disc size={16} /><span className="text-[9px] font-black">FRZ</span></button>
+            <button onClick={() => setShowFineFiltersModal(true)} title="Фильтры" className="w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 shadow-sm hover:bg-emerald-500/25">
+              <SlidersHorizontal size={18} />
+              <span className="text-[8px] font-black uppercase">Фильтры</span>
+            </button>
           </div>
         </div>
         <button onClick={logout} title="Выйти из системы" className="w-12 h-12 rounded-2xl flex items-center justify-center text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/30 transition"><LogOut size={18} /></button>
@@ -947,23 +947,12 @@ export default function App() {
                 <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4 md:p-5 shadow-xl space-y-4">
                   <div className="flex justify-between items-center flex-wrap gap-2">
                     <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Фильтр периода и румов</span>
-                    <div className="flex xl:hidden gap-1.5 items-center">
-                      <button onClick={() => toggleFormat('isPko')} className={`px-2.5 py-1.5 text-[10px] font-black uppercase rounded-xl border transition flex items-center gap-1 ${activeFormats.isPko ? 'bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800'}`}>
-                        <ShieldAlert size={12} /> PKO
-                      </button>
-                      <button onClick={() => toggleFormat('isTurbo')} className={`px-2.5 py-1.5 text-[10px] font-black uppercase rounded-xl border transition flex items-center gap-1 ${activeFormats.isTurbo ? 'bg-amber-500/20 text-amber-400 border-amber-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800'}`}>
-                        <Zap size={12} /> Turbo
-                      </button>
-                      <button onClick={() => toggleFormat('isFreezeout')} className={`px-2.5 py-1.5 text-[10px] font-black uppercase rounded-xl border transition flex items-center gap-1 ${activeFormats.isFreezeout ? 'bg-blue-500/20 text-blue-400 border-blue-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800'}`}>
-                        <Disc size={12} /> Frz
-                      </button>
-                    </div>
 
                     <div className="flex gap-1.5 md:gap-2 items-center flex-wrap w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800">
                       <button onClick={() => setPresetDate('today')} className="px-3 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl transition shadow-sm active:scale-95">Сегодня</button>
                       <button onClick={() => setPresetDate('tomorrow')} className="px-3 py-2 text-[11px] font-black uppercase bg-cyan-950/40 hover:bg-cyan-950/70 text-cyan-400 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl transition shadow-sm active:scale-95">Завтра</button>
                       <button onClick={() => setPresetDate('clear')} title="Сбросить даты" className="w-9 h-9 flex items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:border-rose-500/50 rounded-xl transition shadow-sm active:scale-95"><X size={15} strokeWidth={2.5} /></button>
-                      <button onClick={() => setShowFineFiltersModal(true)} className="px-3.5 py-2 text-[11px] font-black uppercase bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/40 hover:border-emerald-500 rounded-xl transition shadow-sm ml-auto active:scale-95 flex items-center gap-1.5">
+                      <button onClick={() => setShowFineFiltersModal(true)} className="px-3.5 py-2 text-[11px] font-black uppercase bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/40 hover:border-emerald-500 rounded-xl transition shadow-sm ml-auto active:scale-95 flex items-center gap-1.5 xl:hidden">
                         <SlidersHorizontal size={13} /> Фильтры
                       </button>
                     </div>
@@ -1173,7 +1162,7 @@ export default function App() {
                   })}
                 </div>
 
-                {/* === ПАНЕЛЬ ПАГИНАЦИИ С КНОПКАМИ НАЧАЛА И КОНЦА === */}
+                {/* === ПАНЕЛЬ ПАГИНАЦИИ === */}
                 {!loading && filteredTournaments.length > 0 && (
                   <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 flex items-center justify-between shadow-xl mt-4">
                     <div className="flex items-center gap-1.5">
