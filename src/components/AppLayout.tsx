@@ -1,4 +1,5 @@
-import { Search, ListTodo, Check, X, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown, SlidersHorizontal, ChevronLeft, ChevronRight, Spade } from 'lucide-react';
+import React from 'react';
+import { Search, ListTodo, Check, X, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown, SlidersHorizontal, ChevronLeft, ChevronRight, Spade, WandSparkles } from 'lucide-react';
 import type { useAppController } from '../hooks/useAppController';
 import { LoginPanel } from './LoginPanel';
 import { SearchTournamentCard } from './SearchTournamentCard';
@@ -7,11 +8,12 @@ import { DiaryPanel } from './DiaryPanel';
 import { ROOMS, ROOM_DOMAINS } from '../constants';
 import { getRoomCurrency, getRoomIdByName, parseNum, getUniqueId, cleanTournamentName } from '../utils';
 import { RoomBadge } from './RoomBadge';
+import { SmartGridModal } from './SmartGridModal';
 
 type AppController = ReturnType<typeof useAppController>;
 
 export function AppLayout(props: AppController) {
-  const { setAuthStep, setSiteSelectionId, setSiteCandidates, setAuthError, listRef, minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv, authStep, activeTab, setActiveTab, username, setUsername, password, setPassword, otp, setOtp, siteCandidates, authenticatedSite, authLoading, authError, grid, loading, structFilters, setStructFilters, priorityFilters, setPriorityFilters, pageSize, setPageSize, currentPage, setCurrentPage, selectedRooms, setSelectedRooms, isRoomsDropdownOpen, setIsRoomsDropdownOpen, searchActiveRoom, setSearchActiveRoom, dropdownRef, calendarYear, calendarMonth, monthsNames, handlePrevMonth, handleNextMonth, getDaysInMonth, toggleGrid, bulkAdd, balances, modalBalances, setModalBalances, totalBankroll, updateBalance, dateFrom, setDateFrom, dateTo, setDateTo, activeStats, setActiveStats, showFineFiltersModal, setShowFineFiltersModal, notes, sessionsHistory, showSessionModal, setShowSessionModal, setPresetDate, handleLogin, handleSiteSelect, handleMfa, logout, toggleRoom, fetchTournaments, getRoomStyle, getPriorityStyles, isOverlay, totalBuyin, totalEV, availableTournamentsForFilter, activeRoomsForFilter, filteredTournaments, totalPages, searchResults, getNoteKey, saveNote, finishSession, clearHistory, chartData, renderGridPanel } = props;
+  const { setAuthStep, setSiteSelectionId, setSiteCandidates, setAuthError, listRef, minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv, authStep, activeTab, setActiveTab, username, setUsername, password, setPassword, otp, setOtp, siteCandidates, authenticatedSite, authLoading, authError, grid, loading, structFilters, setStructFilters, priorityFilters, setPriorityFilters, pageSize, setPageSize, currentPage, setCurrentPage, selectedRooms, setSelectedRooms, isRoomsDropdownOpen, setIsRoomsDropdownOpen, searchActiveRoom, setSearchActiveRoom, dropdownRef, calendarYear, calendarMonth, monthsNames, handlePrevMonth, handleNextMonth, getDaysInMonth, toggleGrid, bulkAdd, balances, modalBalances, setModalBalances, totalBankroll, updateBalance, dateFrom, setDateFrom, dateTo, setDateTo, activeStats, setActiveStats, showFineFiltersModal, setShowFineFiltersModal, notes, sessionsHistory, showSessionModal, setShowSessionModal, setPresetDate, handleLogin, handleSiteSelect, handleMfa, logout, toggleRoom, fetchTournaments, getRoomStyle, getPriorityStyles, isOverlay, totalBuyin, totalEV, availableTournamentsForFilter, activeRoomsForFilter, filteredTournaments, totalPages, searchResults, getNoteKey, saveNote, finishSession, clearHistory, chartData, renderGridPanel, smartGridIds, runSmartGrid } = props;
 
 
   if (authStep === 'login' || authStep === 'mfa' || authStep === 'site_select') {
@@ -75,6 +77,10 @@ export function AppLayout(props: AppController) {
             <button onClick={() => setShowFineFiltersModal(true)} title="Фильтры" className="w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 shadow-sm hover:bg-emerald-500/25">
               <SlidersHorizontal size={18} />
               <span className="text-[8px] font-black uppercase">Фильтры</span>
+            </button>
+            <button onClick={() => setShowSmartGridModal(true)} title="Умная сетка" className="w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 shadow-sm hover:bg-cyan-500/25">
+              <WandSparkles size={18} />
+              <span className="text-[8px] font-black uppercase">Умная</span>
             </button>
           </div>
         </div>
@@ -407,6 +413,7 @@ export function AppLayout(props: AppController) {
         </div>
       )}
 
+      <SmartGridModal open={showSmartGridModal} onClose={() => setShowSmartGridModal(false)} hasPreviousSmartGrid={smartGridIds.length > 0} onBuild={(settings, mode) => { const result = runSmartGrid(settings, mode); setShowSmartGridModal(false); window.alert(`Добавлено турниров: ${result.selected.length}. Бюджет использован: ${result.spentUsd.toFixed(2)}. Остаток: ${result.remainingUsd.toFixed(2)}. Пик столов: ${result.peakTables}.`); }} />
       <FineFiltersModal
         open={showFineFiltersModal}
         onClose={() => setShowFineFiltersModal(false)}
