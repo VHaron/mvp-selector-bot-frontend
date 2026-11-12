@@ -155,7 +155,7 @@ export function buildSmartGrid(
     selected,
     spentUsd: cents(spentUsd) / 100,
     remainingUsd: Math.max(0, cents(budgetUsd) - cents(spentUsd)) / 100,
-    peakTables: basePeak,
+    peakTables: actualPeak,
     estimatedEnd: latest,
     rejected: all.length - selected.length,
   };
