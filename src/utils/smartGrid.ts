@@ -168,17 +168,52 @@ export function buildSmartGrid(
 
   const selected: Tournament[] = [];
   const selectedIntervals: Interval[] = [];
+  const remaining = [...ranked];
+  const roomGroup = (room: string): 'gg' | 'ipoker' | 'other' => {
+    const normalized = room.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (normalized.includes('gg') || normalized.includes('ggpoker')) return 'gg';
+    if (normalized.includes('ipoker') || normalized.includes('redstar')) return 'ipoker';
+    return 'other';
+  };
+  const targets = { gg: 0.425, ipoker: 0.30, other: 0.275 };
+  const roomCounts = {
+    gg: locked.filter(item => roomGroup(item.room) === 'gg').length,
+    ipoker: locked.filter(item => roomGroup(item.room) === 'ipoker').length,
+    other: locked.filter(item => roomGroup(item.room) === 'other').length,
+  };
   const overlapsLimit = (candidate: Interval) =>
     peakOverlap([...lockedIntervals, ...selectedIntervals, candidate]) >
     Math.max(0, settings.maxTables);
 
-  for (const item of ranked) {
-    if (cents(spentUsd) + cents(item.priceUsd) > cents(budgetUsd)) continue;
-    const interval = { start: item.start, end: item.end };
-    if (overlapsLimit(interval)) continue;
-    selected.push(item.tournament);
-    selectedIntervals.push(interval);
-    spentUsd += item.priceUsd;
+  // Soft room targets are calculated against the final grid, including locked tournaments.
+  // They guide selection but never force weak tournaments or violate hard constraints.
+  while (remaining.length) {
+    const totalCount = locked.length + selected.length;
+    const feasible = remaining.filter(item => {
+      if (cents(spentUsd) + cents(item.priceUsd) > cents(budgetUsd)) return false;
+      return !overlapsLimit({ start: item.start, end: item.end });
+    });
+    if (!feasible.length) break;
+
+    feasible.sort((a, b) => {
+      const groupA = roomGroup(a.tournament.room);
+      const groupB = roomGroup(b.tournament.room);
+      const shareA = roomCounts[groupA] / Math.max(1, totalCount);
+      const shareB = roomCounts[groupB] / Math.max(1, totalCount);
+      const deficitA = targets[groupA] - shareA;
+      const deficitB = targets[groupB] - shareB;
+      const adjustedA = a.score + deficitA * 35;
+      const adjustedB = b.score + deficitB * 35;
+      return adjustedB - adjustedA || a.start.getTime() - b.start.getTime();
+    });
+
+    const chosen = feasible[0];
+    const group = roomGroup(chosen.tournament.room);
+    selected.push(chosen.tournament);
+    selectedIntervals.push({ start: chosen.start, end: chosen.end });
+    roomCounts[group] += 1;
+    spentUsd += chosen.priceUsd;
+    remaining.splice(remaining.findIndex(item => getUniqueId(item.tournament) === getUniqueId(chosen.tournament)), 1);
   }
 
   const allIntervals = [...lockedIntervals, ...selectedIntervals];
