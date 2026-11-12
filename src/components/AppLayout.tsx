@@ -414,7 +414,28 @@ export function AppLayout(props: AppController) {
         </div>
       )}
 
-      <SmartGridModal open={showSmartGridModal} onClose={() => setShowSmartGridModal(false)} hasPreviousSmartGrid={smartGridIds.length > 0} onBuild={(settings, mode) => { const result = runSmartGrid(settings, mode); setShowSmartGridModal(false); window.alert(`Добавлено турниров: ${result.selected.length}. Бюджет использован: ${result.spentUsd.toFixed(2)}. Остаток: ${result.remainingUsd.toFixed(2)}. Пик столов: ${result.peakTables}.`); }} />
+      <SmartGridModal open={showSmartGridModal} onClose={() => setShowSmartGridModal(false)} hasPreviousSmartGrid={smartGridIds.length > 0} onBuild={(settings, mode) => { const result = runSmartGrid(settings, mode); setShowSmartGridModal(false); const rate = settings.budgetCurrency === 'EUR' ? settings.usdPerEur : settings.budgetCurrency === 'RUB' ? settings.usdPerRub : 1; const symbol = settings.budgetCurrency === 'EUR' ? '€' : settings.budgetCurrency === 'RUB' ? '₽' : ' />
+      <FineFiltersModal
+        open={showFineFiltersModal}
+        onClose={() => setShowFineFiltersModal(false)}
+        minBuyin={minBuyin}
+        maxBuyin={maxBuyin}
+        minEv={minEv}
+        setMinBuyin={setMinBuyin}
+        setMaxBuyin={setMaxBuyin}
+        setMinEv={setMinEv}
+        structFilters={structFilters}
+        setStructFilters={setStructFilters}
+        priorityFilters={priorityFilters}
+        setPriorityFilters={setPriorityFilters}
+        pageSize={pageSize}
+        setPageSize={setPageSize}
+        setCurrentPage={setCurrentPage}
+      />
+    </div>
+  );
+}
+; const end = result.estimatedEnd ? result.estimatedEnd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'; window.alert(`Добавлено турниров: ${result.selected.length}. Бюджет использован: ${symbol}${(result.spentUsd / rate).toFixed(2)}. Остаток: ${symbol}${(result.remainingUsd / rate).toFixed(2)}. Пик столов: ${result.peakTables}. Ожидаемое окончание сетки: ${end}.`); }} />
       <FineFiltersModal
         open={showFineFiltersModal}
         onClose={() => setShowFineFiltersModal(false)}
