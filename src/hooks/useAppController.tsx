@@ -10,7 +10,7 @@ import { useTournamentGridModel } from './useTournamentGridModel';
 import { useTournamentSearchModel } from './useTournamentSearchModel';
 import { ROOMS } from '../constants';
 import type { Tournament, NoteTag, NoteData, SessionData } from '../types';
-import { getRoomCurrency, getRoomIdByName, parseNum, getUniqueId, cleanTournamentName } from '../utils';
+import { getRoomIdByName, parseNum, getUniqueId } from '../utils';
 
 export function useAppController() {
   const [listRef] = useAutoAnimate<HTMLDivElement>({ duration: 250 });
