@@ -332,7 +332,7 @@ export function useAppController() {
       if (!isRoomAllowed(item.room) || isStartedTooLongAgo(item.time_start, item.day_week, item.room)) return false;
       const buyin = parseNum(item.buyin);
       if (buyin < minBuyin || buyin > maxBuyin || parseNum(item.ev_mtt) < minEv) return false;
-      if (!({ '1': priorityFilters.p1, '2': priorityFilters.p2, '3': priorityFilters.p3 }[item.priority] ?? false)) return false;
+      const priorityEnabled = item.priority === '1' ? priorityFilters.p1 : item.priority === '2' ? priorityFilters.p2 : item.priority === '3' ? priorityFilters.p3 : false;\n      if (!priorityEnabled) return false;
       const formats = getTournamentFormats(item.name);
       if (formats.isPko && !structFilters.pko) return false;
       if (formats.isFreezeout && !structFilters.freezeout) return false;
