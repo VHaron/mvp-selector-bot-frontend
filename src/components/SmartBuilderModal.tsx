@@ -21,7 +21,7 @@ export const SmartBuilderModal: React.FC<SmartBuilderProps> = ({ sessionToken, s
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleBuild = async () => {
+const handleBuild = async () => {
     if (!sessionToken) return;
     setLoading(true);
     setError('');
@@ -37,6 +37,7 @@ export const SmartBuilderModal: React.FC<SmartBuilderProps> = ({ sessionToken, s
       });
 
       if (response.status === 'success' && response.grid) {
+        // Передаем сетку наверх в AppLayout
         onGridBuilt(response.grid);
         onClose();
       } else {
