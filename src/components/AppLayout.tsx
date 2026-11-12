@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState } from 'react';
 import { Search, ListTodo, Check, X, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown, SlidersHorizontal, ChevronLeft, ChevronRight, Spade, WandSparkles } from 'lucide-react';
 import type { useAppController } from '../hooks/useAppController';
 import { LoginPanel } from './LoginPanel';
@@ -12,7 +12,7 @@ import { SmartGridModal } from './SmartGridModal';
 
 type AppController = ReturnType<typeof useAppController>;
 
-export function AppLayout(props: AppController) {
+export function AppLayout(props: AppController) {\n  const [showSmartGridModal, setShowSmartGridModal] = useState(false);
   const { setAuthStep, setSiteSelectionId, setSiteCandidates, setAuthError, listRef, minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv, authStep, activeTab, setActiveTab, username, setUsername, password, setPassword, otp, setOtp, siteCandidates, authenticatedSite, authLoading, authError, grid, loading, structFilters, setStructFilters, priorityFilters, setPriorityFilters, pageSize, setPageSize, currentPage, setCurrentPage, selectedRooms, setSelectedRooms, isRoomsDropdownOpen, setIsRoomsDropdownOpen, searchActiveRoom, setSearchActiveRoom, dropdownRef, calendarYear, calendarMonth, monthsNames, handlePrevMonth, handleNextMonth, getDaysInMonth, toggleGrid, bulkAdd, balances, modalBalances, setModalBalances, totalBankroll, updateBalance, dateFrom, setDateFrom, dateTo, setDateTo, activeStats, setActiveStats, showFineFiltersModal, setShowFineFiltersModal, notes, sessionsHistory, showSessionModal, setShowSessionModal, setPresetDate, handleLogin, handleSiteSelect, handleMfa, logout, toggleRoom, fetchTournaments, getRoomStyle, getPriorityStyles, isOverlay, totalBuyin, totalEV, availableTournamentsForFilter, activeRoomsForFilter, filteredTournaments, totalPages, searchResults, getNoteKey, saveNote, finishSession, clearHistory, chartData, renderGridPanel, smartGridIds, runSmartGrid } = props;
 
 
