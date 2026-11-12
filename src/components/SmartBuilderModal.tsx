@@ -27,14 +27,14 @@ const handleBuild = async () => {
     setError('');
     try {
       const formatApiDate = (dateStr: string) => dateStr ? dateStr.replace('T', ' ') + ':00' : '';
-      const response = await apiCall('build_smart_grid', {
-        session_token: sessionToken,
-        budget,
-        max_tables: maxTables,
-        start_time: formatApiDate(startTime),
-        end_time: formatApiDate(endTime),
-        rooms: selectedRooms
-      });
+const response = await apiCall('build_smart_grid', {
+  session_token: sessionToken,
+  budget,
+  max_tables: maxTables,
+  start_time: formatApiDate(startTime),
+  end_time: formatApiDate(endTime),
+  tournaments: filteredTournaments // Передаем все загруженные турниры
+});
 
       if (response.status === 'success' && response.grid) {
         // Передаем сетку наверх в AppLayout
