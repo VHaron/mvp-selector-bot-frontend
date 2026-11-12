@@ -4,12 +4,12 @@ import { apiCall } from '../services/api';
 
 interface SmartBuilderProps {
   sessionToken: string | null;
-  selectedRooms: string[];
+  filteredTournaments: any[];
   onClose: () => void;
   onGridBuilt: (grid: any[]) => void;
 }
 
-export const SmartBuilderModal: React.FC<SmartBuilderProps> = ({ sessionToken, selectedRooms, onClose, onGridBuilt }) => {
+export const SmartBuilderModal: React.FC<SmartBuilderProps> = ({ sessionToken, filteredTournaments, onClose, onGridBuilt }) => {
   const [budget, setBudget] = useState<number>(100);
   const [maxTables, setMaxTables] = useState<number>(6);
   
@@ -21,23 +21,22 @@ export const SmartBuilderModal: React.FC<SmartBuilderProps> = ({ sessionToken, s
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-const handleBuild = async () => {
+  const handleBuild = async () => {
     if (!sessionToken) return;
     setLoading(true);
     setError('');
     try {
       const formatApiDate = (dateStr: string) => dateStr ? dateStr.replace('T', ' ') + ':00' : '';
-const response = await apiCall('build_smart_grid', {
-  session_token: sessionToken,
-  budget,
-  max_tables: maxTables,
-  start_time: formatApiDate(startTime),
-  end_time: formatApiDate(endTime),
-  tournaments: filteredTournaments // Передаем все загруженные турниры
-});
+      const response = await apiCall('build_smart_grid', {
+        session_token: sessionToken,
+        budget,
+        max_tables: maxTables,
+        start_time: formatApiDate(startTime),
+        end_time: formatApiDate(endTime),
+        tournaments: filteredTournaments
+      });
 
       if (response.status === 'success' && response.grid) {
-        // Передаем сетку наверх в AppLayout
         onGridBuilt(response.grid);
         onClose();
       } else {
@@ -52,7 +51,7 @@ const response = await apiCall('build_smart_grid', {
 
   return (
     <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-slate500/10 bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative space-y-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative space-y-4">
         <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white transition"><X size={18}/></button>
         
         <div className="flex items-center gap-2">
@@ -60,7 +59,7 @@ const response = await apiCall('build_smart_grid', {
           <h2 className="text-sm font-black text-white uppercase tracking-wider">ИИ-Автосборка</h2>
         </div>
         
-        <p className="text-[10px] text-slate-400">Алгоритм подберет турниры с максимальным EV, не превышая бюджет и лимит столов.</p>
+        <p className="text-[10px] text-slate-400">Алгоритм подберет турниры с максимальным EV из загруженных в фильтр, не превышая бюджет и лимит столов.</p>
 
         {error && <div className="text-xs font-bold text-rose-400 bg-rose-500/10 p-2 rounded-lg">{error}</div>}
 
