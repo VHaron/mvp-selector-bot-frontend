@@ -335,12 +335,14 @@ export function useAppController() {
       const priorityEnabled = item.priority === '1' ? priorityFilters.p1 : item.priority === '2' ? priorityFilters.p2 : item.priority === '3' ? priorityFilters.p3 : false;
       if (!priorityEnabled) return false;
       const formats = getTournamentFormats(item.name);
+      const name = item.name.toLowerCase();
+      const isHyper = name.includes('hyper');
+      const isSixMaxTurboPko = name.includes('6 max') && name.includes('turbo') && name.includes('pko');
       if (formats.isPko && !structFilters.pko) return false;
       if (formats.isFreezeout && !structFilters.freezeout) return false;
-      if (formats.isTurbo && !structFilters.turbo && !structFilters.hyperTurbo) return false;
-      const name = item.name.toLowerCase();
-      if (name.includes('hyper') && !structFilters.hyperTurbo) return false;
-      if (name.includes('6 max') && name.includes('turbo') && name.includes('pko') && !structFilters.turboPko6max) return false;
+      if (isHyper && !structFilters.hyperTurbo) return false;
+      if (isSixMaxTurboPko && !structFilters.turboPko6max && !structFilters.turbo) return false;
+      if (formats.isTurbo && !isHyper && !isSixMaxTurboPko && !structFilters.turbo) return false;
       if (name.includes('series') && !structFilters.series) return false;
       return true;
     });
