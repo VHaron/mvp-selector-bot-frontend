@@ -7,12 +7,16 @@ import { DiaryPanel } from './DiaryPanel';
 import { ROOMS, ROOM_DOMAINS } from '../constants';
 import { getRoomCurrency, getRoomIdByName, parseNum, getUniqueId, cleanTournamentName } from '../utils';
 import { RoomBadge } from './RoomBadge';
+import { useState } from 'react';
+import { Wand2 } from 'lucide-react';
+import { SmartBuilderModal } from './SmartBuilderModal';
 
 type AppController = ReturnType<typeof useAppController>;
 
 export function AppLayout(props: AppController) {
-  const { setAuthStep, setSiteSelectionId, setSiteCandidates, setAuthError, listRef, minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv, authStep, activeTab, setActiveTab, username, setUsername, password, setPassword, otp, setOtp, siteCandidates, authenticatedSite, authLoading, authError, grid, loading, structFilters, setStructFilters, priorityFilters, setPriorityFilters, pageSize, setPageSize, currentPage, setCurrentPage, selectedRooms, setSelectedRooms, isRoomsDropdownOpen, setIsRoomsDropdownOpen, searchActiveRoom, setSearchActiveRoom, dropdownRef, calendarYear, calendarMonth, monthsNames, handlePrevMonth, handleNextMonth, getDaysInMonth, toggleGrid, bulkAdd, balances, modalBalances, setModalBalances, totalBankroll, updateBalance, dateFrom, setDateFrom, dateTo, setDateTo, activeStats, setActiveStats, showFineFiltersModal, setShowFineFiltersModal, notes, sessionsHistory, showSessionModal, setShowSessionModal, setPresetDate, handleLogin, handleSiteSelect, handleMfa, logout, toggleRoom, fetchTournaments, getRoomStyle, getPriorityStyles, isOverlay, totalBuyin, totalEV, availableTournamentsForFilter, activeRoomsForFilter, filteredTournaments, totalPages, searchResults, getNoteKey, saveNote, finishSession, clearHistory, chartData, renderGridPanel } = props;
+  const { setAuthStep, setSiteSelectionId, setSiteCandidates, setAuthError, listRef, minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv, authStep, activeTab, setActiveTab, username, setUsername, password, setPassword, otp, setOtp, siteCandidates, authenticatedSite, authLoading, authError, grid, setGrid, loading, structFilters, setStructFilters, priorityFilters, setPriorityFilters, pageSize, setPageSize, currentPage, setCurrentPage, selectedRooms, setSelectedRooms, isRoomsDropdownOpen, setIsRoomsDropdownOpen, searchActiveRoom, setSearchActiveRoom, dropdownRef, calendarYear, calendarMonth, monthsNames, handlePrevMonth, handleNextMonth, getDaysInMonth, toggleGrid, bulkAdd, balances, modalBalances, setModalBalances, totalBankroll, updateBalance, dateFrom, setDateFrom, dateTo, setDateTo, activeStats, setActiveStats, showFineFiltersModal, setShowFineFiltersModal, notes, sessionsHistory, showSessionModal, setShowSessionModal, setPresetDate, handleLogin, handleSiteSelect, handleMfa, logout, toggleRoom, fetchTournaments, getRoomStyle, getPriorityStyles, isOverlay, totalBuyin, totalEV, availableTournamentsForFilter, activeRoomsForFilter, filteredTournaments, totalPages, searchResults, getNoteKey, saveNote, finishSession, clearHistory, chartData, sessionToken, renderGridPanel } = props;
 
+  const [showSmartBuilder, setShowSmartBuilder] = useState(false);
 
   if (authStep === 'login' || authStep === 'mfa' || authStep === 'site_select') {
     return (
@@ -60,7 +64,7 @@ export function AppLayout(props: AppController) {
         </button>
       </nav>
 
-      {/* === БОКОВАЯ ПАНЕЛЬ С КНОПКОЙ ФИЛЬТРОВ === */}
+      {/* === БОКОВАЯ ПАНЕЛЬ С КНОПКОЙ ФИЛЬТРОВ И АВТОСБОРКОЙ === */}
       <aside className="hidden xl:flex w-20 bg-slate-950 border-r border-slate-800/80 flex-col items-center justify-between py-6 shrink-0 fixed top-0 h-screen z-40">
         <div className="flex flex-col items-center gap-6">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/40 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.2)]">
@@ -75,6 +79,10 @@ export function AppLayout(props: AppController) {
             <button onClick={() => setShowFineFiltersModal(true)} title="Фильтры" className="w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 shadow-sm hover:bg-emerald-500/25">
               <SlidersHorizontal size={18} />
               <span className="text-[8px] font-black uppercase">Фильтры</span>
+            </button>
+            <button onClick={() => setShowSmartBuilder(true)} title="ИИ-Автосборка" className="w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition bg-fuchsia-500/15 text-fuchsia-400 border border-fuchsia-500/40 shadow-sm hover:bg-fuchsia-500/25">
+              <Wand2 size={18} />
+              <span className="text-[8px] font-black uppercase">Авто</span>
             </button>
           </div>
         </div>
@@ -114,6 +122,9 @@ export function AppLayout(props: AppController) {
                       <button onClick={() => setPresetDate('clear')} title="Сбросить даты" className="w-9 h-9 flex items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:border-rose-500/50 rounded-xl transition shadow-sm active:scale-95"><X size={15} strokeWidth={2.5} /></button>
                       <button onClick={() => setShowFineFiltersModal(true)} className="px-3.5 py-2 text-[11px] font-black uppercase bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/40 hover:border-emerald-500 rounded-xl transition shadow-sm ml-auto active:scale-95 flex items-center gap-1.5 xl:hidden">
                         <SlidersHorizontal size={13} /> Фильтры
+                      </button>
+                      <button onClick={() => setShowSmartBuilder(true)} className="px-3.5 py-2 text-[11px] font-black uppercase bg-fuchsia-500/15 hover:bg-fuchsia-500/25 text-fuchsia-400 border border-fuchsia-500/40 hover:border-fuchsia-500 rounded-xl transition shadow-sm active:scale-95 flex items-center gap-1.5 xl:hidden">
+                        <Wand2 size={13} /> Авто
                       </button>
                     </div>
                   </div>
@@ -189,7 +200,6 @@ export function AppLayout(props: AppController) {
                   </div>
                 </div>
                 
-                {/* === АНИМИРОВАННЫЙ СПИСОК ТУРНИРОВ С СУММАМИ В ВАЛЮТЕ РУМА === */}
                 <div ref={listRef} className="space-y-2 pt-1">
                   {loading && [1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-16 bg-slate-900/40 rounded-xl border border-slate-800/40 animate-pulse"></div>)}
                   {filteredTournaments.length === 0 && !loading && (
@@ -274,7 +284,6 @@ export function AppLayout(props: AppController) {
                   })}
                 </div>
 
-                {/* === ПАНЕЛЬ ПАГИНАЦИИ === */}
                 {!loading && filteredTournaments.length > 0 && (
                   <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 flex items-center justify-between shadow-xl mt-4">
                     <div className="flex items-center gap-1.5">
@@ -424,6 +433,15 @@ export function AppLayout(props: AppController) {
         setPageSize={setPageSize}
         setCurrentPage={setCurrentPage}
       />
+
+      {showSmartBuilder && (
+        <SmartBuilderModal 
+          sessionToken={sessionToken} 
+          selectedRooms={selectedRooms}
+          onClose={() => setShowSmartBuilder(false)}
+          onGridBuilt={(newGrid) => setGrid(newGrid)} 
+        />
+      )}
     </div>
   );
 }
