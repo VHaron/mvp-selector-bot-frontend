@@ -1,202 +1,23 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Search, ListTodo, Check, Trash2, X, Lock, User, KeyRound, ArrowUpDown, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown, ShieldAlert, Zap, Disc, Layers, Spade, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, ListTodo, Check, X, Ban, Flame, Wallet, TrendingUp, NotebookPen, LogOut, ChevronDown, ShieldAlert, Zap, Disc, Spade, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 
-// === ИМПОРТЫ ДЛЯ АНИМАЦИЙ И СТЕЙТА ===
 import { useAutoAnimate } from '@formkit/auto-animate/react';
-import { create } from 'zustand';
-
-// === ГЛОБАЛЬНЫЙ СТЕЙТ ТОНКИХ ФИЛЬТРОВ (Zustand) ===
-interface FilterState {
-  minBuyin: number;
-  maxBuyin: number;
-  minEv: number;
-  setMinBuyin: (val: number) => void;
-  setMaxBuyin: (val: number) => void;
-  setMinEv: (val: number) => void;
-}
-
-const useStore = create<FilterState>((set: any) => ({
-  minBuyin: 0,
-  maxBuyin: 1000,
-  minEv: -10,
-  setMinBuyin: (val: number) => set({ minBuyin: val }),
-  setMaxBuyin: (val: number) => set({ maxBuyin: val }),
-  setMinEv: (val: number) => set({ minEv: val }),
-}));
-
-// === ИНТЕРФЕЙСЫ ===
-interface Tournament {
-  id: string; room: string; name: string; priority: string;
-  buyin: string; time_start: string; roi_str: string; gtd: string;
-  afs: string; duration: string; ev_mtt: string; day_week: string;
-}
-
-type NoteTag = 'skip' | 'must' | 'none' | string;
-interface NoteData { tag: NoteTag; text: string; }
-interface SessionData { id: string; date: string; total_buyin: number; total_cashes: number; profit: number; tournaments_count: number; }
-
-const ROOMS: Record<string, string> = {
-  '244': '888', '245': 'Chico', '246': 'GGNet', '247': 'iPoker', '248': 'PartyPoker', '249': 'PS(COM)',
-  '250': 'PS(ES)', '251': 'WMX', '252': 'WPN', '264': 'PD', '265': 'Coin', '267': 'ClubGG', '268': 'WPT'
-};
-
-const ROOM_DOMAINS: Record<string, string> = {
-  '244': '888poker.com', '245': 'betonline.ag', '246': 'ggpoker.com', '247': 'redstar.games',
-  '248': 'partypoker.com', '249': 'pokerstars.com', '250': 'pokerstars.es', '251': 'winamax.fr',
-  '252': 'americascardroom.eu', '264': 'pokerdom.com', '265': 'coinpoker.com', '267': 'clubgg.com', '268': 'wptglobal.com'
-};
-
-const getRoomCurrency = (roomName: string) => {
-  const roomId = getRoomIdByName(roomName);
-  return ['247', '250', '251'].includes(roomId || '') ? '€' : '$';
-};
-
-const getRoomIdByName = (roomName: string) => {
-  if (!roomName) return null;
-  const nameLower = roomName.toLowerCase().trim();
-  
-  if (nameLower.includes('wmx') || nameLower.includes('winamax')) return '251';
-  if (nameLower.includes('gg')) return '246';
-  if (nameLower.includes('888')) return '244';
-  if (nameLower.includes('pokerstars') || nameLower.includes('ps')) return nameLower.includes('es') ? '250' : '249';
-  if (nameLower.includes('pokerdom') || nameLower.includes('pd')) return '264';
-  if (nameLower.includes('coin')) return '265';
-  if (nameLower.includes('wpn') || nameLower.includes('acardroom') || nameLower.includes('americas')) return '252';
-  if (nameLower.includes('ipoker') || nameLower.includes('redstar')) return '247';
-  if (nameLower.includes('party')) return '248';
-  if (nameLower.includes('chico') || nameLower.includes('betonline')) return '245';
-  if (nameLower.includes('clubgg') || nameLower.includes('club gg')) return '267';
-  if (nameLower.includes('wpt')) return '268';
-
-  let foundId = Object.keys(ROOMS).find(id => nameLower.includes(ROOMS[id].toLowerCase()));
-  return foundId || null;
-};
-
-const RoomBadge = ({ roomName, getRoomStyle }: { roomName: string, getRoomStyle: (n: string) => string }) => {
-  const roomId = getRoomIdByName(roomName);
-  const domain = roomId ? ROOM_DOMAINS[roomId] : null;
-  const displayName = roomId ? ROOMS[roomId] : roomName;
-
-  return (
-    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg border font-bold text-[10px] uppercase tracking-wider ${getRoomStyle(roomName)} shadow-sm`}>
-      {domain && (
-        <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt={roomName} className="w-3.5 h-3.5 rounded-full object-cover bg-white p-[0.5px] shadow-sm shrink-0" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-      )}
-      <span>{displayName}</span>
-    </div>
-  );
-};
-
-const API_BASE_URL = 'https://selector-backend-production.up.railway.app';
-const parseNum = (value: string | number | null | undefined) => {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-  if (!value) return 0;
-  let normalized = String(value).trim().replace(/\s/g, '').replace(/[^\d,.-]/g, '');
-  if (normalized.includes(',') && normalized.includes('.')) {
-    const decimalSeparator = normalized.lastIndexOf(',') > normalized.lastIndexOf('.') ? ',' : '.';
-    normalized = decimalSeparator === ',' ? normalized.replace(/\./g, '').replace(',', '.') : normalized.replace(/,/g, '');
-  } else if (normalized.includes(',')) {
-    const parts = normalized.split(',');
-    normalized = parts.length === 2 && parts[1].length !== 3 ? `${parts[0]}.${parts[1]}` : normalized.replace(/,/g, '');
-  }
-  const parsed = Number.parseFloat(normalized);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-
-const getUniqueId = (t: Tournament) => `${t.id}_${t.room}_${t.name}_${t.buyin}_${t.time_start}`;
-
-const cleanTournamentName = (name: string) => {
-  if (!name) return '';
-  let maxSize = '';
-  const maxMatch = name.match(/(\d-max)/i);
-  if (maxMatch) maxSize = maxMatch[1].toLowerCase();
-  let cleaned = name.replace(/\s*\[?\d{2}:\d{2}\]?/g, '').replace(/\s*\[.*?\]/g, '').replace(/\s{2,}/g, ' ').trim();
-  if (maxSize && !cleaned.toLowerCase().includes(maxSize)) cleaned = `${cleaned} [${maxSize}]`;
-  return cleaned;
-};
-
-const getTournamentFormats = (name: string) => {
-  const n = (name || '').toLowerCase();
-  return {
-    isPko: n.includes('pko') || n.includes('bounty'),
-    isTurbo: n.includes('turbo') || n.includes('hyper'),
-    isFreezeout: n.includes('freezeout') || n.includes('freez') || n.includes('frz'),
-  };
-};
-
-const getLocalTimeDate = (mskTimeStr: string, dayWeekStr?: string, _roomName?: string) => {
-  if (!mskTimeStr) return new Date();
-  let [hours, mins] = mskTimeStr.slice(0, 5).split(':').map(Number);
-  const now = new Date();
-  const mskWall = new Date(now.getTime() + 3 * 3600000); 
-  let tMsk = new Date(mskWall.getTime());
-  tMsk.setUTCHours(hours, mins || 0, 0, 0);
-
-  if (dayWeekStr) {
-    const cleanDay = dayWeekStr.toLowerCase().replace(/[^а-яё]/g, '');
-    const days = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
-    const targetDay = days.findIndex(d => cleanDay.includes(d));
-    if (targetDay !== -1) {
-      const currentMskDay = tMsk.getUTCDay();
-      let dayDiff = targetDay - currentMskDay;
-      if (dayDiff > 3) dayDiff -= 7;
-      else if (dayDiff < -3) dayDiff += 7;
-      tMsk.setUTCDate(tMsk.getUTCDate() + dayDiff);
-    }
-  } else {
-    const diffMins = (tMsk.getTime() - mskWall.getTime()) / 60000;
-    if (diffMins > 12 * 60) tMsk.setUTCDate(tMsk.getUTCDate() - 1);
-    else if (diffMins < -12 * 60) tMsk.setUTCDate(tMsk.getUTCDate() + 1);
-  }
-  const actualTimestamp = tMsk.getTime() - 3 * 3600000;
-  return new Date(actualTimestamp);
-};
-
-const getLocalDayWeek = (mskTimeStr: string, dayWeekStr?: string, roomName?: string) => {
-  if (!mskTimeStr) return '';
-  const date = getLocalTimeDate(mskTimeStr, dayWeekStr, roomName);
-  const daysArr = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-  return `${daysArr[date.getDay()]}. `;
-};
-
-const formatLocalTime = (mskTimeStr: string, dayWeekStr?: string, roomName?: string) => {
-  if (!mskTimeStr) return '';
-  const date = getLocalTimeDate(mskTimeStr, dayWeekStr, roomName);
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-};
-
-const getDiffMins = (mskTimeStr: string, dayWeekStr?: string, roomName?: string) => {
-  if (!mskTimeStr) return 0;
-  const tDate = getLocalTimeDate(mskTimeStr, dayWeekStr, roomName);
-  const now = new Date();
-  return Math.round((tDate.getTime() - now.getTime()) / 60000);
-};
-
-const isPlayed = (timeString: string, dayWeekStr?: string, roomName?: string) => {
-  if (!timeString) return false;
-  return getDiffMins(timeString, dayWeekStr, roomName) < -120;
-};
-
-const isStartedTooLongAgo = (timeString: string, dayWeekStr?: string, roomName?: string) => {
-  if (!timeString) return false;
-  return getDiffMins(timeString, dayWeekStr, roomName) < -15; 
-};
-
-const getSmartTimer = (timeStr: string, dayWeekStr?: string, roomName?: string) => {
-  if (!timeStr) return null;
-  const diffMins = getDiffMins(timeStr, dayWeekStr, roomName);
-
-  if (diffMins > 0 && diffMins <= 60) {
-    return <span className="text-[8px] font-black uppercase tracking-wider text-amber-400 animate-pulse bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/30">⏳ {diffMins}м</span>;
-  } else if (diffMins <= 0 && diffMins >= -15) {
-    return <span className="text-[8px] font-black uppercase tracking-wider text-rose-400 animate-pulse bg-rose-500/10 px-1 py-0.5 rounded border border-rose-500/30">🔥 Late</span>;
-  } else if (diffMins < -15 && diffMins >= -120) {
-    return <span className="text-[8px] font-black uppercase tracking-wider text-emerald-400 animate-pulse bg-emerald-500/20 px-1.5 py-0.5 rounded border border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.3)]">🟢 IN GAME</span>;
-  }
-  return null;
-};
-
+import { apiCall } from './services/api';
+import { LoginPanel } from './components/LoginPanel';
+import { TournamentGridCard } from './components/TournamentGridCard';
+import { GridPanel } from './components/GridPanel';
+import { DiaryPanel } from './components/DiaryPanel';
+import { useStore } from './store/filterStore';
+import { ROOMS, ROOM_DOMAINS } from './constants';
+import type { Tournament, NoteTag, NoteData, SessionData } from './types';
+import { RoomBadge } from './components/RoomBadge';
+import { SmartTimer } from './components/SmartTimer';
+import {
+  getRoomCurrency, getRoomIdByName, parseNum, getUniqueId, cleanTournamentName,
+  getTournamentFormats, getLocalTimeDate, getLocalDayWeek, formatLocalTime,
+  isPlayed, isStartedTooLongAgo,
+} from './utils';
 
 export default function App() {
   const [listRef] = useAutoAnimate<HTMLDivElement>({ duration: 250 });
@@ -340,26 +161,6 @@ export default function App() {
     } else if (type === 'tomorrow') {
       setDateFrom(formatLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 12, 0)));
       setDateTo(formatLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 5, 0)));
-    }
-  };
-
-  const apiCall = async (endpoint: string, body: unknown) => {
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 45_000);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
-      const data = await response.json().catch(() => ({}));
-      return response.ok ? data : { ...(typeof data === 'object' && data !== null ? data : {}), status_code: response.status };
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') throw new Error('Сервер не ответил за 45 секунд. Попробуйте ещё раз.');
-      throw error;
-    } finally {
-      window.clearTimeout(timeoutId);
     }
   };
 
@@ -712,175 +513,51 @@ export default function App() {
   const gridVariance = useMemo(() => getVariance(), [grid]);
   const gridEndTime = useMemo(() => getSessionEndTime(grid), [grid]);
 
-  const renderGridCard = (t: any, overrideKey?: string) => {
-    const prioStyles = getPriorityStyles(t.priority);
-    const played = isPlayed(t.time_start, t.day_week, t.room);
-    const elementKey = overrideKey || getUniqueId(t);
-    const fmts = getTournamentFormats(t.name);
-
-    return (
-      <div 
-        key={elementKey} 
-        onClick={() => { 
-          if (window.getSelection()?.toString().length! > 0) return; 
-          toggleGrid(t); 
-        }} 
-        className={`bg-slate-900 rounded-xl px-3 py-2.5 border transition-all flex items-center justify-between gap-2 border-l-[3px] ${prioStyles.border} cursor-pointer hover:border-slate-700 ${played ? 'opacity-40 grayscale bg-slate-900/40' : 'border-slate-800'}`}
-      >
-        <div className="flex-1 min-w-0 space-y-1">
-          <div className="flex items-center gap-1.5">
-            <RoomBadge roomName={t.room} getRoomStyle={getRoomStyle} />
-            <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
-              {getLocalDayWeek(t.time_start, t.day_week, t.room)}{formatLocalTime(t.time_start, t.day_week, t.room)}
-            </span>
-            {getSmartTimer(t.time_start, t.day_week, t.room)}
-          </div>
-          <div className="font-bold text-[11px] text-white truncate leading-tight">{cleanTournamentName(t.name)}</div>
-          <div className="flex items-center gap-2 text-[10px]">
-            <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
-            <div className="flex items-center gap-0.5 ml-1">
-              {fmts.isPko && <div className="w-4 h-4 rounded bg-fuchsia-500/15 border border-fuchsia-500/40 text-fuchsia-400 flex items-center justify-center" title="PKO"><ShieldAlert size={8} /></div>}
-              {fmts.isTurbo && <div className="w-4 h-4 rounded bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-center" title="Turbo"><Zap size={8} /></div>}
-              {fmts.isFreezeout && <div className="w-4 h-4 rounded bg-blue-500/15 border border-blue-500/40 text-blue-400 flex items-center justify-center" title="Freezeout"><Disc size={8} /></div>}
-            </div>
-            <span className="text-slate-500 truncate ml-1">GTD: {t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
-          </div>
-        </div>
-        <div className="shrink-0 flex flex-col items-center gap-1.5">
-          <button onClick={(e) => { e.stopPropagation(); toggleGrid(t); }} title="Удалить" className="w-7 h-7 flex items-center justify-center rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition active:scale-95"><Trash2 size={12} /></button>
-          <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"><NotebookPen size={12}/></button>
-        </div>
-      </div>
-    );
-  };
+  const renderGridCard = (t: Tournament, overrideKey?: string) => (
+    <TournamentGridCard
+      key={overrideKey || getUniqueId(t)}
+      tournament={t}
+      overrideKey={overrideKey}
+      getRoomStyle={getRoomStyle}
+      onToggle={toggleGrid}
+      onOpenNote={setActiveStats}
+    />
+  );
 
   const renderGridPanel = () => (
-    <div className="space-y-5">
-      <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-4 shadow-xl space-y-2.5 flex flex-col justify-between">
-        <div className="space-y-2.5">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400"><ListTodo size={12} strokeWidth={2.5} /></div>
-              <span className="text-xs font-black tracking-wider text-white uppercase">Текущая сетка</span>
-            </div>
-            <span className="text-[11px] font-black text-cyan-400 bg-cyan-950/40 px-2.5 py-1 rounded-lg border border-cyan-500/30">{grid.length} турн.</span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2 pb-2 border-b border-slate-800/80 text-center">
-            <div><span className="text-[9px] uppercase font-bold text-slate-500 block">Турниров</span><div className="text-base font-black text-white">{grid.length}</div></div>
-            <div className="border-x border-slate-800/80"><span className="text-[9px] uppercase font-bold text-slate-500 block">Ожидание</span><div className={`text-base font-black ${totalEV >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{totalEV > 0 ? '+' : ''}${totalEV.toFixed(1)}</div></div>
-            <div><span className="text-[9px] uppercase font-bold text-slate-500 block">Конец</span><div className="text-base font-black text-cyan-400">~{gridEndTime}</div></div>
-          </div>
-
-          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 px-1">
-            <span>Дисперсия: <b className={gridVariance.color}>{gridVariance.label}</b></span>
-            <span>Пик: <b className="text-cyan-400">{gridPeakTables.max} шт (~{gridPeakTables.timeStr})</b></span>
-          </div>
-        </div>
-
-        {grid.length > 0 && (
-          <div className="flex items-center gap-1.5 pt-2 border-t border-slate-800/80">
-            <button onClick={openFinishModal} className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-400 rounded-xl py-1.5 px-2 flex items-center justify-center gap-1.5 text-[11px] uppercase font-black transition"><Wallet size={14} /> <span className="truncate">Завершить</span></button>
-            <button onClick={() => setSortOrder(prev => prev === 'time' ? 'buyin' : prev === 'buyin' ? 'ev' : 'time')} title="Сортировка" className="px-3 py-1.5 bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl text-[11px] uppercase font-black text-blue-400 flex items-center gap-1 transition shrink-0"><ArrowUpDown size={12} /> <span>{sortOrder}</span></button>
-            <button onClick={() => setGroupByRoom(!groupByRoom)} title="Группировать" className={`w-8 h-8 rounded-xl border flex items-center justify-center transition shrink-0 ${groupByRoom ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}`}><Layers size={14} /></button>
-            <button onClick={clearGrid} title="Очистить" className="w-8 h-8 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl flex items-center justify-center text-rose-400 transition shrink-0"><Trash2 size={14} /></button>
-          </div>
-        )}
-      </div>
-
-      {grid.length === 0 ? (
-        <div className="text-center py-20 bg-slate-900/40 rounded-2xl border border-slate-800/50">
-          <div className="text-4xl mb-3 opacity-30">📋</div>
-          <h3 className="text-slate-400 font-bold text-xs mb-3">Сетка пуста</h3>
-          <button onClick={() => setActiveTab('search')} className="bg-cyan-950/40 border border-cyan-500/50 text-cyan-400 font-bold text-xs py-2 px-6 rounded-xl xl:hidden">В поиск</button>
-        </div>
-      ) : groupByRoom ? (
-        <div className="space-y-3">
-          <div className="relative" ref={gridDropdownRef}>
-            <button onClick={() => setIsGridRoomsOpen(!isGridRoomsOpen)} className="w-full bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-200 flex items-center justify-between transition shadow-sm">
-              <div className="flex items-center gap-2 min-w-0">
-                <RoomBadge roomName={gridActiveRoom || activeGridRooms[0] || ''} getRoomStyle={getRoomStyle} />
-                <span className="text-emerald-400 font-black">
-                  {getRoomCurrency(gridActiveRoom || activeGridRooms[0] || '')}{displayGrid.filter(t => t.room === (gridActiveRoom || activeGridRooms[0])).reduce((sum, t) => sum + parseNum(t.buyin), 0).toFixed(1)}
-                </span>
-                <span className="truncate text-slate-400 font-normal">({displayGrid.filter(t => t.room === (gridActiveRoom || activeGridRooms[0])).length} турн.)</span>
-              </div>
-              <ChevronDown size={14} className={`transition-transform shrink-0 ${isGridRoomsOpen ? 'rotate-180 text-cyan-400' : 'text-slate-400'}`} />
-            </button>
-            {isGridRoomsOpen && (
-              <div className="absolute top-full left-0 right-0 mt-1.5 bg-slate-950 border border-slate-800 rounded-2xl p-2 shadow-2xl z-50 space-y-1">
-                {activeGridRooms.map(room => {
-                  const roomTournaments = displayGrid.filter(t => t.room === room);
-                  const count = roomTournaments.length;
-                  const roomSum = roomTournaments.reduce((sum, t) => sum + parseNum(t.buyin), 0);
-                  const currency = getRoomCurrency(room);
-                  const isSel = (gridActiveRoom === room) || (!gridActiveRoom && activeGridRooms[0] === room);
-                  return (
-                    <button key={room} onClick={() => { setGridActiveRoom(room); setIsGridRoomsOpen(false); }} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition ${isSel ? 'bg-cyan-950/50 border border-cyan-500/40 text-cyan-300' : 'hover:bg-slate-900 text-slate-300 border border-transparent'}`}>
-                      <div className="flex items-center gap-2"><RoomBadge roomName={room} getRoomStyle={getRoomStyle} /></div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-emerald-400 font-black">{currency}{roomSum.toFixed(1)}</span>
-                        <span className="text-[11px] text-slate-400">({count} турн.)</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-          <div ref={gridListRef} className="space-y-2">
-            {filteredGridBySelectedRoom.length === 0 ? <div className="text-center py-12 text-slate-500 text-xs">Нет турниров</div> : filteredGridBySelectedRoom.map((t, idx) => renderGridCard(t, `${getUniqueId(t)}_grid_filtered_${idx}`))}
-          </div>
-        </div>
-      ) : (
-        <div ref={gridListRef} className="space-y-2">
-          {displayGrid.map((t, idx) => renderGridCard(t, `${getUniqueId(t)}_grid_${idx}`))}
-        </div>
-      )}
-    </div>
+    <GridPanel
+      grid={grid} totalEV={totalEV} gridEndTime={gridEndTime} gridVariance={gridVariance}
+      gridPeakTables={gridPeakTables} openFinishModal={openFinishModal} sortOrder={sortOrder}
+      setSortOrder={setSortOrder} groupByRoom={groupByRoom} setGroupByRoom={setGroupByRoom}
+      clearGrid={clearGrid} activeGridRooms={activeGridRooms} gridActiveRoom={gridActiveRoom}
+      setGridActiveRoom={setGridActiveRoom} isGridRoomsOpen={isGridRoomsOpen}
+      setIsGridRoomsOpen={setIsGridRoomsOpen} gridDropdownRef={gridDropdownRef}
+      displayGrid={displayGrid} filteredGridBySelectedRoom={filteredGridBySelectedRoom}
+      gridListRef={gridListRef} getRoomStyle={getRoomStyle} renderGridCard={renderGridCard}
+      setActiveTab={setActiveTab}
+    />
   );
+
+
 
   if (authStep === 'login' || authStep === 'mfa' || authStep === 'site_select') {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 text-slate-200">
-        <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-cyan-400"></div>
-          <div className="flex flex-col items-center mb-6">
-            <div className="w-16 h-16 bg-cyan-950/30 rounded-full flex items-center justify-center border border-cyan-500/40 mb-3"><Lock className="text-cyan-400" size={28} /></div>
-            <h1 className="text-2xl font-black text-white">Вход в систему</h1>
-          </div>
-          {authError && <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm font-bold p-3 rounded-xl mb-4 text-center">{authError}</div>}
-          {authStep === 'login' ? (
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="relative"><User size={18} className="absolute left-4 top-3.5 text-slate-500" /><input type="text" required placeholder="Логин" value={username} onChange={e => setUsername(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500"/></div>
-              <div className="relative"><KeyRound size={18} className="absolute left-4 top-3.5 text-slate-500" /><input type="password" required placeholder="Пароль" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500"/></div>
-              <button type="submit" disabled={authLoading} className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black py-3.5 rounded-xl uppercase tracking-wider text-sm active:scale-95 disabled:opacity-50">{authLoading ? '...' : 'Войти'}</button>
-            </form>
-          ) : authStep === 'site_select' ? (
-            <div className="space-y-4">
-              <p className="text-xs text-center text-slate-400 font-bold">Аккаунт найден на обоих сайтах. Выберите, куда войти:</p>
-              {siteCandidates.map(candidate => {
-                const siteLabel = candidate.site === 'globusmvp' ? 'GlobusMVP' : 'GlobusGo';
-                const siteDomain = candidate.site === 'globusmvp' ? 'globusmvp.co' : 'globusgo.pro';
-                return (
-                  <button key={candidate.site} type="button" disabled={authLoading} onClick={() => handleSiteSelect(candidate.site)} className="w-full bg-slate-950 border border-slate-800 hover:border-cyan-500/60 rounded-xl px-4 py-3.5 text-left transition disabled:opacity-50">
-                    <span className="block text-sm font-black text-white">{siteLabel}</span>
-                    <span className="block text-[10px] text-slate-500 mt-0.5">{siteDomain}{candidate.auth_status === 'mfa_required' ? ' · потребуется код 2FA' : ''}</span>
-                  </button>
-                );
-              })}
-              {siteCandidates.length === 0 && <p className="text-xs text-rose-400 text-center">Список доступных сайтов пуст. Вернитесь ко входу и попробуйте снова.</p>}
-              <button type="button" onClick={() => { setSiteSelectionId(null); setSiteCandidates([]); setAuthStep('login'); setAuthError(''); }} className="w-full text-xs text-slate-500 hover:text-slate-300 py-2">Назад</button>
-            </div>
-          ) : (
-            <form onSubmit={handleMfa} className="space-y-4">
-              <p className="text-xs text-center text-slate-400 font-bold mb-3">Введите 2FA код</p>
-              <input type="text" required placeholder="Код 2FA" value={otp} onChange={e => setOtp(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-center text-xl tracking-widest font-mono text-cyan-400 focus:outline-none focus:border-cyan-500"/>
-              <button type="submit" disabled={authLoading} className="w-full bg-emerald-600 text-white font-black py-3.5 rounded-xl uppercase tracking-wider text-sm active:scale-95 disabled:opacity-50">{authLoading ? '...' : 'Подтвердить'}</button>
-            </form>
-          )}
-        </div>
-      </div>
+      <LoginPanel
+        authStep={authStep}
+        authError={authError}
+        authLoading={authLoading}
+        username={username}
+        setUsername={setUsername}
+        password={password}
+        setPassword={setPassword}
+        otp={otp}
+        setOtp={setOtp}
+        siteCandidates={siteCandidates}
+        onLogin={handleLogin}
+        onMfa={handleMfa}
+        onSiteSelect={handleSiteSelect}
+        onBack={() => { setSiteSelectionId(null); setSiteCandidates([]); setAuthStep('login'); setAuthError(''); }}
+      />
     );
   }
 
@@ -1129,7 +806,7 @@ export default function App() {
                               <span className="text-[9px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/30">
                                 {getLocalDayWeek(t.time_start, t.day_week, t.room)}{formatLocalTime(t.time_start, t.day_week, t.room)}
                               </span>
-                              {getSmartTimer(t.time_start, t.day_week, t.room)}
+                              {SmartTimer(t.time_start, t.day_week, t.room)}
                             </div>
                             <button onClick={(e) => { e.stopPropagation(); setActiveStats(t); }} title="Заметка" className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"><NotebookPen size={12}/></button>
                           </div>
@@ -1155,7 +832,7 @@ export default function App() {
                             <span className="text-[10px] font-black tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">
                               {getLocalDayWeek(t.time_start, t.day_week, t.room)}{formatLocalTime(t.time_start, t.day_week, t.room)}
                             </span>
-                            {getSmartTimer(t.time_start, t.day_week, t.room)}
+                            {SmartTimer(t.time_start, t.day_week, t.room)}
                           </div>
                           <div className="font-bold text-white truncate flex-1 min-w-0">
                             {cleanTournamentName(t.name)}
@@ -1232,142 +909,15 @@ export default function App() {
           )}
 
           {activeTab === 'grid' && <div className="w-full max-w-2xl mx-auto">{renderGridPanel()}</div>}
-
           {activeTab === 'diary' && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-1 space-y-4">
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-slate-400 font-bold uppercase text-xs tracking-wider flex items-center gap-2"><Wallet size={16} className="text-emerald-500" /> Банкролл</h2>
-                    <div className="text-emerald-400 font-black text-xl">${totalBankroll.toFixed(1)}</div>
-                  </div>
-                  <div className="space-y-2.5">
-                    {selectedRooms.map(roomId => {
-                      const roomName = ROOMS[roomId];
-                      return (
-                        <div key={roomId} className="bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center justify-between gap-2">
-                          <RoomBadge roomName={roomName} getRoomStyle={getRoomStyle} />
-                          <div className="flex items-center gap-1">
-                            <span className="text-slate-500 text-xs font-black">{getRoomCurrency(roomName)}</span>
-                            <input type="number" value={balances[roomName] || ''} onChange={(e) => updateBalance(roomName, e.target.value)} placeholder="0" className="w-20 bg-transparent text-right text-white font-bold text-sm outline-none [appearance:textfield]" />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-slate-400 font-bold uppercase text-xs tracking-wider">Календарь активности</h3>
-                    <div className="flex items-center gap-1.5">
-                      <button onClick={handlePrevMonth} className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"><span className="text-xs font-black px-1">‹</span></button>
-                      <span className="text-[10px] text-cyan-400 font-bold min-w-[75px] text-center">{monthsNames[calendarMonth]} {calendarYear}</span>
-                      <button onClick={handleNextMonth} className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"><span className="text-xs font-black px-1">›</span></button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-7 gap-1.5 text-center">
-                    {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d => <span key={d} className="text-[10px] font-bold text-slate-500 py-1">{d}</span>)}
-                    
-                    {Array.from({ length: getDaysInMonth(calendarYear, calendarMonth) }, (_, i) => {
-                      const dayNum = i + 1;
-                      const formattedDay = String(dayNum).padStart(2, '0');
-                      const formattedMonth = String(calendarMonth + 1).padStart(2, '0');
-                      const dateStr = `${formattedDay}.${formattedMonth}.${calendarYear}`;
-                      
-                      const daySessions = sessionsHistory.filter(s => s.date === dateStr);
-                      const hasPlayed = daySessions.length > 0;
-                      
-                      const dayCashes = daySessions.reduce((sum, s) => sum + s.total_cashes, 0);
-                      const dayBuyin = daySessions.reduce((sum, s) => sum + s.total_buyin, 0);
-                      const dayProfit = dayCashes - dayBuyin;
-                      const dayTournaments = daySessions.reduce((sum, s) => sum + s.tournaments_count, 0);
-
-                      let bgClass = "bg-slate-950 text-slate-600 border-slate-800/80";
-                      let dotColor = "";
-                      if (hasPlayed) {
-                        if (dayTournaments >= 1 && dayTournaments <= 10) {
-                          bgClass = "bg-rose-500/20 text-rose-400 border-rose-500/40 hover:bg-rose-500/30"; dotColor = "bg-rose-400";
-                        } else if (dayTournaments >= 11 && dayTournaments <= 20) {
-                          bgClass = "bg-amber-500/20 text-amber-400 border-amber-500/40 hover:bg-amber-500/30"; dotColor = "bg-amber-400";
-                        } else {
-                          bgClass = "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30"; dotColor = "bg-emerald-400";
-                        }
-                      }
-
-                      return (
-                        <div key={dayNum} title={hasPlayed ? `Дата: ${dateStr}\nТурниров: ${dayTournaments}\nПрофит: ${dayProfit >= 0 ? '+' : ''}$${dayProfit.toFixed(1)}` : `Дата: ${dateStr}\nНет игр`} className={`h-9 rounded-xl border flex flex-col items-center justify-center text-xs font-bold transition cursor-pointer relative group ${bgClass}`}>
-                          <span>{dayNum}</span>
-                          {hasPlayed && <span className={`w-1 h-1 rounded-full ${dotColor}`}></span>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="text-[10px] text-slate-500 text-center pt-1">💡 Наведи на день для статистики</div>
-                </div>
-              </div>
-
-              <div className="md:col-span-2 space-y-4">
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-slate-400 font-bold uppercase text-xs tracking-wider">График профита</h2>
-                    <button onClick={clearHistory} className="bg-rose-500/10 text-rose-400 p-2 rounded-xl"><Trash2 size={14} /></button>
-                  </div>
-                  <div className="relative h-48 w-full bg-slate-950/50 rounded-xl border border-slate-800/80 overflow-hidden">
-                    {sessionsHistory.length === 0 ? (
-                      <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-500 font-bold">Нет сыгранных сессий</div>
-                    ) : (
-                      <svg className="absolute inset-0 w-full h-full" viewBox="-2 -2 104 104" preserveAspectRatio="none">
-                        <line x1="0" y1={chartData.zeroY} x2="100" y2={chartData.zeroY} stroke="#334155" strokeWidth="0.5" strokeDasharray="2 2" />
-                        <polyline points={chartData.points} fill="none" stroke={chartData.current >= 0 ? '#34d399' : '#fb7185'} strokeWidth="2" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-slate-800/50 flex justify-between items-end text-sm">
-                    <span className="text-slate-500 font-bold uppercase text-xs">Итог профита</span>
-                    <div className={`font-black text-lg ${chartData.current >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>${chartData.current.toFixed(1)}</div>
-                  </div>
-                </div>
-
-                <h3 className="font-bold text-sm text-white pt-2">История сессий по дням</h3>
-                <div className="space-y-4">
-                  {sessionsHistory.length === 0 && <div className="text-center py-10 text-slate-500 text-xs">Дневник пуст</div>}
-                  
-                  {Object.entries(
-                    sessionsHistory.reduce((acc: Record<string, SessionData[]>, h) => {
-                      if (!acc[h.date]) acc[h.date] = []; acc[h.date].push(h); return acc;
-                    }, {})
-                  ).map(([date, daySessions]) => {
-                    const dayProfit = daySessions.reduce((sum, s) => sum + s.total_cashes, 0) - daySessions.reduce((sum, s) => sum + s.total_buyin, 0);
-                    const dayTournamentsCount = daySessions.reduce((sum, s) => sum + s.tournaments_count, 0);
-
-                    return (
-                      <div key={date} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-xl">
-                        <div className="flex justify-between items-center pb-2.5 border-b border-slate-800/80 text-xs">
-                          <div className="font-bold text-cyan-400 flex items-center gap-2"><span>📅 {date}</span><span className="text-[10px] text-slate-500 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">{dayTournamentsCount} турн.</span></div>
-                          <div className={`font-black text-sm ${dayProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{dayProfit > 0 ? '+' : ''}${dayProfit.toFixed(1)}</div>
-                        </div>
-                        <div className="space-y-2">
-                          {daySessions.map((h, idx) => (
-                            <div key={h.id || idx} className="bg-slate-950/60 border border-slate-800/60 rounded-xl p-3 flex justify-between items-center text-xs">
-                              <div>
-                                <div className="text-[10px] text-slate-400 mb-0.5">Сессия #{daySessions.length - idx} • <span className="text-cyan-400 font-bold">{h.tournaments_count} турн.</span></div>
-                                <div className="font-bold text-slate-300">Вгружено: <span className="text-emerald-400">${h.total_buyin.toFixed(1)}</span></div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-[10px] text-slate-400 mb-0.5">Призовые: ${h.total_cashes.toFixed(1)}</div>
-                                <div className={`font-black text-xs ${h.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{h.profit > 0 ? '+' : ''}${h.profit.toFixed(1)}</div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
+            <DiaryPanel
+              totalBankroll={totalBankroll} selectedRooms={selectedRooms} rooms={ROOMS}
+              getRoomStyle={getRoomStyle} getRoomCurrency={getRoomCurrency} balances={balances}
+              updateBalance={updateBalance} onPrevMonth={handlePrevMonth} onNextMonth={handleNextMonth}
+              monthsNames={monthsNames} calendarMonth={calendarMonth} calendarYear={calendarYear}
+              getDaysInMonth={getDaysInMonth} sessionsHistory={sessionsHistory}
+              chartData={chartData} clearHistory={clearHistory}
+            />
           )}
         </main>
       </div>
@@ -1396,9 +946,6 @@ export default function App() {
                 </div>
                 <input value={note.text} onChange={e => saveNote(activeStats, note.tag, e.target.value)} placeholder="Заметка..." className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-white outline-none" />
               </div>
-              <button onClick={() => { toggleGrid(activeStats); setActiveStats(null); }} className={`w-full py-3 rounded-xl font-black text-xs uppercase tracking-wider ${grid.some(item => getUniqueId(item) === getUniqueId(activeStats)) ? 'bg-rose-500/10 border border-rose-500/40 text-rose-400' : 'bg-cyan-950/30 border border-cyan-500/60 text-cyan-400'}`}>
-                {grid.some(item => getUniqueId(item) === getUniqueId(activeStats)) ? 'Убрать из сетки' : 'Добавить в сетку'}
-              </button>
             </div>
           </div>
         );

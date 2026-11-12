@@ -1,75 +1,30 @@
-# React + TypeScript + Vite
+# MVP Tournament Selector — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Development
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Production build:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm run build
 ```
+
+Deploy this folder as the Vercel project root. The existing backend URL is configured in `src/constants.ts`.
+
+## Source structure
+
+- `src/App.tsx` — application orchestration, state, data loading and search workflow.
+- `src/components/LoginPanel.tsx` — login, two-factor verification and GlobusGo/GlobusMVP account selection.
+- `src/components/GridPanel.tsx` — tournament grid view and room grouping.
+- `src/components/DiaryPanel.tsx` — bankroll, calendar and session history.
+- `src/components/TournamentGridCard.tsx` — reusable tournament card in the grid. Clicking the card toggles it in/out of the grid; the note button is independent.
+- `src/components/RoomBadge.tsx`, `SmartTimer.tsx` — shared UI elements.
+- `src/services/api.ts` — backend request helper and timeout handling.
+- `src/store/filterStore.ts` — Zustand state for numeric filters.
+- `src/types.ts`, `src/constants.ts`, `src/utils.ts` — shared types, room metadata and pure helpers.
+
+The refactor keeps the existing API contract and local-storage keys.
