@@ -22,7 +22,12 @@ export function AppLayout(props: AppController) {
     const result = runSmartGrid(settings, mode);
     setShowSmartGridModal(false);
     const rate = settings.budgetCurrency === 'EUR' ? settings.usdPerEur : settings.budgetCurrency === 'RUB' ? settings.usdPerRub : 1;
-    const symbol = settings.budgetCurrency === 'EUR' ? '€' : settings.budgetCurrency === 'RUB' ? '₽' : ' || authStep === 'mfa' || authStep === 'site_select') {
+    const symbol = settings.budgetCurrency === 'EUR' ? '€' : settings.budgetCurrency === 'RUB' ? '₽' : '$';
+    const end = result.estimatedEnd ? result.estimatedEnd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+    window.alert('Добавлено турниров: ' + result.selected.length + '. Бюджет использован: ' + symbol + (result.spentUsd / rate).toFixed(2) + '. Остаток: ' + symbol + (result.remainingUsd / rate).toFixed(2) + '. Пик столов: ' + result.peakTables + '. Ожидаемое окончание сетки: ' + end + '.');
+  };
+
+  if (authStep === 'login' || authStep === 'mfa' || authStep === 'site_select') {
     return (
       <LoginPanel
         authStep={authStep}
