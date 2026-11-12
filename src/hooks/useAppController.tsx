@@ -364,7 +364,7 @@ export function useAppController() {
     }
 
     setSessionsHistory(previous => [s, ...previous]);
-    setGrid([]); setShowSessionModal(false); 
+    setGrid([]); setSmartGridIds([]); localStorage.removeItem('mvp_smart_grid_ids'); setShowSessionModal(false); 
   };
 
   const clearHistory = async () => {
