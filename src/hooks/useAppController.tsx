@@ -10,7 +10,7 @@ import { useTournamentGridModel } from './useTournamentGridModel';
 import { useTournamentSearchModel } from './useTournamentSearchModel';
 import { ROOMS } from '../constants';
 import type { Tournament, NoteTag, NoteData, SessionData } from '../types';
-import { getRoomIdByName, parseNum, getUniqueId } from '../utils';
+import { getRoomIdByName, parseNum, getUniqueId, getTournamentFormats, isStartedTooLongAgo } from '../utils';
 import { buildSmartGrid, type SmartGridSettings } from '../utils/smartGrid';
 
 export function useAppController() {
@@ -328,9 +328,20 @@ export function useAppController() {
   const runSmartGrid = (settings: SmartGridSettings, mode: 'append' | 'replace') => {
     const previousSmart = new Set(smartGridIds);
     const locked = mode === 'replace' ? grid.filter(item => !previousSmart.has(getUniqueId(item))) : grid;
-    const candidates = filteredTournaments.filter(item => {
+    const candidates = tournaments.filter(item => {
+      if (!isRoomAllowed(item.room) || isStartedTooLongAgo(item.time_start, item.day_week, item.room)) return false;
       const buyin = parseNum(item.buyin);
-      return buyin >= minBuyin && buyin <= maxBuyin && parseNum(item.ev_mtt) >= minEv;
+      if (buyin < minBuyin || buyin > maxBuyin || parseNum(item.ev_mtt) < minEv) return false;
+      if (!({ '1': priorityFilters.p1, '2': priorityFilters.p2, '3': priorityFilters.p3 }[item.priority] ?? false)) return false;
+      const formats = getTournamentFormats(item.name);
+      if (formats.isPko && !structFilters.pko) return false;
+      if (formats.isFreezeout && !structFilters.freezeout) return false;
+      if (formats.isTurbo && !structFilters.turbo && !structFilters.hyperTurbo) return false;
+      const name = item.name.toLowerCase();
+      if (name.includes('hyper') && !structFilters.hyperTurbo) return false;
+      if (name.includes('6 max') && name.includes('turbo') && name.includes('pko') && !structFilters.turboPko6max) return false;
+      if (name.includes('series') && !structFilters.series) return false;
+      return true;
     });
     const result = buildSmartGrid(candidates, locked, settings);
     const nextGrid = [...locked, ...result.selected];
