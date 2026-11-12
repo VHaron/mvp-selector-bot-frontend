@@ -434,14 +434,14 @@ export function AppLayout(props: AppController) {
         setCurrentPage={setCurrentPage}
       />
 
-      {showSmartBuilder && (
-        <SmartBuilderModal 
-          sessionToken={sessionToken} 
-          selectedRooms={selectedRooms}
-          onClose={() => setShowSmartBuilder(false)}
-          onGridBuilt={(newGrid) => setGrid(newGrid)} 
-        />
-      )}
+{showSmartBuilder && (
+  <SmartBuilderModal 
+    sessionToken={sessionToken} 
+    filteredTournaments={filteredTournaments}
+    onClose={() => setShowSmartBuilder(false)}
+    onGridBuilt={(newGrid) => setGrid(newGrid)} 
+  />
+)}
     </div>
   );
 }
