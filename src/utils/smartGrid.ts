@@ -34,7 +34,9 @@ const toUsd = (amount: number, currency: 'USD' | 'EUR' | 'RUB', settings: SmartG
 
 const durationHours = (value: string) => {
   if (!value) return 0;
-  const clock = value.trim().match(/^(\d{1,2}):(\d{2})$/);\n  if (clock) return Number(clock[1]) + Number(clock[2]) / 60;\n  const normalized = value.toLowerCase().replace(',', '.');
+  const clock = value.trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (clock) return Number(clock[1]) + Number(clock[2]) / 60;
+  const normalized = value.toLowerCase().replace(',', '.');
   const hours = normalized.match(/([\d.]+)\s*(?:h|час)/);
   const minutes = normalized.match(/([\d.]+)\s*(?:m|min|мин)/);
   if (hours || minutes) return Math.max(0, Number(hours?.[1] || 0) + Number(minutes?.[1] || 0) / 60);
