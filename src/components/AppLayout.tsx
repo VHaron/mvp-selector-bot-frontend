@@ -7,11 +7,12 @@ import { DiaryPanel } from './DiaryPanel';
 import { ROOMS, ROOM_DOMAINS } from '../constants';
 import { getRoomCurrency, getRoomIdByName, parseNum, getUniqueId, cleanTournamentName } from '../utils';
 import { RoomBadge } from './RoomBadge';
+import { SavedGridModals } from './SavedGridModals';
 
 type AppController = ReturnType<typeof useAppController>;
 
 export function AppLayout(props: AppController) {
-  const { setAuthStep, setSiteSelectionId, setSiteCandidates, setAuthError, listRef, minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv, authStep, activeTab, setActiveTab, username, setUsername, password, setPassword, otp, setOtp, siteCandidates, authenticatedSite, authLoading, authError, grid, loading, structFilters, setStructFilters, priorityFilters, setPriorityFilters, pageSize, setPageSize, currentPage, setCurrentPage, selectedRooms, setSelectedRooms, isRoomsDropdownOpen, setIsRoomsDropdownOpen, searchActiveRoom, setSearchActiveRoom, dropdownRef, calendarYear, calendarMonth, monthsNames, handlePrevMonth, handleNextMonth, getDaysInMonth, toggleGrid, bulkAdd, balances, modalBalances, setModalBalances, totalBankroll, updateBalance, dateFrom, setDateFrom, dateTo, setDateTo, activeStats, setActiveStats, showFineFiltersModal, setShowFineFiltersModal, notes, sessionsHistory, showSessionModal, setShowSessionModal, setPresetDate, handleLogin, handleSiteSelect, handleMfa, logout, toggleRoom, fetchTournaments, getRoomStyle, getPriorityStyles, isOverlay, totalBuyin, totalEV, availableTournamentsForFilter, activeRoomsForFilter, filteredTournaments, totalPages, searchResults, getNoteKey, saveNote, finishSession, clearHistory, chartData, renderGridPanel } = props;
+  const { setAuthStep, setSiteSelectionId, setSiteCandidates, setAuthError, listRef, minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv, authStep, activeTab, setActiveTab, username, setUsername, password, setPassword, otp, setOtp, siteCandidates, authenticatedSite, authLoading, authError, grid, loading, structFilters, setStructFilters, priorityFilters, setPriorityFilters, pageSize, setPageSize, currentPage, setCurrentPage, selectedRooms, setSelectedRooms, isRoomsDropdownOpen, setIsRoomsDropdownOpen, searchActiveRoom, setSearchActiveRoom, dropdownRef, calendarYear, calendarMonth, monthsNames, handlePrevMonth, handleNextMonth, getDaysInMonth, toggleGrid, bulkAdd, balances, modalBalances, setModalBalances, totalBankroll, updateBalance, dateFrom, setDateFrom, dateTo, setDateTo, activeStats, setActiveStats, showFineFiltersModal, setShowFineFiltersModal, notes, sessionsHistory, showSessionModal, setShowSessionModal, setPresetDate, handleLogin, handleSiteSelect, handleMfa, logout, toggleRoom, fetchTournaments, getRoomStyle, getPriorityStyles, isOverlay, totalBuyin, totalEV, availableTournamentsForFilter, activeRoomsForFilter, filteredTournaments, totalPages, searchResults, getNoteKey, saveNote, finishSession, clearHistory, chartData, renderGridPanel, isSaveGridModalOpen, setIsSaveGridModalOpen, newGridName, setNewGridName, submitNamedGrid, gridDialogError, setGridDialogError, gridDialogSuccess, isGridErrorOpen, setIsGridErrorOpen, isReplaceGridConfirmOpen, setIsReplaceGridConfirmOpen, pendingGridName, confirmReplaceSavedGrid } = props;
 
 
   if (authStep === 'login' || authStep === 'mfa' || authStep === 'site_select') {
@@ -406,6 +407,23 @@ export function AppLayout(props: AppController) {
           </div>
         </div>
       )}
+
+      <SavedGridModals
+        saveOpen={isSaveGridModalOpen}
+        onCloseSave={() => { setIsSaveGridModalOpen(false); setGridDialogError(''); setGridDialogSuccess(''); }}
+        name={newGridName}
+        onNameChange={setNewGridName}
+        onSave={submitNamedGrid}
+        error={gridDialogError}
+        success={gridDialogSuccess}
+        gridCount={grid.length}
+        errorOpen={isGridErrorOpen}
+        onCloseError={() => { setIsGridErrorOpen(false); setGridDialogError(''); }}
+        confirmOpen={isReplaceGridConfirmOpen}
+        pendingName={pendingGridName}
+        onConfirmReplace={confirmReplaceSavedGrid}
+        onCancelReplace={() => { setIsReplaceGridConfirmOpen(false); setPendingGridName(null); }}
+      />
 
       <FineFiltersModal
         open={showFineFiltersModal}
