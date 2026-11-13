@@ -424,7 +424,9 @@ export function useAppController() {
 
   const renderGridPanel = () => (
     <GridPanel
-      grid={grid} onSaveNamedGrid={saveNamedGrid} onLoadNamedGrids={loadNamedGrids} onSelectSavedGrid={selectSavedGrid}\n      savedGrids={savedGrids} isSavedGridsOpen={isSavedGridsOpen} savedGridsLoading={savedGridsLoading}\n      onCloseSavedGrids={() => setIsSavedGridsOpen(false)} totalEV={totalEV} gridEndTime={gridEndTime} gridVariance={gridVariance}
+      grid={grid} onSaveNamedGrid={saveNamedGrid} onLoadNamedGrids={loadNamedGrids} onSelectSavedGrid={selectSavedGrid}
+      savedGrids={savedGrids} isSavedGridsOpen={isSavedGridsOpen} savedGridsLoading={savedGridsLoading}
+      onCloseSavedGrids={() => setIsSavedGridsOpen(false)} totalEV={totalEV} gridEndTime={gridEndTime} gridVariance={gridVariance}
       gridPeakTables={gridPeakTables} openFinishModal={openFinishModal} sortOrder={sortOrder}
       setSortOrder={setSortOrder} groupByRoom={groupByRoom} setGroupByRoom={setGroupByRoom}
       clearGrid={clearGrid} activeGridRooms={activeGridRooms} gridActiveRoom={gridActiveRoom}
