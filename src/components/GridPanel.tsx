@@ -7,6 +7,7 @@ import { getRoomCurrency, getUniqueId, parseNum } from '../utils';
 type SortOrder = 'time' | 'buyin' | 'ev' | 'tier';
 type Props = {
   grid: Tournament[];
+  onSaveNamedGrid: () => void;
   totalEV: number;
   gridEndTime: string;
   gridVariance: { label: string; color: string };
@@ -32,7 +33,7 @@ type Props = {
 };
 
 export function GridPanel(props: Props) {
-  const { grid, totalEV, gridEndTime, gridVariance, gridPeakTables, openFinishModal, sortOrder, setSortOrder,
+  const { grid, onSaveNamedGrid, totalEV, gridEndTime, gridVariance, gridPeakTables, openFinishModal, sortOrder, setSortOrder,
     groupByRoom, setGroupByRoom, clearGrid, activeGridRooms, gridActiveRoom, setGridActiveRoom,
     isGridRoomsOpen, setIsGridRoomsOpen, gridDropdownRef, displayGrid, filteredGridBySelectedRoom,
     gridListRef, getRoomStyle, renderGridCard, setActiveTab } = props;
@@ -60,6 +61,10 @@ export function GridPanel(props: Props) {
             <span>Пик: <b className="text-cyan-400">{gridPeakTables.max} шт (~{gridPeakTables.timeStr})</b></span>
           </div>
         </div>
+
+        <button onClick={onSaveNamedGrid} disabled={grid.length === 0} className="w-full py-2.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-cyan-300 text-xs font-black uppercase tracking-wide transition">
+          Сохранить сетку
+        </button>
 
         {grid.length > 0 && (
           <div className="flex items-center gap-1.5 pt-2 border-t border-slate-800/80">
