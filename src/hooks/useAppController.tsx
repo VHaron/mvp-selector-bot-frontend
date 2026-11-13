@@ -317,6 +317,19 @@ export function useAppController() {
 
   const clearGrid = () => setGrid([]);
 
+  const saveNamedGrid = async () => {
+    if (!sessionToken || grid.length === 0) return;
+    const name = window.prompt('Введите название сетки:')?.trim();
+    if (!name) return;
+    try {
+      const response = await apiCall('save_named_grid', { session_token: sessionToken, name, grid });
+      if (response.status !== 'success') throw new Error(response.detail || 'Не удалось сохранить сетку');
+      window.alert('Сетка «' + name + '» сохранена');
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Не удалось сохранить сетку');
+    }
+  };
+
   const getNoteKey = (t: Tournament) => `${t.room}_${t.name}`;
   const saveNote = (t: Tournament, tag: NoteTag, text: string) => {
     const key = getNoteKey(t); const newNotes = { ...notes, [key]: { tag, text } };
@@ -383,7 +396,7 @@ export function useAppController() {
 
   const renderGridPanel = () => (
     <GridPanel
-      grid={grid} totalEV={totalEV} gridEndTime={gridEndTime} gridVariance={gridVariance}
+      grid={grid} onSaveNamedGrid={saveNamedGrid} totalEV={totalEV} gridEndTime={gridEndTime} gridVariance={gridVariance}
       gridPeakTables={gridPeakTables} openFinishModal={openFinishModal} sortOrder={sortOrder}
       setSortOrder={setSortOrder} groupByRoom={groupByRoom} setGroupByRoom={setGroupByRoom}
       clearGrid={clearGrid} activeGridRooms={activeGridRooms} gridActiveRoom={gridActiveRoom}
@@ -397,5 +410,5 @@ export function useAppController() {
 
 
 
-  return { setAuthStep, setSiteSelectionId, setSiteCandidates, setAuthError, listRef, gridListRef, minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv, authStep, sessionToken, activeTab, setActiveTab, username, setUsername, password, setPassword, otp, setOtp, siteSelectionId, siteCandidates, authenticatedSite, authLoading, authError, tournaments, setTournaments, grid, setGrid, loading, groupByRoom, setGroupByRoom, gridActiveRoom, setGridActiveRoom, isGridRoomsOpen, setIsGridRoomsOpen, gridDropdownRef, activeFormats, setActiveFormats, structFilters, setStructFilters, priorityFilters, setPriorityFilters, pageSize, setPageSize, currentPage, setCurrentPage, sortOrder, setSortOrder, selectedRooms, setSelectedRooms, isRoomsDropdownOpen, setIsRoomsDropdownOpen, searchActiveRoom, setSearchActiveRoom, dropdownRef, calendarYear, calendarMonth, monthsNames, handlePrevMonth, handleNextMonth, getDaysInMonth, isRoomAllowed, toggleGrid, bulkAdd, balances, setBalances, modalBalances, setModalBalances, totalBankroll, updateBalance, dateFrom, setDateFrom, dateTo, setDateTo, isSettingsLoaded, setIsSettingsLoaded, activeStats, setActiveStats, showFineFiltersModal, setShowFineFiltersModal, notes, setNotes, sessionsHistory, setSessionsHistory, showSessionModal, setShowSessionModal, openFinishModal, setPresetDate, loadAllUserData, handleLogin, handleSiteSelect, handleMfa, logout, toggleRoom, fetchTournaments, getRoomStyle, getPriorityStyles, isOverlay, displayGrid, activeGridRooms, filteredGridBySelectedRoom, gridVariance, gridEndTime, gridPeakTables, totalBuyin, totalEV, availableTournamentsForFilter, activeRoomsForFilter, filteredTournaments, totalPages, searchResults, clearGrid, getNoteKey, saveNote, finishSession, clearHistory, chartData, renderGridCard, renderGridPanel };
+  return { saveNamedGrid, setAuthStep, setSiteSelectionId, setSiteCandidates, setAuthError, listRef, gridListRef, minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv, authStep, sessionToken, activeTab, setActiveTab, username, setUsername, password, setPassword, otp, setOtp, siteSelectionId, siteCandidates, authenticatedSite, authLoading, authError, tournaments, setTournaments, grid, setGrid, loading, groupByRoom, setGroupByRoom, gridActiveRoom, setGridActiveRoom, isGridRoomsOpen, setIsGridRoomsOpen, gridDropdownRef, activeFormats, setActiveFormats, structFilters, setStructFilters, priorityFilters, setPriorityFilters, pageSize, setPageSize, currentPage, setCurrentPage, sortOrder, setSortOrder, selectedRooms, setSelectedRooms, isRoomsDropdownOpen, setIsRoomsDropdownOpen, searchActiveRoom, setSearchActiveRoom, dropdownRef, calendarYear, calendarMonth, monthsNames, handlePrevMonth, handleNextMonth, getDaysInMonth, isRoomAllowed, toggleGrid, bulkAdd, balances, setBalances, modalBalances, setModalBalances, totalBankroll, updateBalance, dateFrom, setDateFrom, dateTo, setDateTo, isSettingsLoaded, setIsSettingsLoaded, activeStats, setActiveStats, showFineFiltersModal, setShowFineFiltersModal, notes, setNotes, sessionsHistory, setSessionsHistory, showSessionModal, setShowSessionModal, openFinishModal, setPresetDate, loadAllUserData, handleLogin, handleSiteSelect, handleMfa, logout, toggleRoom, fetchTournaments, getRoomStyle, getPriorityStyles, isOverlay, displayGrid, activeGridRooms, filteredGridBySelectedRoom, gridVariance, gridEndTime, gridPeakTables, totalBuyin, totalEV, availableTournamentsForFilter, activeRoomsForFilter, filteredTournaments, totalPages, searchResults, clearGrid, getNoteKey, saveNote, finishSession, clearHistory, chartData, renderGridCard, renderGridPanel };
 }
