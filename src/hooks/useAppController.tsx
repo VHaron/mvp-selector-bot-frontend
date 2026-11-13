@@ -39,6 +39,9 @@ export function useAppController() {
 
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [grid, setGrid] = useState<Tournament[]>([]);
+  const [savedGrids, setSavedGrids] = useState<Record<string, Tournament[]>>({});
+  const [isSavedGridsOpen, setIsSavedGridsOpen] = useState(false);
+  const [savedGridsLoading, setSavedGridsLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   
   const [groupByRoom, setGroupByRoom] = useState(false);
@@ -330,6 +333,31 @@ export function useAppController() {
     }
   };
 
+  const loadNamedGrids = async () => {
+    if (!sessionToken) return;
+    setSavedGridsLoading(true);
+    try {
+      const response = await apiCall('get_saved_grids', { session_token: sessionToken });
+      if (response.status !== 'success') throw new Error(response.detail || 'Не удалось получить сохранённые сетки');
+      const saved = response.saved_grids && typeof response.saved_grids === 'object' ? response.saved_grids as Record<string, Tournament[]> : {};
+      setSavedGrids(saved);
+      setIsSavedGridsOpen(true);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Не удалось получить сохранённые сетки');
+    } finally {
+      setSavedGridsLoading(false);
+    }
+  };
+
+  const selectSavedGrid = (name: string) => {
+    const selectedGrid = savedGrids[name];
+    if (!Array.isArray(selectedGrid)) return;
+    if (grid.length > 0 && !window.confirm('Заменить текущую сетку на «' + name + '»?')) return;
+    setGrid(selectedGrid);
+    setIsSavedGridsOpen(false);
+    setGridActiveRoom(null);
+  };
+
   const getNoteKey = (t: Tournament) => `${t.room}_${t.name}`;
   const saveNote = (t: Tournament, tag: NoteTag, text: string) => {
     const key = getNoteKey(t); const newNotes = { ...notes, [key]: { tag, text } };
@@ -396,7 +424,7 @@ export function useAppController() {
 
   const renderGridPanel = () => (
     <GridPanel
-      grid={grid} onSaveNamedGrid={saveNamedGrid} totalEV={totalEV} gridEndTime={gridEndTime} gridVariance={gridVariance}
+      grid={grid} onSaveNamedGrid={saveNamedGrid} onLoadNamedGrids={loadNamedGrids} onSelectSavedGrid={selectSavedGrid}\n      savedGrids={savedGrids} isSavedGridsOpen={isSavedGridsOpen} savedGridsLoading={savedGridsLoading}\n      onCloseSavedGrids={() => setIsSavedGridsOpen(false)} totalEV={totalEV} gridEndTime={gridEndTime} gridVariance={gridVariance}
       gridPeakTables={gridPeakTables} openFinishModal={openFinishModal} sortOrder={sortOrder}
       setSortOrder={setSortOrder} groupByRoom={groupByRoom} setGroupByRoom={setGroupByRoom}
       clearGrid={clearGrid} activeGridRooms={activeGridRooms} gridActiveRoom={gridActiveRoom}
@@ -410,5 +438,5 @@ export function useAppController() {
 
 
 
-  return { saveNamedGrid, setAuthStep, setSiteSelectionId, setSiteCandidates, setAuthError, listRef, gridListRef, minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv, authStep, sessionToken, activeTab, setActiveTab, username, setUsername, password, setPassword, otp, setOtp, siteSelectionId, siteCandidates, authenticatedSite, authLoading, authError, tournaments, setTournaments, grid, setGrid, loading, groupByRoom, setGroupByRoom, gridActiveRoom, setGridActiveRoom, isGridRoomsOpen, setIsGridRoomsOpen, gridDropdownRef, activeFormats, setActiveFormats, structFilters, setStructFilters, priorityFilters, setPriorityFilters, pageSize, setPageSize, currentPage, setCurrentPage, sortOrder, setSortOrder, selectedRooms, setSelectedRooms, isRoomsDropdownOpen, setIsRoomsDropdownOpen, searchActiveRoom, setSearchActiveRoom, dropdownRef, calendarYear, calendarMonth, monthsNames, handlePrevMonth, handleNextMonth, getDaysInMonth, isRoomAllowed, toggleGrid, bulkAdd, balances, setBalances, modalBalances, setModalBalances, totalBankroll, updateBalance, dateFrom, setDateFrom, dateTo, setDateTo, isSettingsLoaded, setIsSettingsLoaded, activeStats, setActiveStats, showFineFiltersModal, setShowFineFiltersModal, notes, setNotes, sessionsHistory, setSessionsHistory, showSessionModal, setShowSessionModal, openFinishModal, setPresetDate, loadAllUserData, handleLogin, handleSiteSelect, handleMfa, logout, toggleRoom, fetchTournaments, getRoomStyle, getPriorityStyles, isOverlay, displayGrid, activeGridRooms, filteredGridBySelectedRoom, gridVariance, gridEndTime, gridPeakTables, totalBuyin, totalEV, availableTournamentsForFilter, activeRoomsForFilter, filteredTournaments, totalPages, searchResults, clearGrid, getNoteKey, saveNote, finishSession, clearHistory, chartData, renderGridCard, renderGridPanel };
+  return { saveNamedGrid, loadNamedGrids, selectSavedGrid, savedGrids, setAuthStep, setSiteSelectionId, setSiteCandidates, setAuthError, listRef, gridListRef, minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv, authStep, sessionToken, activeTab, setActiveTab, username, setUsername, password, setPassword, otp, setOtp, siteSelectionId, siteCandidates, authenticatedSite, authLoading, authError, tournaments, setTournaments, grid, setGrid, loading, groupByRoom, setGroupByRoom, gridActiveRoom, setGridActiveRoom, isGridRoomsOpen, setIsGridRoomsOpen, gridDropdownRef, activeFormats, setActiveFormats, structFilters, setStructFilters, priorityFilters, setPriorityFilters, pageSize, setPageSize, currentPage, setCurrentPage, sortOrder, setSortOrder, selectedRooms, setSelectedRooms, isRoomsDropdownOpen, setIsRoomsDropdownOpen, searchActiveRoom, setSearchActiveRoom, dropdownRef, calendarYear, calendarMonth, monthsNames, handlePrevMonth, handleNextMonth, getDaysInMonth, isRoomAllowed, toggleGrid, bulkAdd, balances, setBalances, modalBalances, setModalBalances, totalBankroll, updateBalance, dateFrom, setDateFrom, dateTo, setDateTo, isSettingsLoaded, setIsSettingsLoaded, activeStats, setActiveStats, showFineFiltersModal, setShowFineFiltersModal, notes, setNotes, sessionsHistory, setSessionsHistory, showSessionModal, setShowSessionModal, openFinishModal, setPresetDate, loadAllUserData, handleLogin, handleSiteSelect, handleMfa, logout, toggleRoom, fetchTournaments, getRoomStyle, getPriorityStyles, isOverlay, displayGrid, activeGridRooms, filteredGridBySelectedRoom, gridVariance, gridEndTime, gridPeakTables, totalBuyin, totalEV, availableTournamentsForFilter, activeRoomsForFilter, filteredTournaments, totalPages, searchResults, clearGrid, getNoteKey, saveNote, finishSession, clearHistory, chartData, renderGridCard, renderGridPanel };
 }
