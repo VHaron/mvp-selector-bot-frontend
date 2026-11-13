@@ -42,6 +42,13 @@ export function useAppController() {
   const [savedGrids, setSavedGrids] = useState<Record<string, Tournament[]>>({});
   const [isSavedGridsOpen, setIsSavedGridsOpen] = useState(false);
   const [savedGridsLoading, setSavedGridsLoading] = useState(false);
+  const [isSaveGridModalOpen, setIsSaveGridModalOpen] = useState(false);
+  const [newGridName, setNewGridName] = useState('');
+  const [gridDialogError, setGridDialogError] = useState('');
+  const [gridDialogSuccess, setGridDialogSuccess] = useState('');
+  const [isGridErrorOpen, setIsGridErrorOpen] = useState(false);
+  const [pendingGridName, setPendingGridName] = useState<string | null>(null);
+  const [isReplaceGridConfirmOpen, setIsReplaceGridConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   
   const [groupByRoom, setGroupByRoom] = useState(false);
@@ -320,16 +327,27 @@ export function useAppController() {
 
   const clearGrid = () => setGrid([]);
 
-  const saveNamedGrid = async () => {
+  const saveNamedGrid = () => {
     if (!sessionToken || grid.length === 0) return;
-    const name = window.prompt('Введите название сетки:')?.trim();
-    if (!name) return;
+    setNewGridName('');
+    setGridDialogError('');
+    setGridDialogSuccess('');
+    setIsSaveGridModalOpen(true);
+  };
+
+  const submitNamedGrid = async () => {
+    const name = newGridName.trim();
+    if (!sessionToken || grid.length === 0 || !name) {
+      setGridDialogError('Введите название сетки');
+      return;
+    }
     try {
       const response = await apiCall('save_named_grid', { session_token: sessionToken, name, grid });
       if (response.status !== 'success') throw new Error(response.detail || 'Не удалось сохранить сетку');
-      window.alert('Сетка «' + name + '» сохранена');
+      setGridDialogError('');
+      setGridDialogSuccess('Сетка «' + name + '» успешно сохранена');
     } catch (error) {
-      window.alert(error instanceof Error ? error.message : 'Не удалось сохранить сетку');
+      setGridDialogError(error instanceof Error ? error.message : 'Не удалось сохранить сетку');
     }
   };
 
@@ -343,19 +361,35 @@ export function useAppController() {
       setSavedGrids(saved);
       setIsSavedGridsOpen(true);
     } catch (error) {
-      window.alert(error instanceof Error ? error.message : 'Не удалось получить сохранённые сетки');
+      setGridDialogError(error instanceof Error ? error.message : 'Не удалось получить сохранённые сетки');
+      setIsGridErrorOpen(true);
     } finally {
       setSavedGridsLoading(false);
     }
   };
 
-  const selectSavedGrid = (name: string) => {
+  const applySavedGrid = (name: string) => {
     const selectedGrid = savedGrids[name];
     if (!Array.isArray(selectedGrid)) return;
-    if (grid.length > 0 && !window.confirm('Заменить текущую сетку на «' + name + '»?')) return;
     setGrid(selectedGrid);
     setIsSavedGridsOpen(false);
+    setIsReplaceGridConfirmOpen(false);
+    setPendingGridName(null);
     setGridActiveRoom(null);
+  };
+
+  const selectSavedGrid = (name: string) => {
+    if (!Array.isArray(savedGrids[name])) return;
+    if (grid.length > 0) {
+      setPendingGridName(name);
+      setIsReplaceGridConfirmOpen(true);
+      return;
+    }
+    applySavedGrid(name);
+  };
+
+  const confirmReplaceSavedGrid = () => {
+    if (pendingGridName) applySavedGrid(pendingGridName);
   };
 
   const getNoteKey = (t: Tournament) => `${t.room}_${t.name}`;
@@ -440,5 +474,5 @@ export function useAppController() {
 
 
 
-  return { saveNamedGrid, loadNamedGrids, selectSavedGrid, savedGrids, setAuthStep, setSiteSelectionId, setSiteCandidates, setAuthError, listRef, gridListRef, minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv, authStep, sessionToken, activeTab, setActiveTab, username, setUsername, password, setPassword, otp, setOtp, siteSelectionId, siteCandidates, authenticatedSite, authLoading, authError, tournaments, setTournaments, grid, setGrid, loading, groupByRoom, setGroupByRoom, gridActiveRoom, setGridActiveRoom, isGridRoomsOpen, setIsGridRoomsOpen, gridDropdownRef, activeFormats, setActiveFormats, structFilters, setStructFilters, priorityFilters, setPriorityFilters, pageSize, setPageSize, currentPage, setCurrentPage, sortOrder, setSortOrder, selectedRooms, setSelectedRooms, isRoomsDropdownOpen, setIsRoomsDropdownOpen, searchActiveRoom, setSearchActiveRoom, dropdownRef, calendarYear, calendarMonth, monthsNames, handlePrevMonth, handleNextMonth, getDaysInMonth, isRoomAllowed, toggleGrid, bulkAdd, balances, setBalances, modalBalances, setModalBalances, totalBankroll, updateBalance, dateFrom, setDateFrom, dateTo, setDateTo, isSettingsLoaded, setIsSettingsLoaded, activeStats, setActiveStats, showFineFiltersModal, setShowFineFiltersModal, notes, setNotes, sessionsHistory, setSessionsHistory, showSessionModal, setShowSessionModal, openFinishModal, setPresetDate, loadAllUserData, handleLogin, handleSiteSelect, handleMfa, logout, toggleRoom, fetchTournaments, getRoomStyle, getPriorityStyles, isOverlay, displayGrid, activeGridRooms, filteredGridBySelectedRoom, gridVariance, gridEndTime, gridPeakTables, totalBuyin, totalEV, availableTournamentsForFilter, activeRoomsForFilter, filteredTournaments, totalPages, searchResults, clearGrid, getNoteKey, saveNote, finishSession, clearHistory, chartData, renderGridCard, renderGridPanel };
+  return { saveNamedGrid, submitNamedGrid, loadNamedGrids, selectSavedGrid, savedGrids, isSaveGridModalOpen, setIsSaveGridModalOpen, newGridName, setNewGridName, gridDialogError, setGridDialogError, gridDialogSuccess, setGridDialogSuccess, isGridErrorOpen, setIsGridErrorOpen, isReplaceGridConfirmOpen, setIsReplaceGridConfirmOpen, pendingGridName, confirmReplaceSavedGrid, setAuthStep, setSiteSelectionId, setSiteCandidates, setAuthError, listRef, gridListRef, minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv, authStep, sessionToken, activeTab, setActiveTab, username, setUsername, password, setPassword, otp, setOtp, siteSelectionId, siteCandidates, authenticatedSite, authLoading, authError, tournaments, setTournaments, grid, setGrid, loading, groupByRoom, setGroupByRoom, gridActiveRoom, setGridActiveRoom, isGridRoomsOpen, setIsGridRoomsOpen, gridDropdownRef, activeFormats, setActiveFormats, structFilters, setStructFilters, priorityFilters, setPriorityFilters, pageSize, setPageSize, currentPage, setCurrentPage, sortOrder, setSortOrder, selectedRooms, setSelectedRooms, isRoomsDropdownOpen, setIsRoomsDropdownOpen, searchActiveRoom, setSearchActiveRoom, dropdownRef, calendarYear, calendarMonth, monthsNames, handlePrevMonth, handleNextMonth, getDaysInMonth, isRoomAllowed, toggleGrid, bulkAdd, balances, setBalances, modalBalances, setModalBalances, totalBankroll, updateBalance, dateFrom, setDateFrom, dateTo, setDateTo, isSettingsLoaded, setIsSettingsLoaded, activeStats, setActiveStats, showFineFiltersModal, setShowFineFiltersModal, notes, setNotes, sessionsHistory, setSessionsHistory, showSessionModal, setShowSessionModal, openFinishModal, setPresetDate, loadAllUserData, handleLogin, handleSiteSelect, handleMfa, logout, toggleRoom, fetchTournaments, getRoomStyle, getPriorityStyles, isOverlay, displayGrid, activeGridRooms, filteredGridBySelectedRoom, gridVariance, gridEndTime, gridPeakTables, totalBuyin, totalEV, availableTournamentsForFilter, activeRoomsForFilter, filteredTournaments, totalPages, searchResults, clearGrid, getNoteKey, saveNote, finishSession, clearHistory, chartData, renderGridCard, renderGridPanel };
 }
