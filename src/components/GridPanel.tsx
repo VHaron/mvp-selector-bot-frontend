@@ -7,6 +7,13 @@ import { getRoomCurrency, getUniqueId, parseNum } from '../utils';
 type SortOrder = 'time' | 'buyin' | 'ev' | 'tier';
 type Props = {
   grid: Tournament[];
+  onSaveNamedGrid: () => void;
+  onLoadNamedGrids: () => void;
+  onSelectSavedGrid: (name: string) => void;
+  onCloseSavedGrids: () => void;
+  savedGrids: Record<string, Tournament[]>;
+  isSavedGridsOpen: boolean;
+  savedGridsLoading: boolean;
   totalEV: number;
   gridEndTime: string;
   gridVariance: { label: string; color: string };
@@ -32,7 +39,7 @@ type Props = {
 };
 
 export function GridPanel(props: Props) {
-  const { grid, totalEV, gridEndTime, gridVariance, gridPeakTables, openFinishModal, sortOrder, setSortOrder,
+  const { grid, onSaveNamedGrid, onLoadNamedGrids, onSelectSavedGrid, onCloseSavedGrids, savedGrids, isSavedGridsOpen, savedGridsLoading, totalEV, gridEndTime, gridVariance, gridPeakTables, openFinishModal, sortOrder, setSortOrder,
     groupByRoom, setGroupByRoom, clearGrid, activeGridRooms, gridActiveRoom, setGridActiveRoom,
     isGridRoomsOpen, setIsGridRoomsOpen, gridDropdownRef, displayGrid, filteredGridBySelectedRoom,
     gridListRef, getRoomStyle, renderGridCard, setActiveTab } = props;
@@ -60,6 +67,34 @@ export function GridPanel(props: Props) {
             <span>Пик: <b className="text-cyan-400">{gridPeakTables.max} шт (~{gridPeakTables.timeStr})</b></span>
           </div>
         </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <button onClick={onSaveNamedGrid} disabled={grid.length === 0} className="w-full py-2.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-cyan-300 text-xs font-black uppercase tracking-wide transition">
+            Сохранить сетку
+          </button>
+          <button onClick={onLoadNamedGrids} disabled={savedGridsLoading} className="w-full py-2.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 disabled:opacity-50 text-emerald-300 text-xs font-black uppercase tracking-wide transition">
+            {savedGridsLoading ? 'Загрузка…' : 'Загрузить сетку'}
+          </button>
+        </div>
+
+        {isSavedGridsOpen && (
+          <div className="rounded-xl border border-slate-700 bg-slate-950 p-2 space-y-1">
+            <div className="flex items-center justify-between px-2 py-1">
+              <span className="text-[11px] font-black uppercase tracking-wide text-slate-300">Сохранённые сетки</span>
+              <button onClick={onCloseSavedGrids} className="text-slate-500 hover:text-white text-xs px-2">Закрыть</button>
+            </div>
+            {Object.keys(savedGrids).length === 0 ? (
+              <div className="px-2 py-3 text-center text-xs text-slate-500">Пока нет сохранённых сеток</div>
+            ) : (
+              Object.entries(savedGrids).map(([name, tournaments]) => (
+                <button key={name} onClick={() => onSelectSavedGrid(name)} className="w-full flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-left hover:bg-slate-800 transition">
+                  <span className="min-w-0 truncate text-xs font-bold text-slate-200">{name}</span>
+                  <span className="shrink-0 text-[10px] text-slate-500">{Array.isArray(tournaments) ? tournaments.length : 0} турн.</span>
+                </button>
+              ))
+            )}
+          </div>
+        )}
 
         {grid.length > 0 && (
           <div className="flex items-center gap-1.5 pt-2 border-t border-slate-800/80">
