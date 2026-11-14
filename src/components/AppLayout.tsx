@@ -14,6 +14,9 @@ import { SmartGridModal, type SmartGridSettings } from './SmartGridModal';
 type AppController = ReturnType<typeof useAppController>;
 
 export function AppLayout(props: AppController) {
+  const [showSmartGridModal, setShowSmartGridModal] = useState(false);
+  const [smartGridBuilding, setSmartGridBuilding] = useState(false);
+  const [smartGridMessage, setSmartGridMessage] = useState('');
   const { setAuthStep, setSiteSelectionId, setSiteCandidates, setAuthError, listRef, minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv, authStep, activeTab, setActiveTab, username, setUsername, password, setPassword, otp, setOtp, siteCandidates, authenticatedSite, authLoading, authError, grid, loading, structFilters, setStructFilters, priorityFilters, setPriorityFilters, pageSize, setPageSize, currentPage, setCurrentPage, selectedRooms, setSelectedRooms, isRoomsDropdownOpen, setIsRoomsDropdownOpen, searchActiveRoom, setSearchActiveRoom, dropdownRef, calendarYear, calendarMonth, monthsNames, handlePrevMonth, handleNextMonth, getDaysInMonth, toggleGrid, bulkAdd, balances, modalBalances, setModalBalances, totalBankroll, updateBalance, dateFrom, setDateFrom, dateTo, setDateTo, activeStats, setActiveStats, showFineFiltersModal, setShowFineFiltersModal, notes, sessionsHistory, showSessionModal, setShowSessionModal, setPresetDate, handleLogin, handleSiteSelect, handleMfa, logout, toggleRoom, fetchTournaments, getRoomStyle, getPriorityStyles, isOverlay, totalBuyin, totalEV, availableTournamentsForFilter, activeRoomsForFilter, filteredTournaments, totalPages, searchResults, getNoteKey, saveNote, finishSession, clearHistory, chartData, renderGridPanel, smartGridIds, runSmartGrid, isSaveGridModalOpen, setIsSaveGridModalOpen, newGridName, setNewGridName, submitNamedGrid, gridDialogError, setGridDialogError, gridDialogSuccess, setGridDialogSuccess, isGridErrorOpen, setIsGridErrorOpen, isReplaceGridConfirmOpen, setIsReplaceGridConfirmOpen, pendingGridName, setPendingGridName, confirmReplaceSavedGrid } = props;
 
 
@@ -23,7 +26,7 @@ export function AppLayout(props: AppController) {
     try {
       const result = await runSmartGrid(settings, mode);
       const end = result.estimated_end ? new Date(result.estimated_end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
-      setSmartGridMessage('Готово: добавлено ' + result.selected_count + ' турниров. Бюджет:  || authStep === 'mfa' || authStep === 'site_select') {
+      setSmartGridMessage('Готово: добавлено ' + result.selected_count + ' турниров. Бюджет: 
     return (
       <LoginPanel
         authStep={authStep}
@@ -437,6 +440,15 @@ export function AppLayout(props: AppController) {
         onCancelReplace={() => { setIsReplaceGridConfirmOpen(false); setPendingGridName(null); }}
       />
 
+      <SmartGridModal
+        open={showSmartGridModal}
+        onClose={() => setShowSmartGridModal(false)}
+        hasPreviousSmartGrid={smartGridIds.length > 0}
+        onBuild={handleSmartGridBuild}
+        building={smartGridBuilding}
+        message={smartGridMessage}
+      />
+
       <FineFiltersModal
         open={showFineFiltersModal}
         onClose={() => setShowFineFiltersModal(false)}
@@ -458,7 +470,7 @@ export function AppLayout(props: AppController) {
   );
 }
  + result.spent_usd.toFixed(2) +
-        ', остаток:  || authStep === 'mfa' || authStep === 'site_select') {
+        ', остаток: 
     return (
       <LoginPanel
         authStep={authStep}
@@ -888,8 +900,7 @@ export function AppLayout(props: AppController) {
     </div>
   );
 }
- + result.remaining_usd.toFixed(2) + ', пик столов: ' + result.peak_tables +
-        ', окончание: ' + end + '.');
+ + result.remaining_usd.toFixed(2) + ', пик столов: ' + result.peak_tables + ', окончание: ' + end + '.');
     } catch (error) {
       setSmartGridMessage(error instanceof Error ? error.message : 'Ошибка умного подбора');
     } finally {
@@ -1305,15 +1316,6 @@ export function AppLayout(props: AppController) {
         pendingName={pendingGridName}
         onConfirmReplace={confirmReplaceSavedGrid}
         onCancelReplace={() => { setIsReplaceGridConfirmOpen(false); setPendingGridName(null); }}
-      />
-
-      <SmartGridModal
-        open={showSmartGridModal}
-        onClose={() => setShowSmartGridModal(false)}
-        hasPreviousSmartGrid={smartGridIds.length > 0}
-        onBuild={handleSmartGridBuild}
-        building={smartGridBuilding}
-        message={smartGridMessage}
       />
 
       <FineFiltersModal
