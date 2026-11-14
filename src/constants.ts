@@ -9,5 +9,4 @@ export const ROOM_DOMAINS: Record<string, string> = {
   '252': 'americascardroom.eu', '264': 'pokerdom.com', '265': 'coinpoker.com', '267': 'clubgg.com', '268': 'wptglobal.com'
 };
 
-
-export const API_BASE_URL = 'https://selector-backend-production.up.railway.app';
+export const API_BASE_URL = 'https://smart-grid-backend-test-testing.up.railway.app';
