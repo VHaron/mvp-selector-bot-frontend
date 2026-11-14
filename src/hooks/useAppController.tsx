@@ -350,6 +350,7 @@ export function useAppController() {
     const locked = mode === 'replace' ? grid.filter(item => !previousSmart.has(getUniqueId(item))) : grid;
     const lockedIds = new Set(locked.map(getUniqueId));
     const candidates = tournaments.filter(item => {
+      if (notes[`${item.room}_${item.name}`]?.tag === 'skip') return false;
       if (!isRoomAllowed(item.room) || isStartedTooLongAgo(item.time_start, item.day_week, item.room)) return false;
       const buyin = parseNum(item.buyin);
       if (buyin < minBuyin || buyin > maxBuyin || parseNum(item.ev_mtt) < minEv) return false;
@@ -375,6 +376,7 @@ export function useAppController() {
     };
     const normalize = (item: Tournament) => ({
       ...item,
+      priority: notes[`${item.room}_${item.name}`]?.tag === 'must' ? '1' : item.priority,
       smart_start_at: localIso(getLocalTimeDate(item.time_start, item.day_week, item.room)),
     });
     const normalizedCandidates = candidates.map(normalize);
