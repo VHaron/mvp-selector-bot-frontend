@@ -469,6 +469,8 @@ export function useAppController() {
     const selectedGrid = savedGrids[name];
     if (!Array.isArray(selectedGrid)) return;
     setGrid(selectedGrid);
+    setSmartGridIds([]);
+    localStorage.removeItem('mvp_smart_grid_ids');
     setIsSavedGridsOpen(false);
     setIsReplaceGridConfirmOpen(false);
     setPendingGridName(null);
