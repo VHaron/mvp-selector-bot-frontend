@@ -10,7 +10,7 @@ import { useTournamentGridModel } from './useTournamentGridModel';
 import { useTournamentSearchModel } from './useTournamentSearchModel';
 import { ROOMS } from '../constants';
 import type { Tournament, NoteTag, NoteData, SessionData } from '../types';
-import { getRoomIdByName, parseNum, getUniqueId, getLocalTimeDate, getTournamentFormats, isStartedTooLongAgo } from '../utils';
+import { getRoomIdByName, parseNum, getUniqueId, getLocalTimeDate, getTournamentFormats } from '../utils';
 
 export function useAppController() {
   const [listRef] = useAutoAnimate<HTMLDivElement>({ duration: 250 });
@@ -351,7 +351,7 @@ export function useAppController() {
     const lockedIds = new Set(locked.map(getUniqueId));
     const candidates = tournaments.filter(item => {
       if (notes[`${item.room}_${item.name}`]?.tag === 'skip') return false;
-      if (!isRoomAllowed(item.room) || isStartedTooLongAgo(item.time_start, item.day_week, item.room)) return false;
+      if (!isRoomAllowed(item.room)) return false;
       const buyin = parseNum(item.buyin);
       if (buyin < minBuyin || buyin > maxBuyin || parseNum(item.ev_mtt) < minEv) return false;
       const priorityEnabled = item.priority === '1' ? priorityFilters.p1 : item.priority === '2' ? priorityFilters.p2 : item.priority === '3' ? priorityFilters.p3 : false;
@@ -374,17 +374,35 @@ export function useAppController() {
       return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) +
         'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
     };
-    const normalize = (item: Tournament) => ({
-      ...item,
-      priority: notes[`${item.room}_${item.name}`]?.tag === 'must' ? '1' : item.priority,
-      smart_start_at: localIso(getLocalTimeDate(item.time_start, item.day_week, item.room)),
-    });
+    const normalize = (item: Tournament) => {
+      const localTournamentTime = getLocalTimeDate(item.time_start, item.day_week, item.room);
+      let scheduled = new Date(localTournamentTime);
+      if (dateFrom) {
+        const rangeStart = new Date(dateFrom);
+        const dayNames = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+        const cleanDay = String(item.day_week || '').toLowerCase().replace(/[^а-яё]/g, '');
+        const targetDay = dayNames.findIndex(day => cleanDay.includes(day));
+        if (Number.isFinite(rangeStart.getTime())) {
+          scheduled = new Date(rangeStart);
+          if (targetDay >= 0) {
+            const difference = (targetDay - rangeStart.getDay() + 7) % 7;
+            scheduled.setDate(scheduled.getDate() + difference);
+          }
+          scheduled.setHours(localTournamentTime.getHours(), localTournamentTime.getMinutes(), 0, 0);
+        }
+      }
+      return {
+        ...item,
+        priority: notes[`${item.room}_${item.name}`]?.tag === 'must' ? '1' : item.priority,
+        smart_start_at: localIso(scheduled),
+      };
+    };
     const normalizedCandidates = candidates.map(normalize);
     const normalizedLocked = locked.map(normalize);
     const dated = [...normalizedCandidates, ...normalizedLocked]
       .map(item => new Date(item.smart_start_at).getTime()).filter(Number.isFinite);
     if (!dated.length) throw new Error('Не удалось определить даты турниров. Обновите расписание.');
-    const first = new Date(Math.min(...dated));
+    const first = dateFrom && Number.isFinite(new Date(dateFrom).getTime()) ? new Date(dateFrom) : new Date(Math.min(...dated));
     const [startHour, startMinute] = settings.startTime.split(':').map(Number);
     const [endHour, endMinute] = settings.endTime.split(':').map(Number);
     const overnight = endHour * 60 + endMinute <= startHour * 60 + startMinute;
