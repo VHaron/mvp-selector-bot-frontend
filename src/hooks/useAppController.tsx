@@ -93,9 +93,15 @@ export function useAppController() {
 
   const toggleGrid = (t: Tournament) => {
     const targetId = getUniqueId(t);
-    setGrid(previous => previous.some(item => getUniqueId(item) === targetId)
-      ? previous.filter(item => getUniqueId(item) !== targetId)
-      : [...previous, t]);
+    const exists = grid.some(item => getUniqueId(item) === targetId);
+    if (exists && smartGridIds.includes(targetId)) {
+      setSmartGridIds(previous => {
+        const next = previous.filter(id => id !== targetId);
+        localStorage.setItem('mvp_smart_grid_ids', JSON.stringify(next));
+        return next;
+      });
+    }
+    setGrid(previous => exists ? previous.filter(item => getUniqueId(item) !== targetId) : [...previous, t]);
   };
 
   const bulkAdd = (type: 'top' | 'overlay') => {
@@ -256,6 +262,7 @@ export function useAppController() {
   };
 
   const logout = () => {
+    setSmartGridIds([]); localStorage.removeItem('mvp_smart_grid_ids');
     localStorage.removeItem('mvp_token'); localStorage.removeItem('mvp_site'); setSessionToken(null);
     setIsSettingsLoaded(false); setTournaments([]); setGrid([]); setNotes({});
     setSessionsHistory([]); setBalances({}); setSelectedRooms(Object.keys(ROOMS));
