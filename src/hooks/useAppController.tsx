@@ -10,7 +10,7 @@ import { useTournamentGridModel } from './useTournamentGridModel';
 import { useTournamentSearchModel } from './useTournamentSearchModel';
 import { ROOMS } from '../constants';
 import type { Tournament, NoteTag, NoteData, SessionData } from '../types';
-import { getRoomIdByName, parseNum, getUniqueId } from '../utils';
+import { getRoomIdByName, parseNum, getUniqueId, getLocalTimeDate, getTournamentFormats, isStartedTooLongAgo } from '../utils';
 
 export function useAppController() {
   const [listRef] = useAutoAnimate<HTMLDivElement>({ duration: 250 });
@@ -39,6 +39,7 @@ export function useAppController() {
 
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [grid, setGrid] = useState<Tournament[]>([]);
+  const [smartGridIds, setSmartGridIds] = useState<string[]>(() => { try { return JSON.parse(localStorage.getItem('mvp_smart_grid_ids') || '[]'); } catch { return []; } });
   const [savedGrids, setSavedGrids] = useState<Record<string, Tournament[]>>({});
   const [isSavedGridsOpen, setIsSavedGridsOpen] = useState(false);
   const [savedGridsLoading, setSavedGridsLoading] = useState(false);
@@ -325,7 +326,96 @@ export function useAppController() {
     tournaments, isRoomAllowed, searchActiveRoom, minBuyin, maxBuyin, minEv, sortOrder, pageSize, currentPage,
   });
 
-  const clearGrid = () => setGrid([]);
+  const clearGrid = () => {
+    setGrid([]);
+    setSmartGridIds([]);
+    localStorage.removeItem('mvp_smart_grid_ids');
+  };
+
+  const runSmartGrid = async (settings: {
+    budget: number; budgetCurrency: 'USD' | 'EUR' | 'RUB'; maxTables: number;
+    startTime: string; endTime: string; usdPerEur: number; usdPerRub: number;
+  }, mode: 'append' | 'replace') => {
+    if (!sessionToken) throw new Error('Сессия авторизации истекла. Войдите заново.');
+    if (!tournaments.length) throw new Error('Сначала загрузите турниры через кнопку «Найти».');
+
+    const previousSmart = new Set(smartGridIds);
+    const locked = mode === 'replace' ? grid.filter(item => !previousSmart.has(getUniqueId(item))) : grid;
+    const lockedIds = new Set(locked.map(getUniqueId));
+    const candidates = tournaments.filter(item => {
+      if (!isRoomAllowed(item.room) || isStartedTooLongAgo(item.time_start, item.day_week, item.room)) return false;
+      const buyin = parseNum(item.buyin);
+      if (buyin < minBuyin || buyin > maxBuyin || parseNum(item.ev_mtt) < minEv) return false;
+      const priorityEnabled = item.priority === '1' ? priorityFilters.p1 : item.priority === '2' ? priorityFilters.p2 : item.priority === '3' ? priorityFilters.p3 : false;
+      if (!priorityEnabled) return false;
+      const formats = getTournamentFormats(item.name);
+      const name = item.name.toLowerCase();
+      const isHyper = name.includes('hyper');
+      const isSixMaxTurboPko = name.includes('6 max') && name.includes('turbo') && name.includes('pko');
+      if (formats.isPko && !structFilters.pko) return false;
+      if (formats.isFreezeout && !structFilters.freezeout) return false;
+      if (isHyper && !structFilters.hyperTurbo) return false;
+      if (isSixMaxTurboPko && !structFilters.turboPko6max && !structFilters.turbo) return false;
+      if (formats.isTurbo && !isHyper && !isSixMaxTurboPko && !structFilters.turbo) return false;
+      if (name.includes('series') && !structFilters.series) return false;
+      return !lockedIds.has(getUniqueId(item));
+    });
+
+    const localIso = (date: Date) => {
+      const pad = (value: number) => String(value).padStart(2, '0');
+      return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) +
+        'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+    };
+    const normalize = (item: Tournament) => ({
+      ...item,
+      smart_start_at: localIso(getLocalTimeDate(item.time_start, item.day_week, item.room)),
+    });
+    const normalizedCandidates = candidates.map(normalize);
+    const normalizedLocked = locked.map(normalize);
+    const dated = [...normalizedCandidates, ...normalizedLocked]
+      .map(item => new Date(item.smart_start_at).getTime()).filter(Number.isFinite);
+    if (!dated.length) throw new Error('Не удалось определить даты турниров. Обновите расписание.');
+    const first = new Date(Math.min(...dated));
+    const [startHour, startMinute] = settings.startTime.split(':').map(Number);
+    const [endHour, endMinute] = settings.endTime.split(':').map(Number);
+    const overnight = endHour * 60 + endMinute <= startHour * 60 + startMinute;
+    const sessionStart = new Date(first);
+    if (overnight && first.getHours() * 60 + first.getMinutes() <= endHour * 60 + endMinute) {
+      sessionStart.setDate(sessionStart.getDate() - 1);
+    }
+    sessionStart.setHours(startHour, startMinute, 0, 0);
+    const sessionEnd = new Date(sessionStart);
+    if (overnight) sessionEnd.setDate(sessionEnd.getDate() + 1);
+    sessionEnd.setHours(endHour, endMinute, 0, 0);
+
+    const rate = settings.budgetCurrency === 'EUR' ? settings.usdPerEur :
+      settings.budgetCurrency === 'RUB' ? settings.usdPerRub : 1;
+    const response = await apiCall('smart_grid/build', {
+      session_token: sessionToken,
+      tournaments: normalizedCandidates,
+      locked: normalizedLocked,
+      settings: {
+        budget_usd: Math.round(settings.budget * rate * 100) / 100,
+        max_tables: settings.maxTables,
+        session_start: localIso(sessionStart),
+        session_end: localIso(sessionEnd),
+        usd_per_eur: settings.usdPerEur,
+        usd_per_rub: settings.usdPerRub,
+      },
+    });
+    if (response.status !== 'success') throw new Error(response.detail || 'Не удалось построить умную сетку');
+    const selected = Array.isArray(response.selected) ? response.selected as Tournament[] : [];
+    const nextGrid = [...locked, ...selected];
+    const nextSmartIds = [...(mode === 'replace' ? [] : smartGridIds), ...selected.map(getUniqueId)];
+    setGrid(nextGrid);
+    setSmartGridIds(nextSmartIds);
+    localStorage.setItem('mvp_smart_grid_ids', JSON.stringify(nextSmartIds));
+    setActiveTab('grid');
+    return response.summary as {
+      selected_count: number; spent_usd: number; remaining_usd: number;
+      peak_tables: number; estimated_end: string | null; candidates_considered: number;
+    };
+  };
 
   const saveNamedGrid = () => {
     if (!sessionToken || grid.length === 0) return;
@@ -420,7 +510,7 @@ export function useAppController() {
     }
 
     setSessionsHistory(previous => [s, ...previous]);
-    setGrid([]); setShowSessionModal(false); 
+    setGrid([]); setSmartGridIds([]); localStorage.removeItem('mvp_smart_grid_ids'); setShowSessionModal(false); 
   };
 
   const clearHistory = async () => {
@@ -474,5 +564,5 @@ export function useAppController() {
 
 
 
-  return { saveNamedGrid, submitNamedGrid, loadNamedGrids, selectSavedGrid, savedGrids, isSaveGridModalOpen, setIsSaveGridModalOpen, newGridName, setNewGridName, gridDialogError, setGridDialogError, gridDialogSuccess, setGridDialogSuccess, isGridErrorOpen, setIsGridErrorOpen, isReplaceGridConfirmOpen, setIsReplaceGridConfirmOpen, pendingGridName, setPendingGridName, confirmReplaceSavedGrid, setAuthStep, setSiteSelectionId, setSiteCandidates, setAuthError, listRef, gridListRef, minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv, authStep, sessionToken, activeTab, setActiveTab, username, setUsername, password, setPassword, otp, setOtp, siteSelectionId, siteCandidates, authenticatedSite, authLoading, authError, tournaments, setTournaments, grid, setGrid, loading, groupByRoom, setGroupByRoom, gridActiveRoom, setGridActiveRoom, isGridRoomsOpen, setIsGridRoomsOpen, gridDropdownRef, activeFormats, setActiveFormats, structFilters, setStructFilters, priorityFilters, setPriorityFilters, pageSize, setPageSize, currentPage, setCurrentPage, sortOrder, setSortOrder, selectedRooms, setSelectedRooms, isRoomsDropdownOpen, setIsRoomsDropdownOpen, searchActiveRoom, setSearchActiveRoom, dropdownRef, calendarYear, calendarMonth, monthsNames, handlePrevMonth, handleNextMonth, getDaysInMonth, isRoomAllowed, toggleGrid, bulkAdd, balances, setBalances, modalBalances, setModalBalances, totalBankroll, updateBalance, dateFrom, setDateFrom, dateTo, setDateTo, isSettingsLoaded, setIsSettingsLoaded, activeStats, setActiveStats, showFineFiltersModal, setShowFineFiltersModal, notes, setNotes, sessionsHistory, setSessionsHistory, showSessionModal, setShowSessionModal, openFinishModal, setPresetDate, loadAllUserData, handleLogin, handleSiteSelect, handleMfa, logout, toggleRoom, fetchTournaments, getRoomStyle, getPriorityStyles, isOverlay, displayGrid, activeGridRooms, filteredGridBySelectedRoom, gridVariance, gridEndTime, gridPeakTables, totalBuyin, totalEV, availableTournamentsForFilter, activeRoomsForFilter, filteredTournaments, totalPages, searchResults, clearGrid, getNoteKey, saveNote, finishSession, clearHistory, chartData, renderGridCard, renderGridPanel };
+  return { saveNamedGrid, submitNamedGrid, loadNamedGrids, selectSavedGrid, savedGrids, isSaveGridModalOpen, setIsSaveGridModalOpen, newGridName, setNewGridName, gridDialogError, setGridDialogError, gridDialogSuccess, setGridDialogSuccess, isGridErrorOpen, setIsGridErrorOpen, isReplaceGridConfirmOpen, setIsReplaceGridConfirmOpen, pendingGridName, setPendingGridName, confirmReplaceSavedGrid, setAuthStep, setSiteSelectionId, setSiteCandidates, setAuthError, listRef, gridListRef, minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv, authStep, sessionToken, activeTab, setActiveTab, username, setUsername, password, setPassword, otp, setOtp, siteSelectionId, siteCandidates, authenticatedSite, authLoading, authError, tournaments, setTournaments, grid, setGrid, loading, groupByRoom, setGroupByRoom, gridActiveRoom, setGridActiveRoom, isGridRoomsOpen, setIsGridRoomsOpen, gridDropdownRef, activeFormats, setActiveFormats, structFilters, setStructFilters, priorityFilters, setPriorityFilters, pageSize, setPageSize, currentPage, setCurrentPage, sortOrder, setSortOrder, selectedRooms, setSelectedRooms, isRoomsDropdownOpen, setIsRoomsDropdownOpen, searchActiveRoom, setSearchActiveRoom, dropdownRef, calendarYear, calendarMonth, monthsNames, handlePrevMonth, handleNextMonth, getDaysInMonth, isRoomAllowed, toggleGrid, bulkAdd, balances, setBalances, modalBalances, setModalBalances, totalBankroll, updateBalance, dateFrom, setDateFrom, dateTo, setDateTo, isSettingsLoaded, setIsSettingsLoaded, activeStats, setActiveStats, showFineFiltersModal, setShowFineFiltersModal, notes, setNotes, sessionsHistory, setSessionsHistory, showSessionModal, setShowSessionModal, openFinishModal, setPresetDate, loadAllUserData, handleLogin, handleSiteSelect, handleMfa, logout, toggleRoom, fetchTournaments, getRoomStyle, getPriorityStyles, isOverlay, displayGrid, activeGridRooms, filteredGridBySelectedRoom, gridVariance, gridEndTime, gridPeakTables, totalBuyin, totalEV, availableTournamentsForFilter, activeRoomsForFilter, filteredTournaments, totalPages, searchResults, clearGrid, smartGridIds, runSmartGrid, getNoteKey, saveNote, finishSession, clearHistory, chartData, renderGridCard, renderGridPanel };
 }
