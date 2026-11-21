@@ -10,4 +10,4 @@ export const ROOM_DOMAINS: Record<string, string> = {
 };
 
 
-export const API_BASE_URL = 'https://selector-backend-production.up.railway.app';
+export const API_BASE_URL = 'https://selector-backend-production-044aaf1e.up.railway.app';
