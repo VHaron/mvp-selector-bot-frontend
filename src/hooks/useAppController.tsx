@@ -18,7 +18,7 @@ export function useAppController() {
 
   const { minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv } = useStore();
 
-  const [authStep, setAuthStep] = useState<'login' | 'mfa' | 'app' | 'site_select'>('login');
+  const [authStep, setAuthStep] = useState<'login' | 'mfa' | 'app' | 'site_select'>('app');
   const [sessionToken, setSessionToken] = useState<string | null>(localStorage.getItem('mvp_token'));
   
   const [activeTab, setActiveTab] = useState<'search' | 'grid' | 'diary'>(() => {
@@ -33,7 +33,7 @@ export function useAppController() {
   const [otp, setOtp] = useState('');
   const [siteSelectionId, setSiteSelectionId] = useState<string | null>(null);
   const [siteCandidates, setSiteCandidates] = useState<{ site: string; auth_status: string }[]>([]);
-  const [authenticatedSite, setAuthenticatedSite] = useState<string>(localStorage.getItem('mvp_site') || 'globusgo');
+  const [authenticatedSite, setAuthenticatedSite] = useState<string>('local');
   const [authLoading, setAuthLoading] = useState(false); 
   const [authError, setAuthError] = useState('');
 
@@ -200,8 +200,26 @@ export function useAppController() {
 
   useEffect(() => {
     try { WebApp.ready(); WebApp.expand(); } catch (e) {}
-    const t = localStorage.getItem('mvp_token');
-    if (t) { setSessionToken(t); loadAllUserData(t); setAuthStep('app'); }
+    let clientId = localStorage.getItem('mvp_client_id');
+    if (!clientId) {
+      clientId = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : 'client_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem('mvp_client_id', clientId);
+    }
+    // Register an app-only session. This does not log in to, contact, or proxy any poker room.
+    void apiCall('session', { client_id: clientId }).then(data => {
+      if (!data.session_token) throw new Error(data.detail || 'Не удалось создать сессию селектора');
+      setSessionToken(data.session_token);
+      setAuthenticatedSite('local');
+      localStorage.setItem('mvp_token', data.session_token);
+      localStorage.setItem('mvp_site', 'local');
+      loadAllUserData(data.session_token);
+      setAuthStep('app');
+    }).catch(error => {
+      console.error('Не удалось создать локальную сессию:', error);
+      setAuthError(error instanceof Error ? error.message : 'Не удалось подключиться к селектору');
+    });
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
