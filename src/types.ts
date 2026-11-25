@@ -1,7 +1,7 @@
 export interface Tournament {
   id: string; room: string; name: string; priority: string;
   buyin: string; time_start: string; roi_str: string; gtd: string;
-  afs: string; duration: string; ev_mtt: string; day_week: string;
+  afs: string; duration: string; ev_mtt: string; day_week: string; start_timestamp?: number;
 }
 
 export type NoteTag = 'skip' | 'must' | 'none' | string;
