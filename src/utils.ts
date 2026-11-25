@@ -17,7 +17,7 @@ export const getRoomIdByName = (roomName: string) => {
   if (nameLower.includes('pokerdom') || nameLower.includes('pd')) return '264';
   if (nameLower.includes('coin')) return '265';
   if (nameLower.includes('wpn') || nameLower.includes('acardroom') || nameLower.includes('americas')) return '252';
-  if (nameLower.includes('ipoker') || nameLower.includes('redstar')) return '247';
+  if (nameLower.includes('ipoker') || nameLower.includes('redstar') || nameLower.includes('championpoker')) return '247';
   if (nameLower.includes('party')) return '248';
   if (nameLower.includes('chico') || nameLower.includes('betonline')) return '245';
   if (nameLower.includes('clubgg') || nameLower.includes('club gg')) return '267';
