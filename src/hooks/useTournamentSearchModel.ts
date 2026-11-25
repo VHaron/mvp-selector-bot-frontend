@@ -39,7 +39,7 @@ export function useTournamentSearchModel({
       if (isStartedTooLongAgo(item.time_start, item.day_week, item.room) || !isRoomAllowed(item.room)) return false;
       if (searchActiveRoom && item.room !== searchActiveRoom) return false;
       const buyin = parseNum(item.buyin);
-      return buyin >= minBuyin && buyin <= maxBuyin && parseNum(item.ev_mtt) >= minEv;
+      return buyin >= minBuyin && buyin <= maxBuyin && (item.room === 'iPoker' || parseNum(item.ev_mtt) >= minEv);
     })
     .sort((a, b) => sortOrder === 'tier'
       ? tierId(a) - tierId(b)
