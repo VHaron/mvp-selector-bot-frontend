@@ -14,10 +14,10 @@ const WEEKDAYS: Record<string, number> = {
 
 function startSortValue(item: Tournament): number {
   if (typeof item.start_timestamp === 'number' && Number.isFinite(item.start_timestamp)) return item.start_timestamp;
-  const match = String(item.time_start || '').match(/(\\d{1,2}):(\\d{2})/);
+  const match = String(item.time_start || '').match(/(\d{1,2}):(\d{2})/);
   if (!match) return Number.MAX_SAFE_INTEGER;
   const [, hours, minutes] = match;
-  const label = String(item.day_week || '').trim().toLocaleLowerCase().replace(/\\.$/, '');
+  const label = String(item.day_week || '').trim().toLocaleLowerCase().replace(/\.$/, '');
   const targetDay = WEEKDAYS[label];
   const today = new Date().getDay();
   const dayOffset = targetDay === undefined ? 0 : (targetDay - today + 7) % 7;
