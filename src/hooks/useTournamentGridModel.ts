@@ -16,11 +16,16 @@ function tier(tournament: Tournament) {
   return { id: 3, label: 'C', color: 'text-slate-500 bg-slate-800/40 border-slate-700/40' };
 }
 
+function tournamentStart(item: Tournament): number {
+  if (typeof item.start_timestamp === 'number' && Number.isFinite(item.start_timestamp)) return item.start_timestamp;
+  return getLocalTimeDate(item.time_start, item.day_week, item.room).getTime();
+}
+
 function sessionEndTime(items: Tournament[]) {
   let latest = 0;
   items.forEach(item => {
     if (!item.time_start || !item.duration) return;
-    const start = getLocalTimeDate(item.time_start, item.day_week, item.room).getTime();
+    const start = tournamentStart(item);
     const end = start + parseFloat(item.duration.replace(',', '.')) * 60 * 60000;
     if (end > latest) latest = end;
   });
@@ -59,7 +64,7 @@ export function useTournamentGridModel(
       if (sortOrder === 'buyin') return parseNum(b.buyin) - parseNum(a.buyin);
       if (sortOrder === 'ev') return parseNum(b.ev_mtt) - parseNum(a.ev_mtt);
       if (sortOrder === 'tier') return tier(a).id - tier(b).id;
-      return getLocalTimeDate(a.time_start, a.day_week, a.room).getTime() - getLocalTimeDate(b.time_start, b.day_week, b.room).getTime();
+      return tournamentStart(a) - tournamentStart(b);
     }), [grid, sortOrder, selectedRooms, isRoomAllowed]);
 
   const displayGrid = useMemo(() => sortedGrid
