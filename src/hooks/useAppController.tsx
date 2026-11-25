@@ -38,6 +38,9 @@ export function useAppController() {
   const [authError, setAuthError] = useState('');
 
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [ipokerLoading, setIpokerLoading] = useState(false);
+  const [ipokerError, setIpokerError] = useState('');
+  const [ipokerCatalogCount, setIpokerCatalogCount] = useState(0);
   const [grid, setGrid] = useState<Tournament[]>([]);
   const [savedGrids, setSavedGrids] = useState<Record<string, Tournament[]>>({});
   const [isSavedGridsOpen, setIsSavedGridsOpen] = useState(false);
@@ -295,6 +298,45 @@ export function useAppController() {
     finally { setLoading(false); }
   };
 
+  const loadIpokerCatalog = async () => {
+    setIpokerLoading(true);
+    setIpokerError('');
+    try {
+      const response = await fetch('https://ipoker-parser-backend-test-testing.up.railway.app/api/tournaments/catalog', { cache: 'no-store' });
+      if (!response.ok) throw new Error(`Каталог iPoker недоступен: HTTP ${response.status}`);
+      const payload = await response.json();
+      if (!Array.isArray(payload.data)) throw new Error('Сервер вернул каталог в неизвестном формате');
+      const mapped: Tournament[] = payload.data.map((item: any) => {
+        const start = item.time_start ? new Date(item.time_start) : null;
+        const validStart = start && !Number.isNaN(start.getTime());
+        const moscowTime = validStart ? new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(start) : '';
+        const dayWeek = validStart ? new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Moscow', weekday: 'short' }).format(start) : '';
+        return {
+          id: String(item.id || item.upstream_id || ''),
+          room: 'iPoker',
+          name: String(item.name || 'iPoker tournament'),
+          priority: '2',
+          buyin: String(item.total_buyin ?? item.buyin ?? 0),
+          time_start: moscowTime,
+          roi_str: '—',
+          gtd: String(item.gtd ?? 'не задано'),
+          afs: String(item.afs ?? ''),
+          duration: String(item.presumable_duration ?? ''),
+          ev_mtt: '0',
+          day_week: dayWeek,
+        };
+      });
+      setIpokerCatalogCount(mapped.length);
+      setTournaments(previous => [...previous.filter(item => item.room.toLowerCase() !== 'ipoker'), ...mapped]);
+      setSearchActiveRoom(null);
+      setCurrentPage(1);
+    } catch (error) {
+      setIpokerError(error instanceof Error ? error.message : 'Не удалось загрузить каталог iPoker');
+    } finally {
+      setIpokerLoading(false);
+    }
+  };
+
   const getRoomStyle = (roomName: string) => {
     const name = roomName.toLowerCase();
     if (name.includes('gg') || name.includes('pokerstars') || name.includes('ps')) return 'bg-red-500/10 text-red-400 border-red-500/30';
@@ -474,5 +516,5 @@ export function useAppController() {
 
 
 
-  return { saveNamedGrid, submitNamedGrid, loadNamedGrids, selectSavedGrid, savedGrids, isSaveGridModalOpen, setIsSaveGridModalOpen, newGridName, setNewGridName, gridDialogError, setGridDialogError, gridDialogSuccess, setGridDialogSuccess, isGridErrorOpen, setIsGridErrorOpen, isReplaceGridConfirmOpen, setIsReplaceGridConfirmOpen, pendingGridName, setPendingGridName, confirmReplaceSavedGrid, setAuthStep, setSiteSelectionId, setSiteCandidates, setAuthError, listRef, gridListRef, minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv, authStep, sessionToken, activeTab, setActiveTab, username, setUsername, password, setPassword, otp, setOtp, siteSelectionId, siteCandidates, authenticatedSite, authLoading, authError, tournaments, setTournaments, grid, setGrid, loading, groupByRoom, setGroupByRoom, gridActiveRoom, setGridActiveRoom, isGridRoomsOpen, setIsGridRoomsOpen, gridDropdownRef, activeFormats, setActiveFormats, structFilters, setStructFilters, priorityFilters, setPriorityFilters, pageSize, setPageSize, currentPage, setCurrentPage, sortOrder, setSortOrder, selectedRooms, setSelectedRooms, isRoomsDropdownOpen, setIsRoomsDropdownOpen, searchActiveRoom, setSearchActiveRoom, dropdownRef, calendarYear, calendarMonth, monthsNames, handlePrevMonth, handleNextMonth, getDaysInMonth, isRoomAllowed, toggleGrid, bulkAdd, balances, setBalances, modalBalances, setModalBalances, totalBankroll, updateBalance, dateFrom, setDateFrom, dateTo, setDateTo, isSettingsLoaded, setIsSettingsLoaded, activeStats, setActiveStats, showFineFiltersModal, setShowFineFiltersModal, notes, setNotes, sessionsHistory, setSessionsHistory, showSessionModal, setShowSessionModal, openFinishModal, setPresetDate, loadAllUserData, handleLogin, handleSiteSelect, handleMfa, logout, toggleRoom, fetchTournaments, getRoomStyle, getPriorityStyles, isOverlay, displayGrid, activeGridRooms, filteredGridBySelectedRoom, gridVariance, gridEndTime, gridPeakTables, totalBuyin, totalEV, availableTournamentsForFilter, activeRoomsForFilter, filteredTournaments, totalPages, searchResults, clearGrid, getNoteKey, saveNote, finishSession, clearHistory, chartData, renderGridCard, renderGridPanel };
+  return { saveNamedGrid, submitNamedGrid, loadNamedGrids, selectSavedGrid, savedGrids, isSaveGridModalOpen, setIsSaveGridModalOpen, newGridName, setNewGridName, gridDialogError, setGridDialogError, gridDialogSuccess, setGridDialogSuccess, isGridErrorOpen, setIsGridErrorOpen, isReplaceGridConfirmOpen, setIsReplaceGridConfirmOpen, pendingGridName, setPendingGridName, confirmReplaceSavedGrid, setAuthStep, setSiteSelectionId, setSiteCandidates, setAuthError, listRef, gridListRef, minBuyin, maxBuyin, minEv, setMinBuyin, setMaxBuyin, setMinEv, authStep, sessionToken, activeTab, setActiveTab, username, setUsername, password, setPassword, otp, setOtp, siteSelectionId, siteCandidates, authenticatedSite, authLoading, authError, tournaments, setTournaments, grid, setGrid, loading, groupByRoom, setGroupByRoom, gridActiveRoom, setGridActiveRoom, isGridRoomsOpen, setIsGridRoomsOpen, gridDropdownRef, activeFormats, setActiveFormats, structFilters, setStructFilters, priorityFilters, setPriorityFilters, pageSize, setPageSize, currentPage, setCurrentPage, sortOrder, setSortOrder, selectedRooms, setSelectedRooms, isRoomsDropdownOpen, setIsRoomsDropdownOpen, searchActiveRoom, setSearchActiveRoom, dropdownRef, calendarYear, calendarMonth, monthsNames, handlePrevMonth, handleNextMonth, getDaysInMonth, isRoomAllowed, toggleGrid, bulkAdd, balances, setBalances, modalBalances, setModalBalances, totalBankroll, updateBalance, dateFrom, setDateFrom, dateTo, setDateTo, isSettingsLoaded, setIsSettingsLoaded, activeStats, setActiveStats, showFineFiltersModal, setShowFineFiltersModal, notes, setNotes, sessionsHistory, setSessionsHistory, showSessionModal, setShowSessionModal, openFinishModal, setPresetDate, loadAllUserData, handleLogin, handleSiteSelect, handleMfa, logout, toggleRoom, fetchTournaments, loadIpokerCatalog, ipokerLoading, ipokerError, ipokerCatalogCount, getRoomStyle, getPriorityStyles, isOverlay, displayGrid, activeGridRooms, filteredGridBySelectedRoom, gridVariance, gridEndTime, gridPeakTables, totalBuyin, totalEV, availableTournamentsForFilter, activeRoomsForFilter, filteredTournaments, totalPages, searchResults, clearGrid, getNoteKey, saveNote, finishSession, clearHistory, chartData, renderGridCard, renderGridPanel };
 }
