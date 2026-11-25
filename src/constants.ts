@@ -9,5 +9,5 @@ export const ROOM_DOMAINS: Record<string, string> = {
   '252': 'americascardroom.eu', '264': 'pokerdom.com', '265': 'coinpoker.com', '267': 'clubgg.com', '268': 'wptglobal.com'
 };
 
-export const API_BASE_URL = 'https://smart-grid-backend-test-testing-7fc031bb.up.railway.app';
-export const PARSER_API_BASE_URL = 'https://ipoker-parser-backend-test-testing.up.railway.app';
+// All selector API traffic goes to our own central backend; no Globus proxy/fallback.
+export const API_BASE_URL = 'https://ipoker-parser-backend-test-testing.up.railway.app';
