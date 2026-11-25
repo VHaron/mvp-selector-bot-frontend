@@ -10,3 +10,4 @@ export const ROOM_DOMAINS: Record<string, string> = {
 };
 
 export const API_BASE_URL = 'https://smart-grid-backend-test-testing-7fc031bb.up.railway.app';
+export const PARSER_API_BASE_URL = 'https://ipoker-parser-backend-test-testing.up.railway.app';
