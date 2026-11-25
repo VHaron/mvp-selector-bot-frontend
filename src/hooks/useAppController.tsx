@@ -306,9 +306,11 @@ export function useAppController() {
       if (!response.ok) throw new Error(`Каталог iPoker недоступен: HTTP ${response.status}`);
       const payload = await response.json();
       if (!Array.isArray(payload.data)) throw new Error('Сервер вернул каталог в неизвестном формате');
+      const now = Date.now();
       const mapped: Tournament[] = payload.data.map((item: any) => {
         const start = item.time_start ? new Date(item.time_start) : null;
         const validStart = start && !Number.isNaN(start.getTime());
+        const timestamp = validStart ? start.getTime() : undefined;
         const moscowTime = validStart ? new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(start) : '';
         const dayWeek = validStart ? new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Moscow', weekday: 'short' }).format(start) : '';
         return {
@@ -324,9 +326,12 @@ export function useAppController() {
           duration: String(item.presumable_duration ?? ''),
           ev_mtt: '0',
           day_week: dayWeek,
-          start_timestamp: validStart ? start.getTime() : undefined,
+          start_timestamp: timestamp,
         };
-      });
+      })
+        // Do not show tournaments whose exact start timestamp has already passed.
+        .filter(item => typeof item.start_timestamp === 'number' && item.start_timestamp >= now)
+        .sort((a, b) => (a.start_timestamp ?? Number.MAX_SAFE_INTEGER) - (b.start_timestamp ?? Number.MAX_SAFE_INTEGER));
       setIpokerCatalogCount(mapped.length);
       setTournaments(previous => [...previous.filter(item => item.room.toLowerCase() !== 'ipoker'), ...mapped]);
       setSearchActiveRoom(null);
