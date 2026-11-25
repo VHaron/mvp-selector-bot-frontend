@@ -330,8 +330,8 @@ export function useAppController() {
         };
       })
         // Do not show tournaments whose exact start timestamp has already passed.
-        .filter(item => typeof item.start_timestamp === 'number' && item.start_timestamp >= now)
-        .sort((a, b) => (a.start_timestamp ?? Number.MAX_SAFE_INTEGER) - (b.start_timestamp ?? Number.MAX_SAFE_INTEGER));
+        .filter((item: Tournament) => typeof item.start_timestamp === 'number' && item.start_timestamp >= now)
+        .sort((a: Tournament, b: Tournament) => (a.start_timestamp ?? Number.MAX_SAFE_INTEGER) - (b.start_timestamp ?? Number.MAX_SAFE_INTEGER));
       setIpokerCatalogCount(mapped.length);
       setTournaments(previous => [...previous.filter(item => item.room.toLowerCase() !== 'ipoker'), ...mapped]);
       setSearchActiveRoom(null);
