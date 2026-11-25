@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../constants';
+import { API_BASE_URL, PARSER_API_BASE_URL } from '../constants';
 
 export const apiCall = async (endpoint: string, body: unknown) => {
   const controller = new AbortController();
@@ -18,4 +18,21 @@ export const apiCall = async (endpoint: string, body: unknown) => {
   } finally {
     window.clearTimeout(timeoutId);
   }
+};
+
+export type IpokerCatalogResponse = {
+  status: 'ready' | 'empty';
+  stale: boolean;
+  count: number;
+  data: Record<string, unknown>[];
+};
+
+export const fetchIpokerCatalog = async (): Promise<IpokerCatalogResponse> => {
+  const response = await fetch(`${PARSER_API_BASE_URL}/api/tournaments/catalog`, {
+    method: 'GET',
+    headers: { Accept: 'application/json' },
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error(`iPoker catalog returned HTTP ${response.status}`);
+  return response.json() as Promise<IpokerCatalogResponse>;
 };
