@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "ChampionPoker iPoker Live Capture",
+  "version": "1.0.0",
+  "description": "Передаёт обновления расписания ChampionPoker в тестовый каталог iPoker.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://games.championpoker.com/*",
+    "https://ipoker-parser-backend-test-testing.up.railway.app/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://games.championpoker.com/*"
+      ],
+      "js": [
+        "bridge.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://games.championpoker.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "options_page": "options.html"
+}
