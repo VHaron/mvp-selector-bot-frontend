@@ -324,6 +324,7 @@ export function useAppController() {
           duration: String(item.presumable_duration ?? ''),
           ev_mtt: '0',
           day_week: dayWeek,
+          start_timestamp: validStart ? start.getTime() : undefined,
         };
       });
       setIpokerCatalogCount(mapped.length);
