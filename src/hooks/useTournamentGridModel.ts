@@ -68,7 +68,7 @@ export function useTournamentGridModel(
     }), [grid, sortOrder, selectedRooms, isRoomAllowed]);
 
   const displayGrid = useMemo(() => sortedGrid
-    .map(item => ({ ...item, played: isPlayed(item.time_start, item.day_week, item.room) }))
+    .map(item => ({ ...item, played: item.start_timestamp ? item.start_timestamp < Date.now() : isPlayed(item.time_start, item.day_week, item.room) }))
     .sort((a, b) => a.played === b.played ? 0 : a.played ? 1 : -1), [sortedGrid]);
 
   const activeGridRooms = useMemo(() => Array.from(new Set(displayGrid.map(item => item.room)))
