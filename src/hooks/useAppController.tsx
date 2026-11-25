@@ -34,7 +34,7 @@ export function useAppController() {
   const [siteSelectionId, setSiteSelectionId] = useState<string | null>(null);
   const [siteCandidates, setSiteCandidates] = useState<{ site: string; auth_status: string }[]>([]);
   const [authenticatedSite, setAuthenticatedSite] = useState<string>('local');
-  const [authLoading, setAuthLoading] = useState(false); 
+  const authLoading = false;
   const [authError, setAuthError] = useState('');
 
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
