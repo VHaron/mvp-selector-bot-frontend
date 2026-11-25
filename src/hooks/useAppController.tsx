@@ -223,72 +223,36 @@ export function useAppController() {
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault(); setAuthLoading(true); setAuthError(''); setSiteSelectionId(null); setSiteCandidates([]);
-    try {
-      const data = await apiCall('login', { username, password, site: 'auto' });
-      if (data.detail) throw new Error(data.detail);
-
-      if (data.status === 'site_selection_required') {
-        setSiteSelectionId(data.selection_id);
-        setSiteCandidates(Array.isArray(data.candidates) ? data.candidates : []);
-        setAuthStep('site_select'); return;
-      }
-      if (!data.session_token) throw new Error('Сервер не вернул токен сессии');
-      setSessionToken(data.session_token);
-      if (data.site) setAuthenticatedSite(data.site);
-      if (data.status === 'mfa_required') { setAuthStep('mfa'); } 
-      else {
-        localStorage.setItem('mvp_token', data.session_token);
-        if (data.site) localStorage.setItem('mvp_site', data.site);
-        loadAllUserData(data.session_token); setAuthStep('app');
-      }
-    } catch (err: any) { setAuthError(err.message || 'Ошибка авторизации'); } 
-    finally { setAuthLoading(false); }
+    e.preventDefault();
+    setAuthError('Авторизация через Globus отключена. Селектор работает независимо от покер-румов.');
   };
-
-  const handleSiteSelect = async (site: string) => {
-    if (!siteSelectionId) return;
-    setAuthLoading(true); setAuthError('');
-    try {
-      const data = await apiCall('select_site', { selection_id: siteSelectionId, site });
-      if (data.detail) throw new Error(data.detail);
-      if (!data.session_token) throw new Error('Сервер не вернул токен выбранного сайта');
-      setSessionToken(data.session_token); setAuthenticatedSite(data.site || site);
-      setSiteSelectionId(null); setSiteCandidates([]); setOtp('');
-
-      if (data.status === 'mfa_required') { setAuthStep('mfa'); } 
-      else {
-        localStorage.setItem('mvp_token', data.session_token);
-        localStorage.setItem('mvp_site', data.site || site);
-        loadAllUserData(data.session_token); setAuthStep('app');
-      }
-    } catch (err: any) { setAuthError(err.message || 'Не удалось выбрать сайт'); } 
-    finally { setAuthLoading(false); }
+  const handleSiteSelect = async (_site: string) => {
+    setAuthError('Выбор внешнего сайта отключён: турнирные данные поступают из центрального каталога.');
   };
-
   const handleMfa = async (e: React.FormEvent) => {
-    e.preventDefault(); setAuthLoading(true); setAuthError('');
-    try {
-      const data = await apiCall('mfa', { session_token: sessionToken, otp });
-      if (data.detail) throw new Error(data.detail);
-      const finalSite = data.site || authenticatedSite;
-      localStorage.setItem('mvp_token', sessionToken as string);
-      if (finalSite) { setAuthenticatedSite(finalSite); localStorage.setItem('mvp_site', finalSite); }
-      loadAllUserData(sessionToken as string); setAuthStep('app');
-    } catch (err: any) { setAuthError(err.message); } 
-    finally { setAuthLoading(false); }
+    e.preventDefault();
+    setAuthError('Внешняя авторизация отключена.');
   };
-
   const logout = () => {
     setSmartGridIds([]); localStorage.removeItem('mvp_smart_grid_ids');
-    localStorage.removeItem('mvp_token'); localStorage.removeItem('mvp_site'); setSessionToken(null);
     setIsSettingsLoaded(false); setTournaments([]); setGrid([]); setNotes({});
     setSessionsHistory([]); setBalances({}); setSelectedRooms(Object.keys(ROOMS));
     setActiveFormats({ isPko: true, isFreezeout: true, isTurbo: true }); setSortOrder('time');
-    setSiteSelectionId(null); setSiteCandidates([]); setOtp(''); setPassword('');
-    setAuthError(''); setAuthStep('login');
+    const clientId = localStorage.getItem('mvp_client_id');
+    if (!clientId) {
+      setAuthError('Не найден локальный идентификатор селектора. Обновите страницу.');
+      return;
+    }
+    void apiCall('session', { client_id: clientId }).then(data => {
+      if (!data.session_token) throw new Error(data.detail || 'Не удалось обновить сессию селектора');
+      setSessionToken(data.session_token);
+      setAuthenticatedSite('local');
+      localStorage.setItem('mvp_token', data.session_token);
+      localStorage.setItem('mvp_site', 'local');
+      loadAllUserData(data.session_token);
+      setAuthStep('app');
+    }).catch(error => setAuthError(error instanceof Error ? error.message : 'Не удалось обновить сессию'));
   };
-
   const toggleRoom = (roomId: string) => setSelectedRooms(prev => prev.includes(roomId) ? prev.filter(id => id !== roomId) : [...prev, roomId]);
 
   const fetchTournaments = async () => {
