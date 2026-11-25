@@ -80,7 +80,7 @@ export function SearchTournamentCard({
           <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
           <FormatBadges name={t.name} compact />
           <span>GTD: {t.gtd.includes('не задано') ? 'TBA' : `$${t.gtd}`}</span>
-          <span className={`font-bold ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}</span>
+          <span className={`font-bold ${parseNum(t.ev_mtt) >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>{t.room === 'iPoker' ? 'EV —' : `${parseNum(t.ev_mtt) > 0 ? '+' : ''}${t.ev_mtt}`}</span>
         </div>
       </div>
 
