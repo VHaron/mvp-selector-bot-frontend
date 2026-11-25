@@ -65,6 +65,11 @@ export const getTournamentFormats = (name: string) => {
 
 export const getLocalTimeDate = (mskTimeStr: string, dayWeekStr?: string, _roomName?: string) => {
   if (!mskTimeStr) return new Date();
+  // Central catalog timestamps carry a full ISO date; legacy Globus rows carry only HH:mm.
+  if (/^\d{4}-\d{2}-\d{2}T/.test(mskTimeStr)) {
+    const parsed = new Date(mskTimeStr);
+    if (Number.isFinite(parsed.getTime())) return parsed;
+  }
   let [hours, mins] = mskTimeStr.slice(0, 5).split(':').map(Number);
   const now = new Date();
   const mskWall = new Date(now.getTime() + 3 * 3600000); 
@@ -120,4 +125,3 @@ export const isStartedTooLongAgo = (timeString: string, dayWeekStr?: string, roo
   if (!timeString) return false;
   return getDiffMins(timeString, dayWeekStr, roomName) < -15; 
 };
-
