@@ -449,6 +449,7 @@ export function useAppController() {
     <TournamentGridCard
       key={overrideKey || getUniqueId(t)}
       tournament={t}
+      isOverlay={isOverlay(t)}
       overrideKey={overrideKey}
       getRoomStyle={getRoomStyle}
       onToggle={toggleGrid}
