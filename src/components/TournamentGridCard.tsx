@@ -35,7 +35,7 @@ export function TournamentGridCard({ tournament: t, getRoomStyle, onToggle, onOp
             </span>
             {SmartTimer(t.time_start, t.day_week, t.room)}
           </div>
-          <div className="font-bold text-[11px] text-white truncate leading-tight">{cleanTournamentName(t.name)}{isOverlay && <Flame size={12} className="inline-block ml-1.5 text-orange-500 animate-pulse mb-0.5" title="Оверлей" />}</div>
+          <div className="font-bold text-[11px] text-white truncate leading-tight">{cleanTournamentName(t.name)}{isOverlay && <span className="inline-flex ml-1.5 text-orange-500 animate-pulse mb-0.5" title="Оверлей"><Flame size={12} /></span>}</div>
           <div className="flex items-center gap-2 text-[10px]">
             <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
             <div className="flex items-center gap-0.5 ml-1">
