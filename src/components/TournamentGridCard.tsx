@@ -1,4 +1,4 @@
-import { ShieldAlert, Zap, Disc, NotebookPen } from 'lucide-react';
+import { Flame, ShieldAlert, Zap, Disc, NotebookPen } from 'lucide-react';
 import type { Tournament } from '../types';
 import { RoomBadge } from './RoomBadge';
 import { SmartTimer } from './SmartTimer';
@@ -10,9 +10,10 @@ type Props = {
   onToggle: (tournament: Tournament) => void;
   onOpenNote: (tournament: Tournament) => void;
   overrideKey?: string;
+  isOverlay: boolean;
 };
 
-export function TournamentGridCard({ tournament: t, getRoomStyle, onToggle, onOpenNote, overrideKey }: Props) {
+export function TournamentGridCard({ tournament: t, getRoomStyle, onToggle, onOpenNote, overrideKey, isOverlay }: Props) {
   const prioStyles = t.priority === '1' ? { border: 'border-l-emerald-500' } : t.priority === '2' ? { border: 'border-l-amber-500' } : { border: 'border-l-rose-500' };
   const played = isPlayed(t.time_start, t.day_week, t.room);
   const elementKey = overrideKey || getUniqueId(t);
@@ -34,7 +35,7 @@ export function TournamentGridCard({ tournament: t, getRoomStyle, onToggle, onOp
             </span>
             {SmartTimer(t.time_start, t.day_week, t.room)}
           </div>
-          <div className="font-bold text-[11px] text-white truncate leading-tight">{cleanTournamentName(t.name)}</div>
+          <div className="font-bold text-[11px] text-white truncate leading-tight">{cleanTournamentName(t.name)}{isOverlay && <Flame size={12} className="inline-block ml-1.5 text-orange-500 animate-pulse mb-0.5" title="Оверлей" />}</div>
           <div className="flex items-center gap-2 text-[10px]">
             <span className="font-black text-emerald-400">{getRoomCurrency(t.room)}{t.buyin}</span>
             <div className="flex items-center gap-0.5 ml-1">
